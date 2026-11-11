@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { defineFixture } from '../../component-fixtures/component-fixture'
 import { OverviewReplyPopover } from './OverviewReplyPopover'
 import type { OverviewWorkspaceRow } from './overview-model-types'
@@ -21,11 +22,24 @@ const row: OverviewWorkspaceRow = {
   cleanable: false
 }
 
+function ControlledReplyPopover(): React.JSX.Element {
+  const [open, setOpen] = useState(false)
+  return (
+    <OverviewReplyPopover
+      row={row}
+      busy={false}
+      reply={async () => true}
+      open={open}
+      setOpen={setOpen}
+    />
+  )
+}
+
 export const open = defineFixture({
   width: 480,
   render: () => (
     <div className="flex h-56 justify-end p-4">
-      <OverviewReplyPopover row={row} busy={false} reply={async () => true} />
+      <ControlledReplyPopover />
     </div>
   ),
   interact: (frame) => {

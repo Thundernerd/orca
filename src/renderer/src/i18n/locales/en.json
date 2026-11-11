@@ -20114,7 +20114,8 @@
           "group": "Group projects",
           "groupNone": "No grouping",
           "groupProjectGroup": "By project group"
-        }
+        },
+        "keyboardHint": "↑/↓ or J/K select what needs you · Enter open · R reply · E mark read · Esc clear"
       }
     },
     "i18n": {

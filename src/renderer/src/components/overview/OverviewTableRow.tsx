@@ -11,25 +11,32 @@ import {
 } from './overview-presentation'
 import { OverviewPrLink } from './OverviewPrLink'
 import { OverviewReplyPopover } from './OverviewReplyPopover'
+import { OVERVIEW_TRIAGE_ATTRIBUTE, type OverviewTriage } from './use-overview-keyboard-triage'
 
 export function OverviewTableRow({
   row,
   now,
-  actions
+  actions,
+  triage
 }: {
   row: OverviewWorkspaceRow
   now: number
   actions: OverviewAttentionCardActions
+  triage: OverviewTriage
 }): React.JSX.Element {
   const t = useTranslate()
   const needsYou = row.attention.some((kind) => kind !== 'pr-ready')
   const waiting = row.attention.includes('agent-waiting')
+  const selected = triage.selectedId === row.worktreeId
   return (
     <tr
+      aria-current={selected ? 'true' : undefined}
+      {...{ [OVERVIEW_TRIAGE_ATTRIBUTE]: row.worktreeId }}
       className={cn(
         'group border-t border-border/50',
         needsYou && 'bg-destructive/5',
-        row.isActive && 'bg-accent/40'
+        row.isActive && 'bg-accent/40',
+        selected && 'bg-accent outline-2 -outline-offset-2 outline-ring'
       )}
     >
       <td className="max-w-0 px-3 py-1.5">
@@ -94,7 +101,13 @@ export function OverviewTableRow({
       <td className="px-3 py-1.5 text-right whitespace-nowrap">
         {waiting ? (
           <span className="mr-3 inline-flex">
-            <OverviewReplyPopover row={row} busy={actions.busy} reply={actions.reply} />
+            <OverviewReplyPopover
+              row={row}
+              busy={actions.busy}
+              reply={actions.reply}
+              open={triage.replyOpenId === row.worktreeId}
+              setOpen={(open) => triage.setReplyOpen(open ? row.worktreeId : null)}
+            />
           </span>
         ) : null}
         {/* Row actions appear on hover or keyboard focus to keep the table scannable. */}

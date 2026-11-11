@@ -19,6 +19,7 @@ import { OverviewHeader } from './OverviewHeader'
 import { OverviewStatsStrip } from './OverviewStatsStrip'
 import { OverviewTable } from './OverviewTable'
 import { OverviewViewMenu } from './OverviewViewMenu'
+import { useOverviewKeyboardTriage } from './use-overview-keyboard-triage'
 import { sectionOverviewProjects } from './overview-project-sections'
 import { runWorktreeDelete } from '@/components/sidebar/workspace-actions/deletion/delete-worktree-flow'
 import { LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
@@ -121,6 +122,16 @@ export default function OverviewPage(): React.JSX.Element {
     },
     [worktreesById]
   )
+  const triage = useOverviewKeyboardTriage({
+    items: snapshot.attention,
+    onOpen: open,
+    onMarkRead: (worktreeId) => {
+      const worktree = worktreesById.get(worktreeId)
+      if (worktree) {
+        markOverviewWorkspaceRead(worktree)
+      }
+    }
+  })
   const mainOf = useCallback(
     (projectId: string) => {
       const mainId = snapshot.projects.find((p) => p.id === projectId)?.mainWorktreeId
@@ -262,6 +273,7 @@ export default function OverviewPage(): React.JSX.Element {
             now={now}
             projectActions={projectActions}
             attentionActions={attentionActions}
+            triage={triage}
           />
         </div>
       ) : (
@@ -317,6 +329,7 @@ export default function OverviewPage(): React.JSX.Element {
                   canMerge={mainOf(item.projectId) !== null}
                   now={now}
                   actions={attentionActions}
+                  triage={triage}
                 />
               ))
             )}

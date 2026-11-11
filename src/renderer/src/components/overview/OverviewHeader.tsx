@@ -98,6 +98,14 @@ export function OverviewHeader({
           </Button>
         </div>
       </div>
+      {needYou > 0 ? (
+        <p className="hidden truncate text-xs text-muted-foreground @3xl:block">
+          {t(
+            'auto.components.overview.keyboardHint',
+            '↑/↓ or J/K select what needs you · Enter open · R reply · E mark read · Esc clear'
+          )}
+        </p>
+      ) : null}
       {activeProject ? (
         <p className="truncate text-xs text-muted-foreground">
           {t('auto.components.overview.active', 'Active: {{project}} · {{workspace}}', {

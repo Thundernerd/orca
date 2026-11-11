@@ -8,6 +8,7 @@ import type { OverviewProjectSection } from './overview-project-sections'
 import type { OverviewProjectCardActions } from './OverviewProjectCard'
 import type { OverviewAttentionCardActions } from './OverviewAttentionCard'
 import { OverviewTableRow } from './OverviewTableRow'
+import type { OverviewTriage } from './use-overview-keyboard-triage'
 import { OverviewWriteTicketPopover } from './OverviewWriteTicketPopover'
 
 /** Every workspace in one table, grouped by project; collapsing a group minimizes its card too. */
@@ -17,7 +18,8 @@ export function OverviewTable({
   ticketsUnavailable,
   now,
   projectActions,
-  attentionActions
+  attentionActions,
+  triage
 }: {
   sections: readonly OverviewProjectSection[]
   minimized: readonly string[]
@@ -25,6 +27,7 @@ export function OverviewTable({
   now: number
   projectActions: OverviewProjectCardActions
   attentionActions: OverviewAttentionCardActions
+  triage: OverviewTriage
 }): React.JSX.Element {
   const t = useTranslate()
   return (
@@ -196,6 +199,7 @@ export function OverviewTable({
                         row={row}
                         now={now}
                         actions={attentionActions}
+                        triage={triage}
                       />
                     ))
                   : null}

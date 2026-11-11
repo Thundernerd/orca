@@ -10,14 +10,18 @@ import type { OverviewWorkspaceRow } from './overview-model-types'
 export function OverviewReplyPopover({
   row,
   busy,
-  reply
+  reply,
+  open,
+  setOpen
 }: {
   row: OverviewWorkspaceRow
   busy: boolean
   reply: (worktreeId: string, text: string) => Promise<boolean>
+  /** Controlled by the page so R in keyboard triage can open it. */
+  open: boolean
+  setOpen: (open: boolean) => void
 }): React.JSX.Element {
   const t = useTranslate()
-  const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
 
   const submit = async (): Promise<void> => {

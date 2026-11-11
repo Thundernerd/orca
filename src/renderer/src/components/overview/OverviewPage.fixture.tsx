@@ -220,3 +220,31 @@ export const groupedTable = defineFixture({
     </div>
   )
 })
+
+function pressDownTwice(): void {
+  for (let i = 0; i < 2; i += 1) {
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+  }
+}
+
+export const triageCards = defineFixture({
+  width: 1200,
+  store,
+  render: () => (
+    <div className="flex h-[640px]">
+      <OverviewPage />
+    </div>
+  ),
+  interact: pressDownTwice
+})
+
+export const triageTable = defineFixture({
+  width: 1200,
+  store: tableStore,
+  render: () => (
+    <div className="flex h-[640px]">
+      <OverviewPage />
+    </div>
+  ),
+  interact: pressDownTwice
+})

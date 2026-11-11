@@ -16,6 +16,7 @@ import { useTranslate } from '@/i18n/use-translate'
 import { formatRelativeTime } from '@/components/activity/activity-thread-presentation'
 import { openHttpLink } from '@/lib/browser/navigation/http-link-routing'
 import type { OverviewAttentionItem } from './overview-model-types'
+import { OVERVIEW_TRIAGE_ATTRIBUTE, type OverviewTriage } from './use-overview-keyboard-triage'
 import { ATTENTION_TONE, attentionKindLabel } from './overview-presentation'
 
 export type OverviewAttentionCardActions = {
@@ -32,15 +33,19 @@ export function OverviewAttentionCard({
   item,
   canMerge,
   now,
-  actions
+  actions,
+  triage
 }: {
   item: OverviewAttentionItem
   canMerge: boolean
   now: number
   actions: OverviewAttentionCardActions
+  triage: OverviewTriage
 }): React.JSX.Element {
   const t = useTranslate()
-  const [replying, setReplying] = useState(false)
+  const replying = triage.replyOpenId === item.worktreeId
+  const setReplying = (open: boolean): void => triage.setReplyOpen(open ? item.worktreeId : null)
+  const selected = triage.selectedId === item.worktreeId
   const [text, setText] = useState('')
   const tone = ATTENTION_TONE[item.kind]
   const headingId = `overview-attention-${item.key}`
@@ -59,9 +64,12 @@ export function OverviewAttentionCard({
   return (
     <article
       aria-labelledby={headingId}
+      aria-current={selected ? 'true' : undefined}
+      {...{ [OVERVIEW_TRIAGE_ATTRIBUTE]: item.worktreeId }}
       className={cn(
         'flex flex-col gap-2 rounded-lg border bg-card p-3 text-card-foreground',
-        tone.border
+        tone.border,
+        selected && 'outline-2 -outline-offset-2 outline-ring'
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -126,7 +134,7 @@ export function OverviewAttentionCard({
             size="xs"
             disabled={actions.busy}
             aria-expanded={replying}
-            onClick={() => setReplying((open) => !open)}
+            onClick={() => setReplying(!replying)}
           >
             <MessageSquareReply />
             {t('auto.components.overview.reply', 'Reply')}
