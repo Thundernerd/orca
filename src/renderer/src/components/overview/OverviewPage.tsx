@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAppStore } from '@/store/index'
 import { useTranslate } from '@/i18n/use-translate'
 import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
@@ -70,16 +70,17 @@ export default function OverviewPage(): React.JSX.Element {
     return () => window.clearInterval(timer)
   }, [])
 
-  const gitWorktrees = useMemo(
-    () => [...worktreesById.values()].filter((w) => parseWorkspaceKey(w.id)?.type !== 'folder'),
-    [worktreesById]
-  )
+  // The list changes on every agent update; read it at refresh time so the timer is not restarted.
+  const worktreesRef = useRef(worktreesById)
+  worktreesRef.current = worktreesById
   const refreshPrs = useCallback(() => {
     const { refreshGitHubForWorktreeIfStale } = useAppStore.getState()
-    for (const w of gitWorktrees) {
-      refreshGitHubForWorktreeIfStale(w.id)
+    for (const w of worktreesRef.current.values()) {
+      if (parseWorkspaceKey(w.id)?.type !== 'folder') {
+        refreshGitHubForWorktreeIfStale(w.id)
+      }
     }
-  }, [gitWorktrees])
+  }, [])
   // PR/CI data is otherwise fetched only for cards on screen; keep every row here fresh.
   useEffect(() => {
     refreshPrs()
