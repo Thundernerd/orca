@@ -95,3 +95,25 @@ export const narrow = defineFixture({
     </div>
   )
 })
+
+const tableStore = { ...store, overviewPrefs: { ...store.overviewPrefs, layout: 'table' as const } }
+
+export const table = defineFixture({
+  width: 1200,
+  store: tableStore,
+  render: () => (
+    <div className="flex h-[640px]">
+      <OverviewPage />
+    </div>
+  )
+})
+
+export const tableNarrow = defineFixture({
+  width: 600,
+  store: tableStore,
+  render: () => (
+    <div className="flex h-[640px]">
+      <OverviewPage />
+    </div>
+  )
+})

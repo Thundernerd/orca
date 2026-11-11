@@ -20049,7 +20049,13 @@
           "status": "Status",
           "active": "Active",
           "main": "(main)",
-          "cleanUp": "clean up"
+          "cleanUp": "clean up",
+          "needs": "Needs",
+          "prChecks": "PR / CI",
+          "lastActive": "Last active",
+          "actions": "Actions",
+          "ticketsReady": "{{count}} tickets ready",
+          "mainLabel": "main"
         },
         "result": {
           "replied": "Replied in {{name}}.",
@@ -20074,6 +20080,17 @@
           "failing": "#{{number}} failing",
           "pending": "#{{number}} pending",
           "green": "#{{number}} green"
+        },
+        "layout": "Layout",
+        "layoutCards": "Cards",
+        "layoutTable": "Table",
+        "stats": {
+          "needYou": "need you",
+          "working": "agents working",
+          "openPrs": "open PRs",
+          "ready": "ready to merge",
+          "tickets": "tickets ready",
+          "cleanup": "to clean up"
         }
       }
     },
