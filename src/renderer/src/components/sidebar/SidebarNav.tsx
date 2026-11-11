@@ -1,5 +1,13 @@
 import React from 'react'
-import { BookOpen, CalendarClock, EyeOff, Files, Search, Smartphone } from 'lucide-react'
+import {
+  BookOpen,
+  CalendarClock,
+  EyeOff,
+  Files,
+  LayoutDashboard,
+  Search,
+  Smartphone
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/index'
 import { cn } from '@/lib/class-names'
@@ -11,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { SetupGuideSidebarEntry } from './SetupGuideSidebarEntry'
 import { SidebarTaskNavButton } from './SidebarTaskNavButton'
+import { OverviewNeedsYouBadge } from '../overview/OverviewNeedsYouBadge'
 import { HideSidebarMenu } from './sidebar-nav-controls'
 import { useTranslate } from '@/i18n/use-translate'
 import { lazyWithRetry } from '@/app-shell/startup/lazy-with-retry'
@@ -26,6 +35,12 @@ export function shouldShowAutomationsButton(
   settings: Partial<Pick<GlobalSettings, 'showAutomationsButton'>> | null | undefined
 ): boolean {
   return settings?.showAutomationsButton !== false
+}
+
+export function shouldShowOverviewButton(
+  settings: Partial<Pick<GlobalSettings, 'showOverviewButton'>> | null | undefined
+): boolean {
+  return settings?.showOverviewButton !== false
 }
 
 export function shouldShowArtifactsButton(
@@ -57,6 +72,7 @@ const SidebarNav = React.memo(function SidebarNav() {
   const openMobilePage = useAppStore((s) => s.openMobilePage)
   const openArtifactsPage = useAppStore((s) => s.openArtifactsPage)
   const openSkillsPage = useAppStore((s) => s.openSkillsPage)
+  const openOverviewPage = useAppStore((s) => s.openOverviewPage)
   const openModal = useAppStore((s) => s.openModal)
   const updateSettings = useAppStore((s) => s.updateSettings)
   const activeView = useAppStore((s) => s.activeView)
@@ -65,10 +81,12 @@ const SidebarNav = React.memo(function SidebarNav() {
   const showMobileButton = useAppStore((s) => shouldShowMobileButton(s.settings))
   const showArtifactsButton = useAppStore((s) => shouldShowArtifactsButton(s.settings))
   const showSkillsButton = useAppStore((s) => shouldShowSkillsButton(s.settings))
+  const showOverviewButton = useAppStore((s) => shouldShowOverviewButton(s.settings))
   const automationsActive = activeView === 'automations'
   const mobileActive = activeView === 'mobile'
   const artifactsActive = activeView === 'artifacts'
   const skillsActive = activeView === 'skills'
+  const overviewActive = activeView === 'overview'
   const mobileOnboardingBadge = useMobileSidebarOnboardingBadge(showMobileButton)
   const hideAutomationsButton = React.useCallback(() => {
     void updateSettings({ showAutomationsButton: false })
@@ -81,6 +99,9 @@ const SidebarNav = React.memo(function SidebarNav() {
   }, [updateSettings])
   const hideSkillsButton = React.useCallback(() => {
     void updateSettings({ showSkillsButton: false })
+  }, [updateSettings])
+  const hideOverviewButton = React.useCallback(() => {
+    void updateSettings({ showOverviewButton: false })
   }, [updateSettings])
 
   return (
@@ -119,6 +140,36 @@ const SidebarNav = React.memo(function SidebarNav() {
       </button>
       <SetupGuideSidebarEntry />
       <SidebarTaskNavButton />
+      {showOverviewButton ? (
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            <button
+              type="button"
+              onClick={openOverviewPage}
+              aria-current={overviewActive ? 'page' : undefined}
+              className={cn(
+                'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium tracking-tight transition-colors',
+                overviewActive
+                  ? 'bg-worktree-sidebar-accent text-worktree-sidebar-accent-foreground'
+                  : 'text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8'
+              )}
+            >
+              <LayoutDashboard
+                className={cn(
+                  'size-4 shrink-0',
+                  !overviewActive && 'text-worktree-sidebar-foreground/30'
+                )}
+                strokeWidth={overviewActive ? 2.25 : 1.75}
+              />
+              <span className="flex-1">
+                {t('auto.components.sidebar.SidebarNav.overview', 'Overview')}
+              </span>
+              <OverviewNeedsYouBadge />
+            </button>
+          </ContextMenuTrigger>
+          <HideSidebarMenu onHide={hideOverviewButton} />
+        </ContextMenu>
+      ) : null}
       {showArtifactsButton ? (
         <ContextMenu>
           <ContextMenuTrigger asChild>

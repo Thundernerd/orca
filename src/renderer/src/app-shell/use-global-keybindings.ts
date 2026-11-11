@@ -230,6 +230,9 @@ export function useGlobalKeybindings(args: {
       ) {
         return
       }
+      if (matchAppShortcut('view.overview') && handlers.get('view.overview')?.()) {
+        return
+      }
       if (matchAppShortcut('view.plugins') && handlers.get('view.plugins')?.()) {
         return
       }

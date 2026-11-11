@@ -10,6 +10,7 @@ import { isFeatureInteractionId } from '../feature-interactions'
 import type { FeatureInteractionId } from '../feature-interactions'
 import { ACTIVITY_GROUP_BY_VALUES, THREAD_READ_FILTER_VALUES } from '../agents-view-thread-filters'
 import { isReleaseChannel } from '../release-channel'
+import { OverviewPrefsSchema } from '../overview-prefs'
 import type { ReleaseChannel } from '../release-channel'
 import { ClientUiWorkspaceFilterFields } from './client-ui-workspace-filter-fields-params'
 import { TaskResumeState } from './task-resume-state-params'
@@ -118,6 +119,7 @@ export const TopLevelViewSchema = z.enum([
   'space',
   'skills',
   'artifacts',
+  'overview',
   'mobile'
 ])
 
@@ -156,6 +158,7 @@ export const UiUpdateFields = z
     agentsShowSearch: z.boolean().optional(),
     agentsReadFilter: z.enum(THREAD_READ_FILTER_VALUES).optional(),
     agentsGroupBy: z.enum(ACTIVITY_GROUP_BY_VALUES).optional(),
+    overviewPrefs: OverviewPrefsSchema.optional(),
     workspaceHostOrder: z.array(z.string()).optional(),
     automationHostFilter: z
       .union([

@@ -6918,7 +6918,8 @@
           "fee535205b": "Tasks",
           "d599269755": "Hide from sidebar",
           "artifacts": "Artifacts",
-          "skills": "Skills"
+          "skills": "Skills",
+          "overview": "Overview"
         },
         "SidebarRepositoryFilterSection": {
           "d3a9c4cea1": "Clear",
@@ -8348,7 +8349,8 @@
           "d2b4ddbea0": "Show Orca Mobile button",
           "657a7230a2": "IDE font",
           "95a5581f66": "Minimize to tray on close",
-          "e90c5d745a": "Window & sidebar"
+          "e90c5d745a": "Window & sidebar",
+          "showOverviewButton": "Show overview button"
         },
         "AutoRenameBranchFromWorkSetting": {
           "1626524572": "Nautilus",
@@ -18165,10 +18167,15 @@
                 "newQuickCommand": "new quick command",
                 "browserRight": "browser right",
                 "splitBrowser": "split browser",
-                "browserSplit": "browser split"
+                "browserSplit": "browser split",
+                "overview": "overview",
+                "needsYou": "needs you",
+                "allProjects": "all projects"
               },
               "newBrowserTabSplitRight": "New Browser Tab in Right Split",
-              "newBrowserTabSplitRightDescription": "Open a browser tab in a new split to the right."
+              "newBrowserTabSplitRightDescription": "Open a browser tab in a new split to the right.",
+              "openOverview": "Open Overview",
+              "openOverviewDescription": "See every project, its worktrees and what needs you."
             }
           },
           "palette": {
@@ -19992,6 +19999,82 @@
       },
       "NewWorkspaceComposerFooter": {
         "create": "Create"
+      },
+      "overview": {
+        "open": "Open",
+        "openMain": "Open main",
+        "reply": "Reply",
+        "markRead": "Mark read",
+        "mergeTickets": "Merge tickets",
+        "replyPlaceholder": "Reply to the agent…",
+        "replyLabel": "Reply to {{name}}",
+        "sendReply": "Send reply",
+        "badge": "{{count}} need you",
+        "title": "Overview",
+        "needYouCount": "{{count}} need you",
+        "refresh": "Refresh",
+        "active": "Active: {{project}} · {{workspace}}",
+        "dismiss": "Dismiss",
+        "empty": "Add a project to see it here.",
+        "projects": "Projects",
+        "needsYou": "Needs you",
+        "allClear": "Nothing needs you right now.",
+        "stat": {
+          "needYou": "{{count}} need you",
+          "working": "{{count}} working",
+          "openPrs": "{{count}} open PRs",
+          "readyPrs": "{{count}} ready",
+          "cleanup": "{{count}} to clean up",
+          "merging": "Merging…"
+        },
+        "unpin": "Unpin {{name}}",
+        "pin": "Pin {{name}}",
+        "expand": "Expand {{name}}",
+        "minimize": "Minimize {{name}}",
+        "show": "Show {{name}}",
+        "hide": "Hide {{name}}",
+        "activeWorkspace": "Active: {{name}}",
+        "tickets": {
+          "counts": "Tickets: {{ready}} ready · {{blocked}} blocked · {{launched}} launched",
+          "counting": "Counting tickets…",
+          "notCounted": "Tickets not counted yet",
+          "failed": "(last count failed)",
+          "refresh": "Recount tickets"
+        },
+        "workspaces": "{{count}} workspaces",
+        "table": {
+          "workspace": "Workspace",
+          "agent": "Agent",
+          "pr": "PR",
+          "status": "Status",
+          "active": "Active",
+          "main": "(main)",
+          "cleanUp": "clean up"
+        },
+        "result": {
+          "replied": "Replied in {{name}}.",
+          "replyRefused": "No agent in {{name}} took the reply.",
+          "sentSkill": "Sent {{prompt}} to the idle Claude session in {{project}}.",
+          "launchRefused": "Claude did not start in {{project}}.",
+          "launched": "Started Claude with {{prompt}} in {{project}}."
+        },
+        "kind": {
+          "agentWaiting": "Agent waiting",
+          "ciFailing": "CI failing",
+          "prReady": "Ready to merge",
+          "flagged": "Flagged"
+        },
+        "agent": {
+          "blocked": "Blocked",
+          "waiting": "Waiting",
+          "working": "Working",
+          "done": "Done"
+        },
+        "pr": {
+          "failing": "#{{number}} failing",
+          "pending": "#{{number}} pending",
+          "green": "#{{number}} green"
+        }
       }
     },
     "i18n": {
@@ -24319,7 +24402,8 @@
       "128cce6e6d": "Set title…",
       "e9da9f872a": "Send review notes to agent",
       "1524825c2c": "Toggle workspace board",
-      "d286d1ab85": "Clear pane title"
+      "d286d1ab85": "Clear pane title",
+      "viewOverview": "Open overview"
     },
     "group": {
       "global": "Global",

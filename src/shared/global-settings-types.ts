@@ -260,6 +260,8 @@ export type GlobalSettings = GlobalSettingsBase & {
   orchestrationWorkerAutoReleaseEnabled?: boolean
   /** Only toggles the sidebar shortcut; Artifacts stay reachable from Settings. */
   showArtifactsButton?: boolean
+  /** Only toggles the sidebar shortcut; Overview stays reachable from Cmd+J and its shortcut. */
+  showOverviewButton?: boolean
   /** Only toggles the sidebar shortcut; Skills stay reachable from Settings. */
   showSkillsButton?: boolean
   /** Only toggles the sidebar shortcut; Orca Mobile stays reachable from Settings. */

@@ -5,6 +5,7 @@ import {
 import type { UISlice, UISliceGet, UISliceSet } from './ui-slice-contract'
 import { workspaceHostScopeForVisibleHosts } from '../../../../../shared/workspace-view/workspace-host-visibility'
 import { createAgentsViewPreferenceActions } from './ui-slice-agents-view-preference-actions'
+import { createOverviewPreferenceActions } from './ui-slice-overview-actions'
 import {
   DEFAULT_AGENT_ACTIVITY_DISPLAY_MODE,
   DEFAULT_SHOW_SLEEPING_WORKSPACES,
@@ -161,6 +162,7 @@ export function createUiPreferenceActions(set: UISliceSet, get: UISliceGet): Par
     setFilterRepoIds: (ids) => set({ filterRepoIds: ids }),
 
     ...createAgentsViewPreferenceActions(set),
+    ...createOverviewPreferenceActions(set),
 
     collapsedGroups: new Set<string>(),
     toggleCollapsedGroup: (key) =>

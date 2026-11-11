@@ -1,6 +1,7 @@
 import { gitGraphSupport, openGitGraph } from '@/lib/source-control/graph/git-graph-tab'
 import {
   GitGraph,
+  LayoutDashboard,
   FileText,
   FolderPlus,
   Globe,
@@ -19,6 +20,7 @@ import {
 import { translate } from '@/i18n/i18n'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
 import { getNativeChatSplitQuickActions } from './native-chat-split-quick-actions'
+import { useAppStore } from '@/store/index'
 
 export type CmdJQuickActionRunResult =
   | { status: 'ok' }
@@ -222,6 +224,26 @@ export const getCmdJQuickActions = createLocalizedCatalog((): CmdJQuickAction[] 
         return { status: 'unavailable', reason: availability.reason }
       }
       ctx.deleteActiveWorkspace()
+      return { status: 'ok' }
+    }
+  },
+  {
+    id: 'open-overview',
+    kind: 'action',
+    title: translate('auto.components.cmd.j.quick.actions.openOverview', 'Open Overview'),
+    description: translate(
+      'auto.components.cmd.j.quick.actions.openOverviewDescription',
+      'See every project, its worktrees and what needs you.'
+    ),
+    icon: LayoutDashboard,
+    verbKeywords: [
+      translate('auto.components.cmd.j.quick.actions.verbs.overview', 'overview'),
+      translate('auto.components.cmd.j.quick.actions.verbs.needsYou', 'needs you'),
+      translate('auto.components.cmd.j.quick.actions.verbs.allProjects', 'all projects')
+    ],
+    isAvailable: () => ({ available: true }),
+    run: async () => {
+      useAppStore.getState().openOverviewPage()
       return { status: 'ok' }
     }
   },

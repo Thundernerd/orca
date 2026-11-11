@@ -63,6 +63,19 @@ export function createUiViewActions(set: UISliceSet, get: UISliceGet): Partial<U
         activeView: state.previousViewBeforeSkills,
         worktreeNavHistoryIndex: rewindHistoryIndexPastView(state, 'skills')
       })),
+    openOverviewPage: () => {
+      get().recordViewVisit('overview')
+      set((state) => ({
+        activeView: 'overview',
+        previousViewBeforeOverview:
+          state.activeView === 'overview' ? state.previousViewBeforeOverview : state.activeView
+      }))
+    },
+    closeOverviewPage: () =>
+      set((state) => ({
+        activeView: state.previousViewBeforeOverview,
+        worktreeNavHistoryIndex: rewindHistoryIndexPastView(state, 'overview')
+      })),
     openSkillShare: (shareId) => {
       get().recordViewVisit('skills')
       set((state) => ({

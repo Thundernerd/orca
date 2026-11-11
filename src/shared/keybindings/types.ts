@@ -41,6 +41,7 @@ export type KeybindingActionId =
   | 'voice.dictation'
   | 'view.tasks'
   | 'view.plugins'
+  | 'view.overview'
   | 'dashboard.toggle'
   | 'sidebar.left.toggle'
   | 'sidebar.right.toggle'

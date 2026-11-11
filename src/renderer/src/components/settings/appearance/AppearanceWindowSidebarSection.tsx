@@ -29,6 +29,7 @@ import {
 import { LeftSidebarAppearanceSetting } from './LeftSidebarAppearanceSetting'
 import { getStatusBarUsageFormatEntry } from './appearance-status-bar-usage-format-search'
 import { StatusBarUsageFormatSetting } from './StatusBarUsageFormatSetting'
+import { OverviewButtonSetting } from './OverviewButtonSetting'
 
 import { useTranslate } from '@/i18n/use-translate'
 import { matchesSettingsSearch, normalizeSettingsSearchQuery } from '../search/settings-search'
@@ -304,6 +305,8 @@ export function AppearanceWindowSidebarSection({
                       }
                     />
                   </SearchableSetting>
+
+                  <OverviewButtonSetting settings={settings} updateSettings={updateSettings} />
 
                   <SearchableSetting
                     title={t(
