@@ -4,6 +4,8 @@ import { useAppStore } from '@/store/index'
 import { buildOverviewSnapshot, isMergingTickets } from './overview-model'
 import type { OverviewSnapshot, OverviewWorktreeInput } from './overview-model-types'
 import { buildOverviewStoreInputs, selectOverviewStoreSlice } from './overview-store-inputs'
+import { useSidebarHostScopeOptions } from '@/components/sidebar/worktree-list/controls/use-sidebar-host-scope-options'
+import { sidebarHostDisplayLabel } from '@/components/sidebar/worktree-list/controls/sidebar-host-options'
 
 // A merge started from the page counts as running until its agent reports, or this long.
 const PENDING_MERGE_MS = 2 * 60_000
@@ -19,9 +21,14 @@ export function useOverviewData(ticketsLoading: ReadonlySet<string> = EMPTY_SET)
   const slice = useAppStore(useShallow(selectOverviewStoreSlice))
   const prefs = useAppStore((state) => state.overviewPrefs)
   const [pendingMerges, setPendingMerges] = useState<ReadonlyMap<string, number>>(new Map())
-  const inputs = useMemo(() => buildOverviewStoreInputs(slice), [slice])
+  const { hostOptions } = useSidebarHostScopeOptions()
+  const hostLabels = useMemo(
+    () => new Map(hostOptions.map((host) => [host.id, sidebarHostDisplayLabel(host)])),
+    [hostOptions]
+  )
+  const inputs = useMemo(() => buildOverviewStoreInputs(slice, hostLabels), [slice, hostLabels])
   const worktreesById = useMemo(
-    () => new Map(inputs.worktrees.map((worktree) => [worktree.id, worktree])),
+    () => new Map(inputs.worktrees.map((worktree) => [worktree.key, worktree])),
     [inputs]
   )
 

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Check, ExternalLink, GitMerge, House, MessageSquareReply, Send } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/class-names'
@@ -73,13 +74,16 @@ export function OverviewAttentionCard({
           </span>
         ) : null}
       </div>
-      <h3
-        id={headingId}
-        className="truncate text-sm font-semibold"
-        title={`${item.projectName} · ${item.workspaceName}`}
-      >
-        {item.projectName} · {item.workspaceName}
-      </h3>
+      <div className="flex min-w-0 items-center gap-1.5">
+        {item.host ? <Badge variant="hostContext">{item.host}</Badge> : null}
+        <h3
+          id={headingId}
+          className="min-w-0 truncate text-sm font-semibold"
+          title={`${item.projectName} · ${item.workspaceName}`}
+        >
+          {item.projectName} · {item.workspaceName}
+        </h3>
+      </div>
       {item.reasons.map((reason) => (
         <p key={reason} className="line-clamp-3 text-xs text-muted-foreground">
           {reason}

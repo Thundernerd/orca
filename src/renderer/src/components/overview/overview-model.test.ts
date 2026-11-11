@@ -11,6 +11,7 @@ function worktree(
   overrides: Partial<OverviewWorktreeInput> = {}
 ): OverviewWorktreeInput {
   return {
+    key: id,
     id,
     repoId: 'repo-a',
     executionHostId: 'local',

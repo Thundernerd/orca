@@ -118,7 +118,7 @@ function workspaceRow(
   return {
     conditions,
     row: {
-      worktreeId: worktree.id,
+      worktreeId: worktree.key,
       executionHostId: worktree.executionHostId,
       name: worktree.name,
       isMain: worktree.isMain,
@@ -178,15 +178,16 @@ export function buildOverviewSnapshot(input: OverviewModelInput): OverviewSnapsh
       }
       const times = conditions.map((c) => c.since).filter((t): t is number => t !== null)
       items.push({
-        key: `ws:${worktree.id}`,
+        key: `ws:${worktree.key}`,
         kind: conditions[0].kind,
         kinds: conditions.map((c) => c.kind),
         reasons: conditions.map((c) => c.reason),
-        worktreeId: worktree.id,
+        worktreeId: worktree.key,
         executionHostId: worktree.executionHostId,
         workspaceName: worktree.name,
         projectId: repo.id,
         projectName: repo.name,
+        host: repo.host,
         isMain: worktree.isMain,
         unread: worktree.isUnread,
         since: times.length > 0 ? Math.min(...times) : null
@@ -210,7 +211,7 @@ export function buildOverviewSnapshot(input: OverviewModelInput): OverviewSnapsh
       name: repo.name,
       host: repo.host,
       ticketSource,
-      mainWorktreeId: main?.id ?? null,
+      mainWorktreeId: main?.key ?? null,
       isActive: active !== null,
       activeWorkspace: active?.name ?? null,
       merging,

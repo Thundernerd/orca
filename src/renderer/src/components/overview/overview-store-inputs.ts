@@ -8,6 +8,7 @@ import {
   type ExecutionHostId
 } from '../../../../shared/execution-host'
 import { folderWorkspaceKey } from '../../../../shared/workspace-scope'
+import { getFolderWorkspaceHostId } from '../../../../shared/folder-workspaces/folder-workspace-host-id'
 import type { AgentStatusEntry } from '../../../../shared/agent-status/contracts/agent-status-types'
 import type { PRInfo } from '../../../../shared/github/pull-request-types'
 import type {
@@ -25,6 +26,7 @@ export type OverviewStoreSlice = Pick<
   | 'folderWorkspaces'
   | 'projectGroups'
   | 'activeWorktreeId'
+  | 'activeWorkspaceExecutionHostId'
   | 'prCache'
   | 'agentStatusByPaneKey'
   | 'migrationUnsupportedByPtyId'
@@ -40,6 +42,7 @@ export function selectOverviewStoreSlice(state: AppState): OverviewStoreSlice {
     folderWorkspaces: state.folderWorkspaces,
     projectGroups: state.projectGroups,
     activeWorktreeId: state.activeWorktreeId,
+    activeWorkspaceExecutionHostId: state.activeWorkspaceExecutionHostId,
     prCache: state.prCache,
     agentStatusByPaneKey: state.agentStatusByPaneKey,
     migrationUnsupportedByPtyId: state.migrationUnsupportedByPtyId,
@@ -79,11 +82,18 @@ function overviewAgent(entry: AgentStatusEntry): OverviewAgentInput {
   }
 }
 
-function hostLabel(hostId: ExecutionHostId): string | null {
-  return hostId === LOCAL_EXECUTION_HOST_ID ? null : getExecutionHostLabel(hostId)
+/** Host labels as the sidebar names them; this machine has none. */
+export type OverviewHostLabels = ReadonlyMap<ExecutionHostId, string>
+
+/** A remote copy of a project is its own project: the same repo id can live on two hosts. */
+function hostScoped(hostId: ExecutionHostId, id: string): string {
+  return hostId === LOCAL_EXECUTION_HOST_ID ? id : `${hostId}|${id}`
 }
 
-export function buildOverviewStoreInputs(slice: OverviewStoreSlice): {
+export function buildOverviewStoreInputs(
+  slice: OverviewStoreSlice,
+  hostLabels: OverviewHostLabels
+): {
   repos: OverviewRepoInput[]
   worktrees: OverviewWorktreeInput[]
 } {
@@ -91,22 +101,33 @@ export function buildOverviewStoreInputs(slice: OverviewStoreSlice): {
   const worktrees: OverviewWorktreeInput[] = []
   const agentsOf = (key: string): OverviewAgentInput[] =>
     selectLiveAgentStatusEntriesForWorktree(slice, key).map(overviewAgent)
+  const labelOf = (hostId: ExecutionHostId): string | null =>
+    hostId === LOCAL_EXECUTION_HOST_ID
+      ? null
+      : (hostLabels.get(hostId) ?? getExecutionHostLabel(hostId))
+  const isActive = (id: string, hostId: ExecutionHostId): boolean =>
+    slice.activeWorktreeId === id &&
+    (slice.activeWorkspaceExecutionHostId ?? LOCAL_EXECUTION_HOST_ID) === hostId
 
   for (const repo of slice.repos) {
     const hostId = getRepoExecutionHostId(repo)
-    repos.push({ id: repo.id, name: repo.displayName, host: hostLabel(hostId) })
+    const projectId = hostScoped(hostId, repo.id)
+    repos.push({ id: projectId, name: repo.displayName, host: labelOf(hostId) })
+    // worktreesByRepo is keyed by bare repo id, so a twin's rows from every host share one list.
     for (const worktree of slice.worktreesByRepo[repo.id] ?? []) {
-      if (worktree.isArchived || worktree.removing) {
+      const rowHostId = worktree.hostId ?? LOCAL_EXECUTION_HOST_ID
+      if (worktree.isArchived || worktree.removing || rowHostId !== hostId) {
         continue
       }
       const branch = worktree.branch.replace(/^refs\/heads\//, '')
       worktrees.push({
+        key: hostScoped(hostId, worktree.id),
         id: worktree.id,
-        repoId: repo.id,
-        executionHostId: worktree.hostId ?? hostId,
+        repoId: projectId,
+        executionHostId: hostId,
         name: worktree.displayName || branch || worktree.path,
         isMain: worktree.isMainWorktree,
-        isActive: slice.activeWorktreeId === worktree.id,
+        isActive: isActive(worktree.id, hostId),
         isUnread: worktree.isUnread,
         comment: worktree.comment,
         issue: worktree.linkedIssue,
@@ -124,30 +145,31 @@ export function buildOverviewStoreInputs(slice: OverviewStoreSlice): {
     if (folder.isArchived) {
       continue
     }
-    const projectId = `group:${folder.projectGroupId}`
-    const hostId = getRepoExecutionHostId(folder)
+    const hostId = getFolderWorkspaceHostId(folder, slice.projectGroups)
+    const projectId = hostScoped(hostId, `group:${folder.projectGroupId}`)
     if (!repos.some((repo) => repo.id === projectId)) {
       repos.push({
         id: projectId,
         name: groupNames.get(folder.projectGroupId) ?? folder.name,
-        host: hostLabel(hostId)
+        host: labelOf(hostId)
       })
     }
-    const key = folderWorkspaceKey(folder.id)
+    const id = folderWorkspaceKey(folder.id)
     worktrees.push({
-      id: key,
+      key: hostScoped(hostId, id),
+      id,
       repoId: projectId,
       executionHostId: hostId,
       name: folder.name,
       isMain: false,
-      isActive: slice.activeWorktreeId === key,
+      isActive: isActive(id, hostId),
       isUnread: folder.isUnread,
       comment: folder.comment,
       issue: null,
       workspaceStatus: null,
       lastActivityAt: folder.lastActivityAt ?? null,
       pr: null,
-      agents: agentsOf(key)
+      agents: agentsOf(id)
     })
   }
   return { repos, worktrees }

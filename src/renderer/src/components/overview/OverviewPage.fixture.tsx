@@ -1,5 +1,6 @@
 import { defineFixture } from '../../component-fixtures/component-fixture'
 import OverviewPage from './OverviewPage'
+import { useAppStore } from '@/store/index'
 import type { Repo } from '../../../../shared/repo-types'
 import type { Worktree } from '../../../../shared/worktree/types'
 
@@ -111,6 +112,43 @@ export const table = defineFixture({
 export const tableNarrow = defineFixture({
   width: 600,
   store: tableStore,
+  render: () => (
+    <div className="flex h-[640px]">
+      <OverviewPage />
+    </div>
+  )
+})
+
+// A twin: UpcomingReleases lives locally and on a paired server named Reach.
+const REACH = 'runtime:reach' as const
+const remoteStore = {
+  ...store,
+  repos: [...repos, { ...repo('alpha', 'UpcomingReleases'), executionHostId: REACH }],
+  worktreesByRepo: {
+    ...worktreesByRepo,
+    alpha: [
+      ...worktreesByRepo.alpha,
+      worktree('alpha', 'main', { isMainWorktree: true, hostId: REACH }),
+      worktree('alpha', 'fix/gh-12-remote-only', {
+        hostId: REACH,
+        isUnread: true,
+        lastActivityAt: NOW - 3 * 60_000
+      })
+    ]
+  }
+}
+
+export const remote = defineFixture({
+  width: 1200,
+  store: remoteStore,
+  setup: () => {
+    useAppStore.setState((state) => ({
+      settings: state.settings && {
+        ...state.settings,
+        hostSettingOverrides: { [REACH]: { displayLabel: 'Reach' } }
+      }
+    }))
+  },
   render: () => (
     <div className="flex h-[640px]">
       <OverviewPage />

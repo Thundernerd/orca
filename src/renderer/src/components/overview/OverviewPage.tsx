@@ -70,16 +70,16 @@ export default function OverviewPage(): React.JSX.Element {
     return () => window.clearInterval(timer)
   }, [])
 
-  const gitWorktreeIds = useMemo(
-    () => [...worktreesById.keys()].filter((id) => parseWorkspaceKey(id)?.type !== 'folder'),
+  const gitWorktrees = useMemo(
+    () => [...worktreesById.values()].filter((w) => parseWorkspaceKey(w.id)?.type !== 'folder'),
     [worktreesById]
   )
   const refreshPrs = useCallback(() => {
     const { refreshGitHubForWorktreeIfStale } = useAppStore.getState()
-    for (const id of gitWorktreeIds) {
-      refreshGitHubForWorktreeIfStale(id)
+    for (const w of gitWorktrees) {
+      refreshGitHubForWorktreeIfStale(w.id)
     }
-  }, [gitWorktreeIds])
+  }, [gitWorktrees])
   // PR/CI data is otherwise fetched only for cards on screen; keep every row here fresh.
   useEffect(() => {
     refreshPrs()

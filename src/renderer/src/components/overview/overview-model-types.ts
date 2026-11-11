@@ -25,6 +25,9 @@ export type OverviewAgentInput = {
 }
 
 export type OverviewWorktreeInput = {
+  /** Unique across hosts: a twin (same id locally and on a server) is two workspaces. */
+  key: string
+  /** The id its host knows it by; with executionHostId it names the workspace for actions. */
   id: string
   repoId: string
   executionHostId: ExecutionHostId
@@ -87,6 +90,8 @@ export type OverviewAttentionItem = {
   workspaceName: string
   projectId: string
   projectName: string
+  /** The paired server or SSH host it lives on; null on this machine. */
+  host: string | null
   isMain: boolean
   unread: boolean
   since: number | null

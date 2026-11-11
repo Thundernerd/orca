@@ -1,5 +1,7 @@
 import { useAppStore } from '@/store/index'
 import { translate } from '@/i18n/i18n'
+import { runtimeEnvironmentIdOrLocalUnlessTwin } from '@/lib/workspace/ownership/worktree-runtime-owner'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
 import { activateAndRevealWorkspaceWithOutcome } from '@/lib/workspace/activation/worktree-activation'
 import { activateWorktreeAgentPane } from '@/components/sidebar/workspace-card/activity/use-worktree-agent-activation'
 import { sendMessageToAgent } from '@/lib/agent-session/messaging/agent-message-send'
@@ -25,10 +27,30 @@ function terminalTarget(agent: OverviewAgentInput) {
   return parsed ? { kind: 'terminal' as const, tabId: parsed.tabId, leafId: parsed.leafId } : null
 }
 
+/**
+ * A remote workspace whose id alone does not name its host (the same id exists on another host).
+ * Sends and pane focus resolve by id, so the workspace must be selected on its host first.
+ */
+function needsHostSelection(worktree: OverviewWorktreeInput): boolean {
+  return (
+    worktree.executionHostId !== LOCAL_EXECUTION_HOST_ID &&
+    runtimeEnvironmentIdOrLocalUnlessTwin(useAppStore.getState(), worktree.id) === null
+  )
+}
+
+function selectOnHost(worktree: OverviewWorktreeInput): void {
+  activateAndRevealWorkspaceWithOutcome(worktree.id, { executionHostId: worktree.executionHostId })
+}
+
 function focusAgent(worktree: OverviewWorktreeInput, agent: OverviewAgentInput): boolean {
   const target = terminalTarget(agent)
   // Folder workspaces have no worktree activation path for panes; opening the workspace is enough.
-  if (!target || parseWorkspaceKey(worktree.id)?.type === 'folder') {
+  // Pane activation resolves by bare id, which could pick the other host's copy of the workspace.
+  if (
+    !target ||
+    parseWorkspaceKey(worktree.id)?.type === 'folder' ||
+    needsHostSelection(worktree)
+  ) {
     return false
   }
   activateWorktreeAgentPane(worktree.id, target.tabId, agent.paneKey)
@@ -41,7 +63,7 @@ export function openOverviewWorkspace(worktree: OverviewWorktreeInput): void {
   if (agent && focusAgent(worktree, agent)) {
     return
   }
-  activateAndRevealWorkspaceWithOutcome(worktree.id, { executionHostId: worktree.executionHostId })
+  selectOnHost(worktree)
 }
 
 export function markOverviewWorkspaceRead(worktree: OverviewWorktreeInput): void {
@@ -56,6 +78,9 @@ async function sendToAgent(
   const target = terminalTarget(agent)
   if (!target) {
     return false
+  }
+  if (needsHostSelection(worktree)) {
+    selectOnHost(worktree)
   }
   const result = await sendMessageToAgent({ worktreeId: worktree.id, target, prompt: text })
   return result.status === 'sent' || result.status === 'unconfirmed'
@@ -110,7 +135,7 @@ export async function runOverviewSkill(
       }
     }
   }
-  activateAndRevealWorkspaceWithOutcome(main.id, { executionHostId: main.executionHostId })
+  selectOnHost(main)
   const outcome = launchAgentInNewTabWithOutcome({
     requestId: createNonSecureContextUuid(),
     agent: 'claude',
