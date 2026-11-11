@@ -11,6 +11,7 @@ import {
   prChecksClass,
   prSummary
 } from './overview-presentation'
+import { OverviewReplyPopover } from './OverviewReplyPopover'
 
 export function OverviewTableRow({
   row,
@@ -23,6 +24,7 @@ export function OverviewTableRow({
 }): React.JSX.Element {
   const t = useTranslate()
   const needsYou = row.attention.some((kind) => kind !== 'pr-ready')
+  const waiting = row.attention.includes('agent-waiting')
   return (
     <tr
       className={cn(
@@ -83,6 +85,11 @@ export function OverviewTableRow({
         {row.lastActivityAt ? formatRelativeTime(row.lastActivityAt, now) : '–'}
       </td>
       <td className="px-3 py-1.5 text-right whitespace-nowrap">
+        {waiting ? (
+          <span className="mr-3 inline-flex">
+            <OverviewReplyPopover row={row} busy={actions.busy} reply={actions.reply} />
+          </span>
+        ) : null}
         {/* Row actions appear on hover or keyboard focus to keep the table scannable. */}
         <span className="inline-flex gap-3 opacity-0 group-focus-within:opacity-100 group-hover:opacity-100">
           {row.unread ? (
