@@ -20099,7 +20099,8 @@
           "hint": "Claude investigates and asks you to confirm the drafts.",
           "send": "Write ticket",
           "sendEmpty": "Start without text"
-        }
+        },
+        "markAllRead": "Mark all read ({{count}})"
       }
     },
     "i18n": {

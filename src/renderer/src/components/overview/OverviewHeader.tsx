@@ -1,4 +1,4 @@
-import { LayoutGrid, RefreshCw, Rows3, X } from 'lucide-react'
+import { CheckCheck, LayoutGrid, RefreshCw, Rows3, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { cn } from '@/lib/class-names'
@@ -14,7 +14,9 @@ export function OverviewHeader({
   layout,
   onLayoutChange,
   onRefresh,
-  onDismissNotice
+  onDismissNotice,
+  unreadCount,
+  onMarkAllRead
 }: {
   needYou: number
   activeProject: OverviewProject | undefined
@@ -23,6 +25,8 @@ export function OverviewHeader({
   onLayoutChange: (layout: OverviewLayout) => void
   onRefresh: () => void
   onDismissNotice: () => void
+  unreadCount: number
+  onMarkAllRead: () => void
 }): React.JSX.Element {
   const t = useTranslate()
   return (
@@ -45,6 +49,14 @@ export function OverviewHeader({
           ) : null}
         </div>
         <div className="flex items-center gap-1">
+          {unreadCount > 0 ? (
+            <Button variant="ghost" size="sm" onClick={onMarkAllRead}>
+              <CheckCheck />
+              {t('auto.components.overview.markAllRead', 'Mark all read ({{count}})', {
+                count: unreadCount
+              })}
+            </Button>
+          ) : null}
           <ToggleGroup
             type="single"
             variant="outline"

@@ -183,6 +183,8 @@ export default function OverviewPage(): React.JSX.Element {
   }
 
   const layout = prefs.layout ?? 'cards'
+  // Hidden projects are already out of Needs you, so they keep their unread flags.
+  const unreadItems = snapshot.attention.filter((item) => item.unread)
   const refreshAll = (): void => {
     refreshPrs()
     for (const project of snapshot.projects) {
@@ -202,6 +204,15 @@ export default function OverviewPage(): React.JSX.Element {
         onLayoutChange={(next) => updatePrefs((p) => ({ ...p, layout: next }))}
         onRefresh={refreshAll}
         onDismissNotice={() => setNotice(null)}
+        unreadCount={unreadItems.length}
+        onMarkAllRead={() => {
+          for (const item of unreadItems) {
+            const worktree = worktreesById.get(item.worktreeId)
+            if (worktree) {
+              markOverviewWorkspaceRead(worktree)
+            }
+          }
+        }}
       />
 
       {snapshot.projects.length === 0 ? (
