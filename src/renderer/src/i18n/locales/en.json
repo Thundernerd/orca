@@ -20049,7 +20049,6 @@
           "status": "Status",
           "active": "Active",
           "main": "(main)",
-          "cleanUp": "clean up",
           "needs": "Needs",
           "prChecks": "PR / CI",
           "lastActive": "Last active",
@@ -20079,7 +20078,9 @@
         "pr": {
           "failing": "#{{number}} failing",
           "pending": "#{{number}} pending",
-          "green": "#{{number}} green"
+          "green": "#{{number}} green",
+          "failingChecks": "Failing: {{names}}",
+          "open": "Open PR #{{number}}"
         },
         "layout": "Layout",
         "layoutCards": "Cards",
@@ -20100,7 +20101,20 @@
           "send": "Write ticket",
           "sendEmpty": "Start without text"
         },
-        "markAllRead": "Mark all read ({{count}})"
+        "markAllRead": "Mark all read ({{count}})",
+        "openPr": "PR",
+        "ungrouped": "Ungrouped",
+        "cleanUpTitle": "Remove {{name}}",
+        "cleanUp": "Clean up",
+        "view": {
+          "label": "Sort and group",
+          "sort": "Sort projects",
+          "sortAttention": "Needs you first",
+          "sortName": "Name",
+          "group": "Group projects",
+          "groupNone": "No grouping",
+          "groupProjectGroup": "By project group"
+        }
       }
     },
     "i18n": {

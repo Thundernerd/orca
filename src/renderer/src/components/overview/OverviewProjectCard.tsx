@@ -65,7 +65,8 @@ export function OverviewProjectCard({
   tableOpen,
   ticketsUnavailable,
   now,
-  actions
+  actions,
+  onRemoveWorkspace
 }: {
   project: OverviewProject
   minimized: boolean
@@ -73,6 +74,7 @@ export function OverviewProjectCard({
   ticketsUnavailable: boolean
   now: number
   actions: OverviewProjectCardActions
+  onRemoveWorkspace: (worktreeId: string) => void
 }): React.JSX.Element {
   const t = useTranslate()
   const tickets = project.tickets
@@ -261,6 +263,7 @@ export function OverviewProjectCard({
               now={now}
               busy={actions.busy}
               onOpen={actions.open}
+              onRemove={onRemoveWorkspace}
             />
           ) : null}
         </>

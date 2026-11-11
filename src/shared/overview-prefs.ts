@@ -19,7 +19,11 @@ export const OverviewPrefsSchema = z.object({
   openTables: z.array(z.string()),
   tickets: z.record(z.string(), TicketCountsSchema),
   /** Absent on prefs saved before the table layout existed; reads as cards. */
-  layout: z.enum(['cards', 'table']).optional()
+  layout: z.enum(['cards', 'table']).optional(),
+  /** Absent reads as attention: what needs you first, then most recent. */
+  sort: z.enum(['attention', 'name']).optional(),
+  /** Absent reads as none. */
+  groupBy: z.enum(['none', 'group']).optional()
 })
 
 export type OverviewPrefs = z.infer<typeof OverviewPrefsSchema>

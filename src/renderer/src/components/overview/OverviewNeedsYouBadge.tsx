@@ -1,10 +1,11 @@
+import { useAppStore } from '@/store/index'
 import { useTranslate } from '@/i18n/use-translate'
-import { useOverviewData } from './use-overview-data'
+import { selectOverviewNeedsYouCount } from './overview-needs-you-count'
 
 /** The sidebar entry's count of workspaces that need you. */
 export function OverviewNeedsYouBadge(): React.JSX.Element | null {
   const t = useTranslate()
-  const count = useOverviewData().snapshot.attention.length
+  const count = useAppStore(selectOverviewNeedsYouCount)
   if (count === 0) {
     return null
   }

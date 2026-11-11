@@ -41,7 +41,8 @@ export function useOverviewData(ticketsLoading: ReadonlySet<string> = EMPTY_SET)
         ticketsLoading,
         pendingMerges: new Set(pendingMerges.keys()),
         hidden: new Set(prefs.hidden),
-        pinned: new Set(prefs.pinned)
+        pinned: new Set(prefs.pinned),
+        sort: prefs.sort ?? 'attention'
       }),
     [inputs, prefs, ticketsLoading, pendingMerges]
   )

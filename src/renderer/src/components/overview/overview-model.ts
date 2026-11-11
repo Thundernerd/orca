@@ -9,6 +9,19 @@ import type {
   OverviewWorkspaceRow,
   OverviewWorktreeInput
 } from './overview-model-types'
+import { getIntlLocale } from '@/i18n/i18n'
+
+const MAX_CHECK_NAMES = 3
+
+function failingReason(pr: { number: number; failingChecks: string[] }): string {
+  const names = pr.failingChecks
+  if (names.length === 0) {
+    return `PR #${pr.number} CI failing`
+  }
+  const shown = names.slice(0, MAX_CHECK_NAMES).join(', ')
+  const more = names.length > MAX_CHECK_NAMES ? ` +${names.length - MAX_CHECK_NAMES}` : ''
+  return `PR #${pr.number} failing: ${shown}${more}`
+}
 
 const TICKET_BRANCH = /(^|[-/])(gh|issue)-\d+-/
 const KIND_RANK: Record<OverviewAttentionKind, number> = {
@@ -93,7 +106,7 @@ function workspaceConditions(
   if (pr?.state === 'open' && pr.checks === 'failure') {
     conditions.push({
       kind: 'ci-failing',
-      reason: `PR #${pr.number} CI failing`,
+      reason: failingReason(pr),
       since: worktree.lastActivityAt
     })
   } else if (pr?.state === 'open' && pr.checks === 'success' && !merging) {
@@ -188,6 +201,7 @@ export function buildOverviewSnapshot(input: OverviewModelInput): OverviewSnapsh
         projectId: repo.id,
         projectName: repo.name,
         host: repo.host,
+        prUrl: worktree.pr?.url ?? null,
         isMain: worktree.isMain,
         unread: worktree.isUnread,
         since: times.length > 0 ? Math.min(...times) : null
@@ -210,6 +224,7 @@ export function buildOverviewSnapshot(input: OverviewModelInput): OverviewSnapsh
       id: repo.id,
       name: repo.name,
       host: repo.host,
+      groupId: repo.groupId,
       ticketSource,
       mainWorktreeId: main?.key ?? null,
       isActive: active !== null,
@@ -230,12 +245,16 @@ export function buildOverviewSnapshot(input: OverviewModelInput): OverviewSnapsh
     })
   }
 
+  // Built per sort: the UI language can change while the app runs.
+  const collator = new Intl.Collator(getIntlLocale(), { sensitivity: 'base' })
   projects.sort(
     (a, b) =>
       Number(a.hidden) - Number(b.hidden) ||
       Number(b.pinned) - Number(a.pinned) ||
-      Number(b.attentionCount > 0) - Number(a.attentionCount > 0) ||
-      b.lastActivityAt - a.lastActivityAt
+      (input.sort === 'name'
+        ? collator.compare(a.name, b.name) || collator.compare(a.host ?? '', b.host ?? '')
+        : Number(b.attentionCount > 0) - Number(a.attentionCount > 0) ||
+          b.lastActivityAt - a.lastActivityAt)
   )
   // Urgent kinds first (a blocked agent beats a stale unread flag), then what waited longest.
   attention.sort(

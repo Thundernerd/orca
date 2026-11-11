@@ -155,3 +155,68 @@ export const remote = defineFixture({
     </div>
   )
 })
+
+const groupedPrefs = { ...store.overviewPrefs, groupBy: 'group' as const, sort: 'name' as const }
+const groupedStore = {
+  ...store,
+  worktreesByRepo: {
+    ...worktreesByRepo,
+    beta: [
+      ...worktreesByRepo.beta,
+      worktree('beta', 'fix/gh-300-merged-fix', {
+        workspaceStatus: 'completed',
+        lastActivityAt: NOW - 2 * 86_400_000
+      })
+    ]
+  },
+  repos: [
+    { ...repo('alpha', 'UpcomingReleases'), projectGroupId: 'software' },
+    { ...repo('beta', 'rally-point'), projectGroupId: 'games' }
+  ],
+  projectGroups: [
+    {
+      id: 'games',
+      name: 'Games',
+      parentPath: null,
+      parentGroupId: null,
+      createdFrom: 'manual' as const,
+      tabOrder: 0,
+      isCollapsed: false,
+      color: null,
+      createdAt: 0,
+      updatedAt: 0
+    },
+    {
+      id: 'software',
+      name: 'Software',
+      parentPath: null,
+      parentGroupId: null,
+      createdFrom: 'manual' as const,
+      tabOrder: 1,
+      isCollapsed: false,
+      color: null,
+      createdAt: 0,
+      updatedAt: 0
+    }
+  ]
+}
+
+export const grouped = defineFixture({
+  width: 1200,
+  store: { ...groupedStore, overviewPrefs: groupedPrefs },
+  render: () => (
+    <div className="flex h-[640px]">
+      <OverviewPage />
+    </div>
+  )
+})
+
+export const groupedTable = defineFixture({
+  width: 1200,
+  store: { ...groupedStore, overviewPrefs: { ...groupedPrefs, layout: 'table' as const } },
+  render: () => (
+    <div className="flex h-[640px]">
+      <OverviewPage />
+    </div>
+  )
+})

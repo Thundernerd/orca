@@ -2,23 +2,21 @@ import { cn } from '@/lib/class-names'
 import { useTranslate } from '@/i18n/use-translate'
 import { formatRelativeTime } from '@/components/activity/activity-thread-presentation'
 import type { OverviewWorkspaceRow } from './overview-model-types'
-import {
-  AGENT_STATE_CLASS,
-  agentStateLabel,
-  prChecksClass,
-  prSummary
-} from './overview-presentation'
+import { AGENT_STATE_CLASS, agentStateLabel } from './overview-presentation'
+import { OverviewPrLink } from './OverviewPrLink'
 
 export function OverviewWorkspaceTable({
   rows,
   now,
   busy,
-  onOpen
+  onOpen,
+  onRemove
 }: {
   rows: readonly OverviewWorkspaceRow[]
   now: number
   busy: boolean
   onOpen: (worktreeId: string) => void
+  onRemove: (worktreeId: string) => void
 }): React.JSX.Element {
   const t = useTranslate()
   return (
@@ -73,13 +71,25 @@ export function OverviewWorkspaceTable({
               >
                 {agentStateLabel(row.agentState)}
               </td>
-              <td className={cn('py-1 pr-2 whitespace-nowrap', row.pr && prChecksClass(row.pr))}>
-                {row.pr ? prSummary(row.pr) : '–'}
+              <td className="py-1 pr-2 whitespace-nowrap">
+                <OverviewPrLink pr={row.pr} />
               </td>
               <td className="hidden py-1 pr-2 whitespace-nowrap text-muted-foreground sm:table-cell">
-                {row.cleanable
-                  ? t('auto.components.overview.table.cleanUp', 'clean up')
-                  : (row.status ?? '–')}
+                {row.cleanable ? (
+                  <button
+                    type="button"
+                    className="underline-offset-2 hover:text-foreground hover:underline"
+                    disabled={busy}
+                    title={t('auto.components.overview.cleanUpTitle', 'Remove {{name}}', {
+                      name: row.name
+                    })}
+                    onClick={() => onRemove(row.worktreeId)}
+                  >
+                    {t('auto.components.overview.cleanUp', 'Clean up')}
+                  </button>
+                ) : (
+                  (row.status ?? '–')
+                )}
               </td>
               <td className="hidden py-1 whitespace-nowrap text-muted-foreground sm:table-cell">
                 {row.lastActivityAt ? formatRelativeTime(row.lastActivityAt, now) : '–'}

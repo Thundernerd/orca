@@ -7,10 +7,9 @@ import {
   AGENT_STATE_CLASS,
   ATTENTION_TONE,
   agentStateLabel,
-  attentionKindLabel,
-  prChecksClass,
-  prSummary
+  attentionKindLabel
 } from './overview-presentation'
+import { OverviewPrLink } from './OverviewPrLink'
 import { OverviewReplyPopover } from './OverviewReplyPopover'
 
 export function OverviewTableRow({
@@ -64,9 +63,17 @@ export function OverviewTableRow({
           </span>
         ))}
         {row.cleanable ? (
-          <span className="text-muted-foreground">
-            {t('auto.components.overview.table.cleanUp', 'clean up')}
-          </span>
+          <button
+            type="button"
+            className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            disabled={actions.busy}
+            title={t('auto.components.overview.cleanUpTitle', 'Remove {{name}}', {
+              name: row.name
+            })}
+            onClick={() => actions.removeWorkspace(row.worktreeId)}
+          >
+            {t('auto.components.overview.cleanUp', 'Clean up')}
+          </button>
         ) : null}
       </td>
       <td
@@ -78,8 +85,8 @@ export function OverviewTableRow({
       >
         {agentStateLabel(row.agentState)}
       </td>
-      <td className={cn('px-2 py-1.5 whitespace-nowrap', row.pr && prChecksClass(row.pr))}>
-        {row.pr ? prSummary(row.pr) : '–'}
+      <td className="px-2 py-1.5 whitespace-nowrap">
+        <OverviewPrLink pr={row.pr} />
       </td>
       <td className="hidden px-2 py-1.5 whitespace-nowrap text-muted-foreground @3xl:table-cell">
         {row.lastActivityAt ? formatRelativeTime(row.lastActivityAt, now) : '–'}

@@ -16,7 +16,8 @@ export function OverviewHeader({
   onRefresh,
   onDismissNotice,
   unreadCount,
-  onMarkAllRead
+  onMarkAllRead,
+  viewMenu
 }: {
   needYou: number
   activeProject: OverviewProject | undefined
@@ -27,6 +28,7 @@ export function OverviewHeader({
   onDismissNotice: () => void
   unreadCount: number
   onMarkAllRead: () => void
+  viewMenu: React.ReactNode
 }): React.JSX.Element {
   const t = useTranslate()
   return (
@@ -57,6 +59,7 @@ export function OverviewHeader({
               })}
             </Button>
           ) : null}
+          {viewMenu}
           <ToggleGroup
             type="single"
             variant="outline"

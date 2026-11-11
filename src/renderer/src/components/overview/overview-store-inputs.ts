@@ -65,7 +65,13 @@ function checksOf(pr: PRInfo): OverviewChecks {
 
 function overviewPr(pr: PRInfo | null): OverviewPr | null {
   return pr
-    ? { number: pr.number, state: pr.state, checks: checksOf(pr), url: pr.url || null }
+    ? {
+        number: pr.number,
+        state: pr.state,
+        checks: checksOf(pr),
+        url: pr.url || null,
+        failingChecks: pr.failingCheckNames ?? []
+      }
     : null
 }
 
@@ -112,7 +118,12 @@ export function buildOverviewStoreInputs(
   for (const repo of slice.repos) {
     const hostId = getRepoExecutionHostId(repo)
     const projectId = hostScoped(hostId, repo.id)
-    repos.push({ id: projectId, name: repo.displayName, host: labelOf(hostId) })
+    repos.push({
+      id: projectId,
+      name: repo.displayName,
+      host: labelOf(hostId),
+      groupId: repo.projectGroupId ?? null
+    })
     // worktreesByRepo is keyed by bare repo id, so a twin's rows from every host share one list.
     for (const worktree of slice.worktreesByRepo[repo.id] ?? []) {
       const rowHostId = worktree.hostId ?? LOCAL_EXECUTION_HOST_ID
@@ -151,7 +162,8 @@ export function buildOverviewStoreInputs(
       repos.push({
         id: projectId,
         name: groupNames.get(folder.projectGroupId) ?? folder.name,
-        host: labelOf(hostId)
+        host: labelOf(hostId),
+        groupId: folder.projectGroupId
       })
     }
     const id = folderWorkspaceKey(folder.id)

@@ -18,6 +18,10 @@ import { OverviewProjectCard, type OverviewProjectCardActions } from './Overview
 import { OverviewHeader } from './OverviewHeader'
 import { OverviewStatsStrip } from './OverviewStatsStrip'
 import { OverviewTable } from './OverviewTable'
+import { OverviewViewMenu } from './OverviewViewMenu'
+import { sectionOverviewProjects } from './overview-project-sections'
+import { runWorktreeDelete } from '@/components/sidebar/workspace-actions/deletion/delete-worktree-flow'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
 
 const PR_REFRESH_MS = 2 * 60_000
 const CLOCK_MS = 30_000
@@ -58,6 +62,7 @@ export default function OverviewPage(): React.JSX.Element {
   const closePage = useAppStore((state) => state.closeOverviewPage)
   const prefs = useAppStore((state) => state.overviewPrefs)
   const updatePrefs = useAppStore((state) => state.updateOverviewPrefs)
+  const projectGroups = useAppStore((state) => state.projectGroups)
   const surveys = useOverviewTicketSurveys()
   const { snapshot, worktreesById, markMergePending } = useOverviewData(surveys.ticketsLoading)
   const [notice, setNotice] = useState<OverviewActionResult | null>(null)
@@ -169,7 +174,19 @@ export default function OverviewPage(): React.JSX.Element {
         markOverviewWorkspaceRead(worktree)
       }
     },
-    mergeTickets: (projectId) => runSkill(projectId, 'merge-tickets')
+    mergeTickets: (projectId) => runSkill(projectId, 'merge-tickets'),
+    // The sidebar's delete funnel: its confirmation, unsaved-file and host checks apply.
+    removeWorkspace: (worktreeId) => {
+      const worktree = worktreesById.get(worktreeId)
+      if (worktree) {
+        runWorktreeDelete(
+          worktree.id,
+          worktree.executionHostId === LOCAL_EXECUTION_HOST_ID
+            ? {}
+            : { expectedHostId: worktree.executionHostId }
+        )
+      }
+    }
   }
   const projectActions: OverviewProjectCardActions = {
     busy,
@@ -183,6 +200,14 @@ export default function OverviewPage(): React.JSX.Element {
   }
 
   const layout = prefs.layout ?? 'cards'
+  const sort = prefs.sort ?? 'attention'
+  const groupBy = prefs.groupBy ?? 'none'
+  const sections = sectionOverviewProjects(
+    snapshot.projects,
+    projectGroups,
+    groupBy,
+    t('auto.components.overview.ungrouped', 'Ungrouped')
+  )
   // Hidden projects are already out of Needs you, so they keep their unread flags.
   const unreadItems = snapshot.attention.filter((item) => item.unread)
   const refreshAll = (): void => {
@@ -205,6 +230,14 @@ export default function OverviewPage(): React.JSX.Element {
         onRefresh={refreshAll}
         onDismissNotice={() => setNotice(null)}
         unreadCount={unreadItems.length}
+        viewMenu={
+          <OverviewViewMenu
+            sort={sort}
+            groupBy={groupBy}
+            onSortChange={(next) => updatePrefs((p) => ({ ...p, sort: next }))}
+            onGroupByChange={(next) => updatePrefs((p) => ({ ...p, groupBy: next }))}
+          />
+        }
         onMarkAllRead={() => {
           for (const item of unreadItems) {
             const worktree = worktreesById.get(item.worktreeId)
@@ -223,7 +256,7 @@ export default function OverviewPage(): React.JSX.Element {
         <div className="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4 @3xl:px-5">
           <OverviewStatsStrip snapshot={snapshot} />
           <OverviewTable
-            projects={snapshot.projects}
+            sections={sections}
             minimized={prefs.minimized}
             ticketsUnavailable={(source) => surveys.unavailable.has(source)}
             now={now}
@@ -238,19 +271,30 @@ export default function OverviewPage(): React.JSX.Element {
             aria-label={t('auto.components.overview.projects', 'Projects')}
             className="scrollbar-sleek @container order-2 min-h-0 @3xl:order-1 @3xl:overflow-y-auto"
           >
-            <div className="grid grid-cols-1 gap-3 @2xl:grid-cols-2 @6xl:grid-cols-3">
-              {snapshot.projects.map((project) => (
-                <OverviewProjectCard
-                  key={project.id}
-                  project={project}
-                  minimized={prefs.minimized.includes(project.id)}
-                  tableOpen={prefs.openTables.includes(project.id)}
-                  ticketsUnavailable={
-                    project.ticketSource !== null && surveys.unavailable.has(project.ticketSource)
-                  }
-                  now={now}
-                  actions={projectActions}
-                />
+            <div className="flex flex-col gap-4">
+              {sections.map((section) => (
+                <div key={section.key} className="flex flex-col gap-2">
+                  {section.label ? (
+                    <h2 className="text-xs font-semibold text-muted-foreground">{section.label}</h2>
+                  ) : null}
+                  <div className="grid grid-cols-1 gap-3 @2xl:grid-cols-2 @6xl:grid-cols-3">
+                    {section.projects.map((project) => (
+                      <OverviewProjectCard
+                        key={project.id}
+                        project={project}
+                        minimized={prefs.minimized.includes(project.id)}
+                        tableOpen={prefs.openTables.includes(project.id)}
+                        ticketsUnavailable={
+                          project.ticketSource !== null &&
+                          surveys.unavailable.has(project.ticketSource)
+                        }
+                        now={now}
+                        actions={projectActions}
+                        onRemoveWorkspace={attentionActions.removeWorkspace}
+                      />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </section>

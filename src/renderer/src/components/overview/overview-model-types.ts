@@ -10,6 +10,8 @@ export type OverviewPr = {
   state: 'open' | 'closed' | 'merged' | 'draft'
   checks: OverviewChecks
   url: string | null
+  /** Names of the failing checks, when the host reported them. */
+  failingChecks: string[]
 }
 
 export type OverviewAgentInput = {
@@ -48,7 +50,11 @@ export type OverviewRepoInput = {
   name: string
   /** SSH or runtime host label; null on this machine. */
   host: string | null
+  /** The project group it is filed under in the sidebar; null when ungrouped. */
+  groupId: string | null
 }
+
+export type OverviewSort = 'attention' | 'name'
 
 export type OverviewModelInput = {
   repos: OverviewRepoInput[]
@@ -59,6 +65,7 @@ export type OverviewModelInput = {
   pendingMerges: ReadonlySet<string>
   hidden: ReadonlySet<string>
   pinned: ReadonlySet<string>
+  sort: OverviewSort
 }
 
 export type OverviewWorkspaceRow = {
@@ -92,6 +99,8 @@ export type OverviewAttentionItem = {
   projectName: string
   /** The paired server or SSH host it lives on; null on this machine. */
   host: string | null
+  /** The workspace's PR, so the card can link to it. */
+  prUrl: string | null
   isMain: boolean
   unread: boolean
   since: number | null
@@ -101,6 +110,7 @@ export type OverviewProject = {
   id: string
   name: string
   host: string | null
+  groupId: string | null
   ticketSource: string | null
   mainWorktreeId: string | null
   isActive: boolean

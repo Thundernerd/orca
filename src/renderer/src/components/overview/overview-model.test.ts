@@ -36,8 +36,8 @@ function agent(overrides: Partial<OverviewAgentInput>): OverviewAgentInput {
 function input(worktrees: OverviewWorktreeInput[], overrides: Partial<OverviewModelInput> = {}) {
   return buildOverviewSnapshot({
     repos: [
-      { id: 'repo-a', name: 'Alpha', host: null },
-      { id: 'repo-b', name: 'Beta', host: null }
+      { id: 'repo-a', name: 'Alpha', host: null, groupId: null },
+      { id: 'repo-b', name: 'Beta', host: null, groupId: null }
     ],
     worktrees,
     tickets: {},
@@ -45,6 +45,7 @@ function input(worktrees: OverviewWorktreeInput[], overrides: Partial<OverviewMo
     pendingMerges: new Set(),
     hidden: new Set(),
     pinned: new Set(),
+    sort: 'attention',
     ...overrides
   })
 }
@@ -55,13 +56,13 @@ describe('buildOverviewSnapshot', () => {
       worktree('flagged-old', { isUnread: true, lastActivityAt: 100 }),
       worktree('ready', {
         lastActivityAt: 500,
-        pr: { number: 7, state: 'open', checks: 'success', url: null }
+        pr: { number: 7, state: 'open', checks: 'success', url: null, failingChecks: [] }
       }),
       worktree('blocked-new', { agents: [agent({ state: 'blocked', stateStartedAt: 900 })] }),
       worktree('waiting-old', { agents: [agent({ state: 'waiting', stateStartedAt: 200 })] }),
       worktree('failing', {
         lastActivityAt: 50,
-        pr: { number: 8, state: 'open', checks: 'failure', url: null }
+        pr: { number: 8, state: 'open', checks: 'failure', url: null, failingChecks: [] }
       })
     ])
     expect(snapshot.attention.map((item) => item.worktreeId)).toEqual([
@@ -75,7 +76,7 @@ describe('buildOverviewSnapshot', () => {
 
   it('hides ready-to-merge items while /merge-tickets runs in the main workspace', () => {
     const ready = worktree('ready', {
-      pr: { number: 7, state: 'open', checks: 'success', url: null }
+      pr: { number: 7, state: 'open', checks: 'success', url: null, failingChecks: [] }
     })
     const mainMerging = worktree('main', {
       isMain: true,
@@ -101,5 +102,28 @@ describe('buildOverviewSnapshot', () => {
     )
     expect(snapshot.attention.map((item) => item.projectId)).toEqual(['repo-a'])
     expect(snapshot.projects.map((project) => project.id)).toEqual(['repo-a', 'repo-b'])
+  })
+})
+
+describe('project sort', () => {
+  it('sorts by name when asked, keeping pinned first and hidden last', () => {
+    const snapshot = buildOverviewSnapshot({
+      repos: [
+        { id: 'c', name: 'charlie', host: null, groupId: null },
+        { id: 'a', name: 'Alpha', host: null, groupId: null },
+        { id: 'b', name: 'bravo', host: null, groupId: null },
+        { id: 'z', name: 'Zulu', host: null, groupId: null }
+      ],
+      worktrees: ['a', 'b', 'c', 'z'].map((repoId) =>
+        worktree(`${repoId}-main`, { repoId, isMain: true, isUnread: repoId === 'c' })
+      ),
+      tickets: {},
+      ticketsLoading: new Set(),
+      pendingMerges: new Set(),
+      hidden: new Set(['a']),
+      pinned: new Set(['z']),
+      sort: 'name'
+    })
+    expect(snapshot.projects.map((p) => p.name)).toEqual(['Zulu', 'bravo', 'charlie', 'Alpha'])
   })
 })

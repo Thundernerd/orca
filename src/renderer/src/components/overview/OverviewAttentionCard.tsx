@@ -1,11 +1,20 @@
 import { useState } from 'react'
-import { Check, ExternalLink, GitMerge, House, MessageSquareReply, Send } from 'lucide-react'
+import {
+  Check,
+  ExternalLink,
+  GitMerge,
+  GitPullRequest,
+  House,
+  MessageSquareReply,
+  Send
+} from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/class-names'
 import { useTranslate } from '@/i18n/use-translate'
 import { formatRelativeTime } from '@/components/activity/activity-thread-presentation'
+import { openHttpLink } from '@/lib/browser/navigation/http-link-routing'
 import type { OverviewAttentionItem } from './overview-model-types'
 import { ATTENTION_TONE, attentionKindLabel } from './overview-presentation'
 
@@ -16,6 +25,7 @@ export type OverviewAttentionCardActions = {
   reply: (worktreeId: string, text: string) => Promise<boolean>
   markRead: (worktreeId: string) => void
   mergeTickets: (projectId: string) => void
+  removeWorkspace: (worktreeId: string) => void
 }
 
 export function OverviewAttentionCard({
@@ -120,6 +130,16 @@ export function OverviewAttentionCard({
           >
             <MessageSquareReply />
             {t('auto.components.overview.reply', 'Reply')}
+          </Button>
+        ) : null}
+        {item.prUrl ? (
+          <Button
+            variant="outline"
+            size="xs"
+            onClick={() => item.prUrl && openHttpLink(item.prUrl)}
+          >
+            <GitPullRequest />
+            {t('auto.components.overview.openPr', 'PR')}
           </Button>
         ) : null}
         {item.unread ? (
