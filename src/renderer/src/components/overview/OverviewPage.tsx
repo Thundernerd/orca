@@ -123,14 +123,14 @@ export default function OverviewPage(): React.JSX.Element {
     [snapshot.projects, worktreesById]
   )
   const runSkill = useCallback(
-    (projectId: string, skill: OverviewSkill) => {
+    (projectId: string, skill: OverviewSkill, args?: string) => {
       const main = mainOf(projectId)
       const project = snapshot.projects.find((p) => p.id === projectId)
       if (!main || !project) {
         return
       }
       void run(async () => {
-        const result = await runOverviewSkill(main, project.name, skill)
+        const result = await runOverviewSkill(main, project.name, skill, args)
         if (result.ok && skill === 'merge-tickets') {
           markMergePending(projectId)
         }

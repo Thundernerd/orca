@@ -92,9 +92,10 @@ export async function replyToOverviewWorkspace(
 export async function runOverviewSkill(
   main: OverviewWorktreeInput,
   projectName: string,
-  skill: OverviewSkill
+  skill: OverviewSkill,
+  args = ''
 ): Promise<OverviewActionResult> {
-  const prompt = `/${skill}`
+  const prompt = args ? `/${skill} ${args}` : `/${skill}`
   for (const agent of main.agents.filter(isIdleClaude)) {
     if (await sendToAgent(main, agent, prompt)) {
       // The skills ask before they act: show the session so the question is seen.

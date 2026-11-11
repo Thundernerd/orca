@@ -8,6 +8,7 @@ import type { OverviewProject } from './overview-model-types'
 import type { OverviewProjectCardActions } from './OverviewProjectCard'
 import type { OverviewAttentionCardActions } from './OverviewAttentionCard'
 import { OverviewTableRow } from './OverviewTableRow'
+import { OverviewWriteTicketPopover } from './OverviewWriteTicketPopover'
 
 /** Every workspace in one table, grouped by project; collapsing a group minimizes its card too. */
 export function OverviewTable({
@@ -112,20 +113,32 @@ export function OverviewTable({
                     ) : null}
                     <span className="ml-auto flex flex-wrap items-center gap-1">
                       {project.mainWorktreeId && !project.hidden
-                        ? OVERVIEW_SKILLS.map((skill) => (
-                            <Button
-                              key={skill}
-                              variant="ghost"
-                              size="xs"
-                              disabled={
-                                projectActions.busy ||
-                                (skill === 'merge-tickets' && project.merging)
-                              }
-                              onClick={() => projectActions.runSkill(project.id, skill)}
-                            >
-                              /{skill}
-                            </Button>
-                          ))
+                        ? OVERVIEW_SKILLS.map((skill) =>
+                            skill === 'write-ticket' ? (
+                              <OverviewWriteTicketPopover
+                                key={skill}
+                                projectName={project.name}
+                                busy={projectActions.busy}
+                                variant="ghost"
+                                onSubmit={(text) =>
+                                  projectActions.runSkill(project.id, skill, text)
+                                }
+                              />
+                            ) : (
+                              <Button
+                                key={skill}
+                                variant="ghost"
+                                size="xs"
+                                disabled={
+                                  projectActions.busy ||
+                                  (skill === 'merge-tickets' && project.merging)
+                                }
+                                onClick={() => projectActions.runSkill(project.id, skill)}
+                              >
+                                /{skill}
+                              </Button>
+                            )
+                          )
                         : null}
                       <Button
                         variant="ghost"

@@ -17,11 +17,12 @@ import { formatRelativeTime } from '@/components/activity/activity-thread-presen
 import type { OverviewProject } from './overview-model-types'
 import { OVERVIEW_SKILLS, type OverviewSkill } from './overview-actions'
 import { OverviewWorkspaceTable } from './OverviewWorkspaceTable'
+import { OverviewWriteTicketPopover } from './OverviewWriteTicketPopover'
 
 export type OverviewProjectCardActions = {
   busy: boolean
   open: (worktreeId: string) => void
-  runSkill: (projectId: string, skill: OverviewSkill) => void
+  runSkill: (projectId: string, skill: OverviewSkill, args?: string) => void
   refreshTickets: (ticketSource: string) => void
   togglePinned: (projectId: string) => void
   toggleMinimized: (projectId: string) => void
@@ -219,17 +220,27 @@ export function OverviewProjectCard({
 
           {canRunSkills ? (
             <div className="flex flex-wrap gap-1">
-              {OVERVIEW_SKILLS.map((skill) => (
-                <Button
-                  key={skill}
-                  variant="outline"
-                  size="xs"
-                  disabled={actions.busy || (skill === 'merge-tickets' && project.merging)}
-                  onClick={() => actions.runSkill(project.id, skill)}
-                >
-                  /{skill}
-                </Button>
-              ))}
+              {OVERVIEW_SKILLS.map((skill) =>
+                skill === 'write-ticket' ? (
+                  <OverviewWriteTicketPopover
+                    key={skill}
+                    projectName={project.name}
+                    busy={actions.busy}
+                    variant="outline"
+                    onSubmit={(text) => actions.runSkill(project.id, skill, text)}
+                  />
+                ) : (
+                  <Button
+                    key={skill}
+                    variant="outline"
+                    size="xs"
+                    disabled={actions.busy || (skill === 'merge-tickets' && project.merging)}
+                    onClick={() => actions.runSkill(project.id, skill)}
+                  >
+                    /{skill}
+                  </Button>
+                )
+              )}
             </div>
           ) : null}
 

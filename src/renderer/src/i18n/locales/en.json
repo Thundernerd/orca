@@ -20091,6 +20091,14 @@
           "ready": "ready to merge",
           "tickets": "tickets ready",
           "cleanup": "to clean up"
+        },
+        "writeTicket": {
+          "title": "Write a ticket for {{project}}",
+          "placeholder": "What is broken, awkward or wanted? One item, or a list.",
+          "label": "Ticket description",
+          "hint": "Claude investigates and asks you to confirm the drafts.",
+          "send": "Write ticket",
+          "sendEmpty": "Start without text"
         }
       }
     },
