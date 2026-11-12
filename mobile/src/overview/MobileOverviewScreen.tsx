@@ -6,7 +6,6 @@ import { CheckCheck, ChevronLeft, X } from 'lucide-react-native'
 import { NavBar } from '../components/nav-bar/NavBar'
 import { NavBarButton } from '../components/nav-bar/NavBarButton'
 import { TextInputModal } from '../components/TextInputModal'
-import { useHostProtocolGates } from '../components/host-protocol-gates-context'
 import { useHostClient } from '../transport/connection/host-client-hooks'
 import { useRouteHandoff } from '../navigation/route-handoff'
 import { useHostQuery } from '../query/host-query'
@@ -32,9 +31,10 @@ import { loadOverviewSort, saveOverviewSort } from './overview-sort-preference'
 import {
   canMarkReadFromPhone,
   useMobileOverviewActions,
-  type MobileOverviewResult,
-  type MobileOverviewSkill
+  type MobileOverviewResult
 } from './use-mobile-overview-actions'
+import { mobileTicketActions } from './mobile-ticket-actions'
+import { MobileTicketSheet, type MobileTicketSheetMode } from './MobileTicketSheet'
 import { MobileOverviewAttentionCard } from './MobileOverviewAttentionCard'
 import { MobileOverviewProjectCard } from './MobileOverviewProjectCard'
 import { overviewStyles as styles } from './mobile-overview-styles'
@@ -43,7 +43,7 @@ const NONE: ReadonlySet<string> = new Set()
 
 type TextPrompt =
   | { kind: 'reply'; worktree: OverviewWorktreeInput; message: string | null }
-  | { kind: 'write-ticket'; main: OverviewWorktreeInput; projectName: string }
+  | { kind: 'write-ticket'; projectId: string; projectName: string }
 
 /** Every project and workspace on this computer, with what needs you first. */
 export function MobileOverviewScreen() {
@@ -52,7 +52,6 @@ export function MobileOverviewScreen() {
   const router = useRouteHandoff()
   const { hostId } = useLocalSearchParams<{ hostId: string }>()
   const { client, state: connState } = useHostClient(hostId)
-  const { hostCapabilities } = useHostProtocolGates()
   const now = useNow(30_000)
   const catalog = useHostQuery(
     hostWorktreeCatalogQuery,
@@ -60,9 +59,14 @@ export function MobileOverviewScreen() {
     HOST_LIST_TARGET,
     NO_HOST_LIST_INPUT
   )
-  const actions = useMobileOverviewActions({ hostId, client, connState, hostCapabilities })
+  const actions = useMobileOverviewActions({ hostId, client, connState })
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
   const [prompt, setPrompt] = useState<TextPrompt | null>(null)
+  const [sheet, setSheet] = useState<{
+    mode: MobileTicketSheetMode
+    projectId: string
+    projectName: string
+  } | null>(null)
   const [notice, setNotice] = useState<MobileOverviewResult | null>(null)
   const [busy, setBusy] = useState(false)
   const [sort, setSort] = useState<OverviewSort>('attention')
@@ -94,7 +98,6 @@ export function MobileOverviewScreen() {
         ...inputs,
         tickets: {},
         ticketsLoading: NONE,
-        pendingMerges: NONE,
         hidden: NONE,
         pinned: NONE,
         sort,
@@ -117,21 +120,11 @@ export function MobileOverviewScreen() {
     }
   }
 
-  const mainOf = (projectId: string): OverviewWorktreeInput | null => {
-    const id = snapshot.projects.find((p) => p.id === projectId)?.mainWorktreeId
-    return id ? (byKey.get(id) ?? null) : null
-  }
-  const runSkill = (projectId: string, projectName: string, skill: MobileOverviewSkill): void => {
-    const main = mainOf(projectId)
-    if (!main) {
-      return
-    }
-    if (skill === 'write-ticket') {
-      setPrompt({ kind: 'write-ticket', main, projectName })
-      return
-    }
-    void run(() => actions.runSkill(main, projectName, skill))
-  }
+  const live = client !== null && connState === 'connected' ? client : null
+  const ticketActions = useMemo(
+    () => (live && sheet ? mobileTicketActions(live, sheet.projectId) : null),
+    [live, sheet]
+  )
   const unread = snapshot.attention
     .filter((item) => item.unread)
     .flatMap((item) => byKey.get(item.worktreeId) ?? [])
@@ -264,7 +257,12 @@ export function MobileOverviewScreen() {
                 actions.open(worktree)
               }
             }}
-            onRunSkill={(skill) => runSkill(project.id, project.name, skill)}
+            onOpenTickets={(mode) =>
+              setSheet({ mode, projectId: project.id, projectName: project.name })
+            }
+            onWriteTicket={() =>
+              setPrompt({ kind: 'write-ticket', projectId: project.id, projectName: project.name })
+            }
           />
         ))}
       </ScrollView>
@@ -282,8 +280,8 @@ export function MobileOverviewScreen() {
           prompt?.kind === 'reply'
             ? (prompt.message ?? undefined)
             : t(
-                'overview.mobile.writeTicketMessage',
-                'What is broken, awkward or wanted? Claude investigates and asks you to confirm.'
+                'overview.mobile.writeTicketDraftMessage',
+                'What is broken, awkward or wanted? Claude drafts the tickets; you publish them from Drafts.'
               )
         }
         placeholder={
@@ -296,19 +294,23 @@ export function MobileOverviewScreen() {
             ? t('overview.mobile.send', 'Send')
             : t('overview.mobile.writeTicket', 'Write ticket')
         }
-        allowEmpty={prompt?.kind === 'write-ticket'}
         onCancel={() => setPrompt(null)}
         onSubmit={(value) => {
           const current = prompt
           setPrompt(null)
           if (current?.kind === 'reply') {
             void run(() => actions.reply(current.worktree, value))
-          } else if (current?.kind === 'write-ticket') {
-            void run(() =>
-              actions.runSkill(current.main, current.projectName, 'write-ticket', value)
-            )
+          } else if (current?.kind === 'write-ticket' && live) {
+            void run(() => mobileTicketActions(live, current.projectId).startDraft(value))
           }
         }}
+      />
+      <MobileTicketSheet
+        mode={sheet?.mode ?? null}
+        projectName={sheet?.projectName ?? ''}
+        actions={ticketActions}
+        onClose={() => setSheet(null)}
+        onResult={(action) => void run(action)}
       />
     </SafeAreaView>
   )

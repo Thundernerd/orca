@@ -28,7 +28,6 @@ function snapshotOf(rows: Worktree[]) {
     ...inputs,
     tickets: {},
     ticketsLoading: new Set(),
-    pendingMerges: new Set(),
     hidden: new Set(),
     pinned: new Set(),
     sort: 'attention'

@@ -139,9 +139,6 @@ export function OverviewProjectCard({
               })}
             </Stat>
           ) : null}
-          {project.merging ? (
-            <Stat>{t('auto.components.overview.stat.merging', 'Merging…')}</Stat>
-          ) : null}
         </div>
         <div className="flex shrink-0 items-center">
           <IconToggle

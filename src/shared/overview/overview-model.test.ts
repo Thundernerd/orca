@@ -42,7 +42,6 @@ function input(worktrees: OverviewWorktreeInput[], overrides: Partial<OverviewMo
     worktrees,
     tickets: {},
     ticketsLoading: new Set(),
-    pendingMerges: new Set(),
     hidden: new Set(),
     pinned: new Set(),
     sort: 'attention',
@@ -74,24 +73,6 @@ describe('buildOverviewSnapshot', () => {
     ])
   })
 
-  it('hides ready-to-merge items while /merge-tickets runs in the main workspace', () => {
-    const ready = worktree('ready', {
-      pr: { number: 7, state: 'open', checks: 'success', url: null, failingChecks: [] }
-    })
-    const mainMerging = worktree('main', {
-      isMain: true,
-      agents: [agent({ state: 'working', prompt: '/merge-tickets' })]
-    })
-    expect(input([mainMerging, ready]).attention).toEqual([])
-    expect(
-      input([worktree('main', { isMain: true }), ready], { pendingMerges: new Set(['repo-a']) })
-        .attention
-    ).toEqual([])
-    expect(input([worktree('main', { isMain: true }), ready]).attention.map((i) => i.kind)).toEqual(
-      ['pr-ready']
-    )
-  })
-
   it('keeps hidden projects out of needs-you and sorts them last', () => {
     const snapshot = input(
       [
@@ -119,7 +100,6 @@ describe('project sort', () => {
       ),
       tickets: {},
       ticketsLoading: new Set(),
-      pendingMerges: new Set(),
       hidden: new Set(['a']),
       pinned: new Set(['z']),
       sort: 'name'

@@ -10,7 +10,7 @@ import { useMobileColorScheme } from '../theme/use-mobile-color-scheme'
 import { useMobileTranslation } from '../i18n/use-mobile-translation'
 import type { Translate } from '../i18n/mobile-i18n'
 import { formatTimeAgo } from '../worktree/agent-row-display'
-import { MOBILE_OVERVIEW_SKILLS, type MobileOverviewSkill } from './use-mobile-overview-actions'
+import type { MobileTicketSheetMode } from './MobileTicketSheet'
 import { overviewStyles as styles } from './mobile-overview-styles'
 
 function Stat({ label, tone }: { label: string; tone?: 'urgent' | 'ready' }) {
@@ -89,7 +89,8 @@ export function MobileOverviewProjectCard({
   busy,
   onToggle,
   onOpenWorkspace,
-  onRunSkill
+  onOpenTickets,
+  onWriteTicket
 }: {
   project: OverviewProject
   now: number
@@ -97,7 +98,8 @@ export function MobileOverviewProjectCard({
   busy: boolean
   onToggle: () => void
   onOpenWorkspace: (worktreeId: string) => void
-  onRunSkill: (skill: MobileOverviewSkill) => void
+  onOpenTickets: (mode: MobileTicketSheetMode) => void
+  onWriteTicket: () => void
 }) {
   useMobileColorScheme()
   const t = useMobileTranslation()
@@ -163,17 +165,34 @@ export function MobileOverviewProjectCard({
         <>
           {project.mainWorktreeId ? (
             <View style={styles.wrap}>
-              {MOBILE_OVERVIEW_SKILLS.map((skill) => (
+              {(
+                [
+                  ['launch', t('overview.mobile.tickets.launchButton', 'Launch tickets')],
+                  ['clean', t('overview.mobile.tickets.cleanButton', 'Clean up')],
+                  ['queue', t('overview.mobile.tickets.queueButton', 'Merge queue')],
+                  ['drafts', t('overview.mobile.tickets.draftsButton', 'Drafts')]
+                ] as const
+              ).map(([mode, label]) => (
                 <Pressable
-                  key={skill}
-                  disabled={busy || (skill === 'merge-tickets' && project.merging)}
-                  onPress={() => onRunSkill(skill)}
+                  key={mode}
+                  disabled={busy}
+                  onPress={() => onOpenTickets(mode)}
                   accessibilityRole="button"
                   style={({ pressed }) => [styles.button, pressed && styles.pressed]}
                 >
-                  <Text style={styles.buttonText}>/{skill}</Text>
+                  <Text style={styles.buttonText}>{label}</Text>
                 </Pressable>
               ))}
+              <Pressable
+                disabled={busy}
+                onPress={onWriteTicket}
+                accessibilityRole="button"
+                style={({ pressed }) => [styles.button, pressed && styles.pressed]}
+              >
+                <Text style={styles.buttonText}>
+                  {t('overview.mobile.writeTicket', 'Write ticket')}
+                </Text>
+              </Pressable>
             </View>
           ) : null}
           <View>

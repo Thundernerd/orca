@@ -5000,7 +5000,6 @@
       "projects": "Projects",
       "replyTitle": "Reply to {{name}}",
       "writeTicketTitle": "Write a ticket for {{project}}",
-      "writeTicketMessage": "What is broken, awkward or wanted? Claude investigates and asks you to confirm.",
       "replyPlaceholder": "Reply to the agent…",
       "writeTicketPlaceholder": "One item, or a list",
       "send": "Send",
@@ -5012,10 +5011,6 @@
       "markReadFailed": "{{count}} could not be marked read",
       "replied": "Replied in {{name}}",
       "replyRefused": "No agent in {{name}} took the reply",
-      "sentSkill": "Sent /{{skill}} to the idle Claude session in {{project}}",
-      "promptNotSent": "Claude started in {{project}}, but /{{skill}} wasn't sent",
-      "launched": "Started Claude with /{{skill}} in {{project}}",
-      "updateRequired": "Update Orca on your computer to start an agent from your phone.",
       "pr": {
         "merged": "#{{number}} merged",
         "closed": "#{{number}} closed",
@@ -5024,7 +5019,40 @@
         "green": "#{{number}} green"
       },
       "sortAttention": "Needs you first",
-      "sortName": "Name"
+      "sortName": "Name",
+      "writeTicketDraftMessage": "What is broken, awkward or wanted? Claude drafts the tickets; you publish them from Drafts.",
+      "tickets": {
+        "failed": "Could not {{what}}",
+        "launched": "Launched {{count}} of {{total}}",
+        "removed": "Removed {{count}} of {{total}}",
+        "drafting": "Claude is drafting; review the drafts under Drafts when they are ready",
+        "launchButton": "Launch tickets",
+        "cleanButton": "Clean up",
+        "queueButton": "Merge queue",
+        "draftsButton": "Drafts",
+        "launchTitle": "Launch tickets in {{project}}",
+        "cleanTitle": "Clean up {{project}}",
+        "queueTitle": "Merge queue in {{project}}",
+        "draftsTitle": "Ticket drafts for {{project}}",
+        "loading": "Loading…",
+        "noTickets": "No open tickets.",
+        "launch": "Launch {{count}}",
+        "noChildren": "The main workspace has no child workspaces.",
+        "remove": "Remove {{count}}",
+        "paused": "Paused: {{reason}}",
+        "waitingTurn": "Waiting its turn.",
+        "queueEmpty": "No ticket PRs are waiting to merge.",
+        "resume": "Resume",
+        "resumed": "Merge queue resumed",
+        "merge": "Merge {{ticket}}",
+        "merged": "Merged {{ticket}}",
+        "noDrafts": "No drafts are waiting for review.",
+        "publish": "Publish {{count}}",
+        "published": "Published {{ids}}",
+        "publishStopped": "Publishing stopped",
+        "discard": "Discard",
+        "discarded": "Drafts discarded"
+      }
     }
   }
 }

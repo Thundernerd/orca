@@ -29,7 +29,6 @@ function project(id: string, groupId: string | null): OverviewProject {
     mainWorktreeId: null,
     isActive: false,
     activeWorkspace: null,
-    merging: false,
     hidden: false,
     pinned: false,
     usesTickets: false,

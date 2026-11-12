@@ -20024,8 +20024,7 @@
           "working": "{{count}} working",
           "openPrs": "{{count}} open PRs",
           "readyPrs": "{{count}} ready",
-          "cleanup": "{{count}} to clean up",
-          "merging": "Merging…"
+          "cleanup": "{{count}} to clean up"
         },
         "unpin": "Unpin {{name}}",
         "pin": "Pin {{name}}",

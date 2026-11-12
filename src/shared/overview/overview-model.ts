@@ -39,11 +39,6 @@ export function isWaitingAgent(agent: OverviewAgentInput): boolean {
   return agentStates(agent).some((state) => state === 'blocked' || state === 'waiting')
 }
 
-/** A Claude session that finished its turn and will take a new prompt now. */
-export function isIdleClaude(agent: OverviewAgentInput): boolean {
-  return agent.agentType === 'claude' && agent.state === 'done' && !isWaitingAgent(agent)
-}
-
 function urgentState(agent: OverviewAgentInput): OverviewAgentState {
   const states = agentStates(agent)
   return URGENCY.find((state) => states.includes(state)) ?? agent.state
@@ -64,22 +59,9 @@ function truncate(text: string | null | undefined, max: number): string | null {
   return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat || null
 }
 
-/** A /merge-tickets run is still going here: working, monitoring CI, or asking. */
-export function isMergingTickets(worktree: OverviewWorktreeInput | null): boolean {
-  return (worktree?.agents ?? []).some(
-    (agent) =>
-      /^\/merge-tickets\b/.test(agent.prompt.trim()) &&
-      (agent.state !== 'done' || agent.workingMode === 'monitoring' || isWaitingAgent(agent))
-  )
-}
-
 type Condition = { kind: OverviewAttentionKind; reason: string; since: number | null }
 
-function workspaceConditions(
-  worktree: OverviewWorktreeInput,
-  merging: boolean,
-  comment: string | null
-): Condition[] {
+function workspaceConditions(worktree: OverviewWorktreeInput, comment: string | null): Condition[] {
   const conditions: Condition[] = []
   const waiting = worktree.agents.find(isWaitingAgent)
   if (waiting) {
@@ -108,8 +90,7 @@ function workspaceConditions(
       reason: failingReason(pr),
       since: worktree.lastActivityAt
     })
-  } else if (pr?.state === 'open' && pr.checks === 'success' && !merging) {
-    // While /merge-tickets runs it works through every green PR, so they need nothing from you.
+  } else if (pr?.state === 'open' && pr.checks === 'success') {
     conditions.push({
       kind: 'pr-ready',
       reason: `PR #${pr.number} ready to merge`,
@@ -119,13 +100,13 @@ function workspaceConditions(
   return conditions.sort((a, b) => KIND_RANK[a.kind] - KIND_RANK[b.kind])
 }
 
-function workspaceRow(
-  worktree: OverviewWorktreeInput,
-  merging: boolean
-): { row: OverviewWorkspaceRow; conditions: Condition[] } {
+function workspaceRow(worktree: OverviewWorktreeInput): {
+  row: OverviewWorkspaceRow
+  conditions: Condition[]
+} {
   const urgent = agentsByUrgency(worktree.agents)[0] ?? null
   const comment = worktree.comment.trim() || null
-  const conditions = workspaceConditions(worktree, merging, comment)
+  const conditions = workspaceConditions(worktree, comment)
   const pr = worktree.pr
   return {
     conditions,
@@ -178,12 +159,11 @@ export function buildOverviewSnapshot(input: OverviewModelInput): OverviewSnapsh
       continue
     }
     const main = worktrees.find((w) => w.isMain) ?? null
-    const merging = isMergingTickets(main) || input.pendingMerges.has(repo.id)
     const hidden = input.hidden.has(repo.id)
     const rows: OverviewWorkspaceRow[] = []
     const items: OverviewAttentionItem[] = []
     for (const worktree of worktrees) {
-      const { row, conditions } = workspaceRow(worktree, merging)
+      const { row, conditions } = workspaceRow(worktree)
       rows.push(row)
       if (conditions.length === 0) {
         continue
@@ -228,7 +208,6 @@ export function buildOverviewSnapshot(input: OverviewModelInput): OverviewSnapsh
       mainWorktreeId: main?.key ?? null,
       isActive: active !== null,
       activeWorkspace: active?.name ?? null,
-      merging,
       hidden,
       pinned: input.pinned.has(repo.id),
       usesTickets: usesTickets(worktrees) || tickets !== null,

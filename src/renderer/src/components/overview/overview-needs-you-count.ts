@@ -51,7 +51,6 @@ export function selectOverviewNeedsYouCount(state: AppState): number {
     ...inputs,
     tickets: {},
     ticketsLoading: NONE,
-    pendingMerges: NONE,
     hidden: new Set(hidden),
     pinned: NONE,
     sort: 'attention'

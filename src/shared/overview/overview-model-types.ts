@@ -61,8 +61,6 @@ export type OverviewModelInput = {
   worktrees: OverviewWorktreeInput[]
   tickets: Readonly<Record<string, OverviewTicketCounts>>
   ticketsLoading: ReadonlySet<string>
-  /** Projects where /merge-tickets was just started here, before its agent reports. */
-  pendingMerges: ReadonlySet<string>
   hidden: ReadonlySet<string>
   pinned: ReadonlySet<string>
   sort: OverviewSort
@@ -117,7 +115,6 @@ export type OverviewProject = {
   mainWorktreeId: string | null
   isActive: boolean
   activeWorkspace: string | null
-  merging: boolean
   hidden: boolean
   pinned: boolean
   usesTickets: boolean

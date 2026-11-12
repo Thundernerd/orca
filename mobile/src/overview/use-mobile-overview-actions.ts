@@ -5,32 +5,19 @@ import type { RpcClient } from '../transport/rpc/rpc-client-contract'
 import type { ConnectionState } from '../transport/connection/connection-state'
 import { interpretOrThrowRefusalMessage } from '../transport/rpc/rpc-refusal-message'
 import { useOpenMobileSession } from '../session/use-open-mobile-session'
-import { launchAgentInExistingWorkspace } from '../session/agent-launch/mobile-existing-agent-launch'
 import { healMobileNativeChatStaleInput } from '../session/native-chat/composer/mobile-native-chat-stale-input'
 import {
   reviewTerminalListRead,
   reviewTerminalSendRun
 } from '../source-control/review/mobile-review-terminal-operations'
 import { hostWorktreeCatalogKey } from '../host-screen/host-list-queries'
-import {
-  agentsByUrgency,
-  isIdleClaude,
-  isWaitingAgent
-} from '../../../src/shared/overview/overview-model'
+import { agentsByUrgency, isWaitingAgent } from '../../../src/shared/overview/overview-model'
 import type {
   OverviewAgentInput,
   OverviewWorktreeInput
 } from '../../../src/shared/overview/overview-model-types'
 import { parseWorkspaceKey } from '../../../src/shared/workspace-scope'
 import { worktreeMarkReadWrite } from './overview-operations'
-
-export const MOBILE_OVERVIEW_SKILLS = [
-  'launch-tickets',
-  'merge-tickets',
-  'clean-workspaces',
-  'write-ticket'
-] as const
-export type MobileOverviewSkill = (typeof MOBILE_OVERVIEW_SKILLS)[number]
 
 export type MobileOverviewResult = { ok: boolean; message: string }
 
@@ -86,9 +73,8 @@ export function useMobileOverviewActions(args: {
   hostId: string
   client: RpcClient | null
   connState: ConnectionState
-  hostCapabilities: readonly string[] | null
 }) {
-  const { hostId, client, connState, hostCapabilities } = args
+  const { hostId, client, connState } = args
   const openSession = useOpenMobileSession()
   const queryClient = useQueryClient()
   const live = client !== null && connState === 'connected' ? client : null
@@ -182,74 +168,5 @@ export function useMobileOverviewActions(args: {
     [live, refreshRows]
   )
 
-  /** Types `/<skill> [text]` into an idle Claude session in the main workspace, or starts one. */
-  const runSkill = useCallback(
-    async (
-      main: OverviewWorktreeInput,
-      projectName: string,
-      skill: MobileOverviewSkill,
-      text = ''
-    ): Promise<MobileOverviewResult> => {
-      if (!live) {
-        return waitingForDesktop()
-      }
-      const prompt = text.trim() ? `/${skill} ${text.trim()}` : `/${skill}`
-      for (const agent of main.agents.filter(isIdleClaude)) {
-        if (await sendToAgent(live, main.id, agent, prompt).catch(() => false)) {
-          return {
-            ok: true,
-            message: translate(
-              'overview.mobile.sentSkill',
-              'Sent /{{skill}} to the idle Claude session in {{project}}',
-              { skill, project: projectName }
-            )
-          }
-        }
-      }
-      const launched = await launchAgentInExistingWorkspace({
-        client: live,
-        hostCapabilities,
-        worktreeId: main.id,
-        agent: 'claude',
-        prompt: { text: prompt, delivery: 'submit' },
-        launchSource: 'mobile'
-      })
-      switch (launched.kind) {
-        case 'launched':
-          refreshRows()
-          return launched.promptDelivered === false
-            ? {
-                ok: false,
-                message: translate(
-                  'overview.mobile.promptNotSent',
-                  "Claude started in {{project}}, but /{{skill}} wasn't sent",
-                  { skill, project: projectName }
-                )
-              }
-            : {
-                ok: true,
-                message: translate(
-                  'overview.mobile.launched',
-                  'Started Claude with /{{skill}} in {{project}}',
-                  { skill, project: projectName }
-                )
-              }
-        case 'unsupported':
-          return {
-            ok: false,
-            message: translate(
-              'overview.mobile.updateRequired',
-              'Update Orca on your computer to start an agent from your phone.'
-            )
-          }
-        case 'failed':
-        case 'tab-closed':
-        case 'unknown':
-          return { ok: false, message: launched.message }
-      }
-    },
-    [hostCapabilities, live, refreshRows]
-  )
-
-  return { open, markRead, reply, runSkill }
+  return { open, markRead, reply }
 }
