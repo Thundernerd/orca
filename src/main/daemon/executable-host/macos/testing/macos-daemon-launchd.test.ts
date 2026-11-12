@@ -217,7 +217,7 @@ it('launches the copied helper on plain Node and leaves no inherited credentials
   expect(job).toMatchObject({
     Label: macDaemonJobLabel(state.root),
     KeepAlive: false,
-    AssociatedBundleIdentifiers: ['net.tnrd.corca'],
+    AssociatedBundleIdentifiers: ['net.tnrd.corka'],
     MaterializeDatalessFiles: true,
     EnvironmentVariables: { ORCA_TEST_SECRET: 'test-value' }
   })

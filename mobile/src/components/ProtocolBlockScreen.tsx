@@ -10,9 +10,9 @@ import { useMobileTranslation } from '../i18n/use-mobile-translation'
 import type { CompatVerdict } from '../transport/connection/protocol-compat'
 import type { MobileWebBundleCompatVerdict } from '../transport/web-bundle/mobile-web-bundle-compat'
 import type { PageRouteRefusalVerdict } from '../mobile-web-shell/page-route-policy'
-import { CORCA_RELEASE_REPO } from '../app-update/corca-release-repo'
+import { CORKA_RELEASE_REPO } from '../app-update/corka-release-repo'
 
-const RELEASES_URL = `https://github.com/${CORCA_RELEASE_REPO}/releases`
+const RELEASES_URL = `https://github.com/${CORKA_RELEASE_REPO}/releases`
 const IOS_APP_STORE_URL = 'itms-apps://apps.apple.com/app/orca-ide/id6766130217'
 
 // Protocol/bundle/page-route walls are terminal: no native workspace fallback; update the relevant app or bundle.

@@ -12,7 +12,7 @@ import type {
   ComputerUsePermissionStatusResult
 } from '../../../shared/computer-use-permissions-types'
 
-const DEFAULT_COMPUTER_USE_BUNDLE_ID = 'net.tnrd.corca.computer-use'
+const DEFAULT_COMPUTER_USE_BUNDLE_ID = 'net.tnrd.corka.computer-use'
 
 // One setup-helper spawn per 5s across every permission, on the monotonic clock; claimed synchronously.
 const SETUP_HELPER_LAUNCH_WINDOW_MS = 5_000

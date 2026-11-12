@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "COrca",
+    "name": "Corka",
     "slug": "orca-mobile",
     "version": "0.0.64",
     "orientation": "default",
@@ -28,7 +28,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "net.tnrd.corca.mobile",
+      "bundleIdentifier": "net.tnrd.corka.mobile",
       "buildNumber": "1",
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
@@ -89,7 +89,7 @@
       "usesCleartextTraffic": true,
       "allowBackup": false,
       "permissions": ["RECORD_AUDIO", "MODIFY_AUDIO_SETTINGS"],
-      "package": "net.tnrd.corca.mobile",
+      "package": "net.tnrd.corka.mobile",
       "versionCode": 28,
       "googleServicesFile": "./google-services.json"
     },

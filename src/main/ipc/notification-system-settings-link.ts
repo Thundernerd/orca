@@ -1,6 +1,6 @@
 import { shell } from 'electron'
 
-const MACOS_PACKAGED_BUNDLE_ID = 'net.tnrd.corca'
+const MACOS_PACKAGED_BUNDLE_ID = 'net.tnrd.corka'
 const MACOS_NOTIFICATION_SETTINGS_URL =
   'x-apple.systempreferences:com.apple.Notifications-Settings.extension'
 

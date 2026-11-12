@@ -9,7 +9,7 @@ import { colors, spacing, typography } from '../theme/mobile-theme'
 import { themedStyleSheet } from '../theme/themed-styles'
 import { useMobileColorScheme } from '../theme/use-mobile-color-scheme'
 import { SettingsScreen, SettingsSection } from './settings-screen-frame'
-import { CORCA_RELEASE_REPO } from '../app-update/corca-release-repo'
+import { CORKA_RELEASE_REPO } from '../app-update/corka-release-repo'
 
 function GithubIcon({ size = 16, color = colors.textSecondary }) {
   useMobileColorScheme()
@@ -66,10 +66,10 @@ export default function AboutScreen({
         />
         <ListRow
           key="source"
-          title={CORCA_RELEASE_REPO}
+          title={CORKA_RELEASE_REPO}
           leading={<GithubIcon size={18} />}
           accessibilityLabel={t('settings.aboutScreen.sourceCode', 'Orca source code')}
-          onPress={() => openLink(`https://github.com/${CORCA_RELEASE_REPO}`)}
+          onPress={() => openLink(`https://github.com/${CORKA_RELEASE_REPO}`)}
         />
         <ListRow
           key="social"

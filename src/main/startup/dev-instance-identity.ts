@@ -2,8 +2,8 @@ import { createHash } from 'node:crypto'
 import path from 'node:path'
 import type { AppIdentity } from '../../shared/app-identity'
 
-const BASE_APP_NAME = 'COrca'
-const BASE_APP_USER_MODEL_ID = 'net.tnrd.corca'
+const BASE_APP_NAME = 'Corka'
+const BASE_APP_USER_MODEL_ID = 'net.tnrd.corka'
 const MAX_LABEL_LENGTH = 80
 
 export type DevInstanceIdentity = AppIdentity & {

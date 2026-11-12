@@ -1,6 +1,6 @@
-name: COrca Desktop Release
+name: Corka Desktop Release
 
-# COrca (this fork's build of Orca): tag `v<major>.<minor>.<upstream patch × 100 + build>` on `mine`,
+# Corka (this fork's build of Orca): tag `v<major>.<minor>.<upstream patch × 100 + build>` on `mine`,
 # e.g. upstream 1.4.214 + build 1 → v1.4.21401. Builds macOS arm64 and Linux x64 and publishes one
 # GitHub Release the in-app updater reads (APP_RELEASE_REPO in src/shared/release-channel.ts).
 on:
@@ -9,7 +9,7 @@ on:
       - 'v*'
 
 concurrency:
-  group: corca-desktop-release-${{ github.ref_name }}
+  group: corka-desktop-release-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -25,7 +25,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Resolve the COrca version from the tag
+      - name: Resolve the Corka version from the tag
         id: version
         env:
           TAG: ${{ github.ref_name }}
@@ -54,7 +54,7 @@ jobs:
           set -euo pipefail
           if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --verify-tag \
-              --title "COrca $TAG" --generate-notes
+              --title "Corka $TAG" --generate-notes
           fi
 
   build-mac:
@@ -67,8 +67,8 @@ jobs:
       ORCA_BACKGROUND_LAUNCH: '1'
       NODE_OPTIONS: --max-old-space-size=4096
       ORCA_BUILD_IDENTITY: stable
-      ORCA_COMPUTER_MACOS_BUNDLE_ID: net.tnrd.corca.computer-use
-      CSC_NAME: COrca Code Signing
+      ORCA_COMPUTER_MACOS_BUNDLE_ID: net.tnrd.corka.computer-use
+      CSC_NAME: Corka Code Signing
       GH_TOKEN: ${{ github.token }}
       TAG: ${{ needs.prepare.outputs.tag }}
     steps:
@@ -119,37 +119,37 @@ jobs:
 
       - uses: ./.github/actions/install-mobile-dependencies
 
-      - name: Stamp the COrca version
+      - name: Stamp the Corka version
         run: npm pkg set version="${{ needs.prepare.outputs.version }}"
 
       # Self-signed: the updater only needs every build signed by the same certificate.
       # Trusting it on the runner lets electron-builder find it (`security find-identity -v`).
-      - name: Import the COrca signing certificate
+      - name: Import the Corka signing certificate
         env:
-          CERT_P12: ${{ secrets.CORCA_MAC_CERT_P12 }}
-          CERT_PASSWORD: ${{ secrets.CORCA_MAC_CERT_PASSWORD }}
+          CERT_P12: ${{ secrets.CORKA_MAC_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.CORKA_MAC_CERT_PASSWORD }}
         run: |
           set -euo pipefail
           if [ -z "$CERT_P12" ] || [ -z "$CERT_PASSWORD" ]; then
-            echo "::error::Set the CORCA_MAC_CERT_P12 and CORCA_MAC_CERT_PASSWORD secrets"
+            echo "::error::Set the CORKA_MAC_CERT_P12 and CORKA_MAC_CERT_PASSWORD secrets"
             exit 1
           fi
-          keychain="$RUNNER_TEMP/corca-signing.keychain-db"
+          keychain="$RUNNER_TEMP/corka-signing.keychain-db"
           keychain_password=$(openssl rand -hex 16)
-          echo "$CERT_P12" | base64 --decode >"$RUNNER_TEMP/corca.p12"
+          echo "$CERT_P12" | base64 --decode >"$RUNNER_TEMP/corka.p12"
           security create-keychain -p "$keychain_password" "$keychain"
           security set-keychain-settings -lut 21600 "$keychain"
           security unlock-keychain -p "$keychain_password" "$keychain"
-          security import "$RUNNER_TEMP/corca.p12" -k "$keychain" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          security import "$RUNNER_TEMP/corka.p12" -k "$keychain" -P "$CERT_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "$keychain_password" "$keychain" >/dev/null
           existing=()
           while IFS= read -r line; do existing+=("$(echo "$line" | tr -d '" ')"); done < <(security list-keychains -d user)
           security list-keychains -d user -s "$keychain" "${existing[@]}"
-          openssl pkcs12 -in "$RUNNER_TEMP/corca.p12" -passin env:CERT_PASSWORD -nokeys -clcerts -legacy -out "$RUNNER_TEMP/corca.pem" 2>/dev/null \
-            || openssl pkcs12 -in "$RUNNER_TEMP/corca.p12" -passin env:CERT_PASSWORD -nokeys -clcerts -out "$RUNNER_TEMP/corca.pem"
-          sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain "$RUNNER_TEMP/corca.pem"
-          rm -f "$RUNNER_TEMP/corca.p12"
-          security find-identity -v -p codesigning "$keychain" | grep -q "COrca Code Signing"
+          openssl pkcs12 -in "$RUNNER_TEMP/corka.p12" -passin env:CERT_PASSWORD -nokeys -clcerts -legacy -out "$RUNNER_TEMP/corka.pem" 2>/dev/null \
+            || openssl pkcs12 -in "$RUNNER_TEMP/corka.p12" -passin env:CERT_PASSWORD -nokeys -clcerts -out "$RUNNER_TEMP/corka.pem"
+          sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain "$RUNNER_TEMP/corka.pem"
+          rm -f "$RUNNER_TEMP/corka.p12"
+          security find-identity -v -p codesigning "$keychain" | grep -q "Corka Code Signing"
 
       - name: Build app
         run: pnpm run build:release
@@ -162,12 +162,12 @@ jobs:
           pnpm exec electron-builder --config config/electron-builder.config.cjs \
             --mac dmg zip --arm64 --publish always \
             -c.publish.releaseType=draft \
-            -c.dmg.artifactName="corca-macos-\${arch}.\${ext}"
+            -c.dmg.artifactName="corka-macos-\${arch}.\${ext}"
 
       - name: Verify the app signature
         run: |
           set -euo pipefail
-          app=$(find dist -maxdepth 2 -name COrca.app -type d | head -1)
+          app=$(find dist -maxdepth 2 -name Corka.app -type d | head -1)
           codesign --verify --deep --strict "$app"
           codesign -d -r- "$app" 2>&1 | grep 'designated =>'
 
@@ -234,7 +234,7 @@ jobs:
       - name: Install Linux computer-use provider dependencies
         run: sudo apt-get update && sudo apt-get install -y python3-gi gir1.2-atspi-2.0 at-spi2-core xclip xdotool
 
-      - name: Stamp the COrca version
+      - name: Stamp the Corka version
         run: npm pkg set version="${{ needs.prepare.outputs.version }}"
 
       - name: Build app
@@ -247,8 +247,8 @@ jobs:
           pnpm exec electron-builder --config config/electron-builder.config.cjs \
             --linux AppImage deb --x64 --publish always \
             -c.publish.releaseType=draft \
-            -c.appImage.artifactName="corca-linux.\${ext}" \
-            -c.deb.artifactName="corca_\${version}_\${arch}.\${ext}"
+            -c.appImage.artifactName="corka-linux.\${ext}" \
+            -c.deb.artifactName="corka_\${version}_\${arch}.\${ext}"
 
   publish:
     needs: [prepare, build-mac, build-linux]

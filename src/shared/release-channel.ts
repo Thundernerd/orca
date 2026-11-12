@@ -23,7 +23,7 @@ export const HOURLY_RELEASE_REPO = 'stablyai/orca-hourly'
 export const DAILY_RELEASE_REPO = 'stablyai/orca-daily'
 export const ADHOC_RELEASE_REPO = 'stablyai/orca-adhoc'
 export const MAIN_RELEASE_REPO = 'stablyai/orca'
-/** COrca: where this fork's own app builds are published and updated from. */
+/** Corka: where this fork's own app builds are published and updated from. */
 export const APP_RELEASE_REPO = 'Thundernerd/orca'
 
 /** The dev channels, each published to its own repo rather than the main one. */

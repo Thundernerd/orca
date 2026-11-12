@@ -1,6 +1,6 @@
 export const LOCAL_BUILD_COMPATIBILITY_CONTRACT = {
   formatVersion: 1,
-  appId: 'net.tnrd.corca',
+  appId: 'net.tnrd.corka',
   stateSchemaVersion: 1,
   readableStateSchemaVersions: [1],
   daemonProtocolVersion: 56,

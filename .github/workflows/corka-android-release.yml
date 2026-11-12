@@ -1,8 +1,8 @@
-name: COrca Android Release
+name: Corka Android Release
 
-# COrca's phone app: tag `mobile-android-v<major>.<minor>.<app.json patch × 100 + build>` on `mine`,
+# Corka's phone app: tag `mobile-android-v<major>.<minor>.<app.json patch × 100 + build>` on `mine`,
 # e.g. app.json 0.0.64 + build 1 → mobile-android-v0.0.6401. The phone's update check reads these
-# releases (mobile/src/app-update/corca-release-repo.ts). Disable upstream's mobile-android-release.yml
+# releases (mobile/src/app-update/corka-release-repo.ts). Disable upstream's mobile-android-release.yml
 # on the fork: it listens to the same tags.
 on:
   push:
@@ -10,7 +10,7 @@ on:
       - 'mobile-android-v*'
 
 concurrency:
-  group: corca-android-release-${{ github.ref_name }}
+  group: corka-android-release-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -27,7 +27,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Resolve the COrca version from the tag
+      - name: Resolve the Corka version from the tag
         id: version
         env:
           TAG: ${{ github.ref_name }}
@@ -89,12 +89,12 @@ jobs:
             exit 1
           fi
           umask 077
-          printf '%s' "$ORCA_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/corca-release.keystore"
+          printf '%s' "$ORCA_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/corka-release.keystore"
 
       - name: Build Android release APK
         env:
           ORCA_ANDROID_REQUIRE_RELEASE_SIGNING: 'true'
-          ORCA_ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/corca-release.keystore
+          ORCA_ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/corka-release.keystore
           ORCA_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ORCA_ANDROID_KEYSTORE_PASSWORD }}
           ORCA_ANDROID_KEY_ALIAS: ${{ secrets.ORCA_ANDROID_KEY_ALIAS }}
           ORCA_ANDROID_KEY_PASSWORD: ${{ secrets.ORCA_ANDROID_KEY_PASSWORD }}
@@ -102,7 +102,7 @@ jobs:
 
       - name: Remove release keystore
         if: always()
-        run: rm -f "$RUNNER_TEMP/corca-release.keystore"
+        run: rm -f "$RUNNER_TEMP/corka-release.keystore"
 
       # A swapped key would make every installed copy refuse the update.
       - name: Verify APK signing certificate
@@ -131,7 +131,7 @@ jobs:
             echo "Expected exactly one release APK, found ${#apks[@]}" >&2
             exit 1
           fi
-          apk="$RUNNER_TEMP/corca-$VERSION.apk"
+          apk="$RUNNER_TEMP/corka-$VERSION.apk"
           cp "${apks[0]}" "$apk"
           (cd "$RUNNER_TEMP" && sha256sum "$(basename "$apk")" | sed 's/  / */' > "$(basename "$apk").sha256")
           echo "apk=$apk" >>"$GITHUB_OUTPUT"
@@ -148,6 +148,6 @@ jobs:
             gh release upload "$TAG" "$APK" "$APK.sha256" --repo "$GITHUB_REPOSITORY" --clobber
           else
             gh release create "$TAG" "$APK" "$APK.sha256" --repo "$GITHUB_REPOSITORY" \
-              --verify-tag --title "COrca Android $TAG" --notes "COrca for Android. Install the APK over the previous version." \
+              --verify-tag --title "Corka Android $TAG" --notes "Corka for Android. Install the APK over the previous version." \
               --prerelease --latest=false
           fi

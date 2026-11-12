@@ -18,7 +18,7 @@ const DEFAULTS_TIMEOUT_MS = 5_000
 // defaults uses exit 1 for an absent key; other failures leave its presence unknown.
 const DEFAULTS_MISSING_STATUS = 1
 
-const ORCA_BUNDLE_ID = 'net.tnrd.corca'
+const ORCA_BUNDLE_ID = 'net.tnrd.corka'
 
 export type PressAndHoldDecision =
   | 'not-macos'
