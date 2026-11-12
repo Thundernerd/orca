@@ -3,6 +3,12 @@ name: Corka Desktop Release
 # Corka (this fork's build of Orca): tag `v<major>.<minor>.<upstream patch × 100 + build>` on `mine`,
 # e.g. upstream 1.4.214 + build 1 → v1.4.21401. Builds macOS arm64 and Linux x64 and publishes one
 # GitHub Release the in-app updater reads (APP_RELEASE_REPO in src/shared/release-channel.ts).
+#
+# The macOS job runs on a self-hosted Apple-silicon Mac registered to this repo with the label
+# `corka-release-mac`; start its runner (`./run.sh` in the runner folder) before tagging. That Mac
+# trusts the Corka signing certificate once, by hand, for code signing:
+#   codesign -d --extract-certificates=/tmp/corka /Applications/Corka.app
+#   sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain /tmp/corka0
 on:
   push:
     tags:
@@ -59,7 +65,9 @@ jobs:
 
   build-mac:
     needs: prepare
-    runs-on: macos-15
+    # A self-hosted Mac registered with this label only; started on demand when releasing.
+    # The unique label keeps every other workflow in this public repo off that machine.
+    runs-on: [self-hosted, macOS, ARM64, corka-release-mac]
     timeout-minutes: 90
     permissions:
       contents: write
@@ -123,7 +131,8 @@ jobs:
         run: npm pkg set version="${{ needs.prepare.outputs.version }}"
 
       # Self-signed: the updater only needs every build signed by the same certificate.
-      # Trusting it on the runner lets electron-builder find it (`security find-identity -v`).
+      # The runner Mac trusts it once by hand (see the header); this step only adds a throwaway
+      # keychain, and the cleanup step puts the user's keychain search list back.
       - name: Import the Corka signing certificate
         env:
           CERT_P12: ${{ secrets.CORKA_MAC_CERT_P12 }}
@@ -144,12 +153,15 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k "$keychain_password" "$keychain" >/dev/null
           existing=()
           while IFS= read -r line; do existing+=("$(echo "$line" | tr -d '" ')"); done < <(security list-keychains -d user)
+          # Saved so the cleanup step can restore the runner user's own search list.
+          printf '%s\n' "${existing[@]}" >"$RUNNER_TEMP/keychain-search-list"
+          echo "CORKA_SIGNING_KEYCHAIN=$keychain" >>"$GITHUB_ENV"
           security list-keychains -d user -s "$keychain" "${existing[@]}"
-          openssl pkcs12 -in "$RUNNER_TEMP/corka.p12" -passin env:CERT_PASSWORD -nokeys -clcerts -legacy -out "$RUNNER_TEMP/corka.pem" 2>/dev/null \
-            || openssl pkcs12 -in "$RUNNER_TEMP/corka.p12" -passin env:CERT_PASSWORD -nokeys -clcerts -out "$RUNNER_TEMP/corka.pem"
-          sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain "$RUNNER_TEMP/corka.pem"
           rm -f "$RUNNER_TEMP/corka.p12"
-          security find-identity -v -p codesigning "$keychain" | grep -q "Corka Code Signing"
+          if ! security find-identity -v -p codesigning "$keychain" | grep -q "Corka Code Signing"; then
+            echo "::error::This Mac does not trust the Corka signing certificate yet; trust it once (see the workflow header) and rerun."
+            exit 1
+          fi
 
       - name: Build app
         run: pnpm run build:release
@@ -175,6 +187,20 @@ jobs:
           set -euo pipefail
           node config/scripts/desktop-distribution/macos/gate-mac-update-manifests.mjs dist
           gh release upload "$TAG" dist/*-mac.yml --repo "$GITHUB_REPOSITORY" --clobber
+
+      # A self-hosted Mac keeps state between runs: drop the signing keychain and restore the search list.
+      - name: Remove the signing keychain
+        if: always()
+        run: |
+          set -uo pipefail
+          if [ -f "$RUNNER_TEMP/keychain-search-list" ]; then
+            saved=()
+            while IFS= read -r line; do saved+=("$line"); done <"$RUNNER_TEMP/keychain-search-list"
+            security list-keychains -d user -s "${saved[@]}"
+          fi
+          if [ -n "${CORKA_SIGNING_KEYCHAIN:-}" ]; then
+            security delete-keychain "$CORKA_SIGNING_KEYCHAIN" || true
+          fi
 
   build-linux:
     needs: prepare
