@@ -15,3 +15,17 @@ export async function loadOverviewSort(): Promise<OverviewSort> {
 export async function saveOverviewSort(sort: OverviewSort): Promise<void> {
   await AsyncStorage.setItem(OVERVIEW_SORT_KEY, sort)
 }
+
+const NEEDS_YOU_FOLDED_KEY = 'orca:overviewNeedsYouFolded'
+
+export async function loadNeedsYouFolded(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(NEEDS_YOU_FOLDED_KEY)) === '1'
+  } catch {
+    return false
+  }
+}
+
+export async function saveNeedsYouFolded(folded: boolean): Promise<void> {
+  await AsyncStorage.setItem(NEEDS_YOU_FOLDED_KEY, folded ? '1' : '0')
+}

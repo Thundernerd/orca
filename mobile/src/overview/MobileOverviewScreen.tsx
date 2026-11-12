@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams } from 'expo-router'
-import { CheckCheck, ChevronLeft, X } from 'lucide-react-native'
+import { CheckCheck, ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react-native'
 import { NavBar } from '../components/nav-bar/NavBar'
 import { NavBarButton } from '../components/nav-bar/NavBarButton'
 import { TextInputModal } from '../components/TextInputModal'
@@ -27,7 +27,12 @@ import type {
 } from '../../../src/shared/overview/overview-model-types'
 import { MobileSegmentedControl } from '../components/MobileSegmentedControl'
 import { overviewInputsFromRows } from './overview-ps-inputs'
-import { loadOverviewSort, saveOverviewSort } from './overview-sort-preference'
+import {
+  loadNeedsYouFolded,
+  loadOverviewSort,
+  saveNeedsYouFolded,
+  saveOverviewSort
+} from './overview-view-preferences'
 import {
   canMarkReadFromPhone,
   useMobileOverviewActions,
@@ -70,12 +75,14 @@ export function MobileOverviewScreen() {
   const [notice, setNotice] = useState<MobileOverviewResult | null>(null)
   const [busy, setBusy] = useState(false)
   const [sort, setSort] = useState<OverviewSort>('attention')
+  const [needsYouFolded, setNeedsYouFolded] = useState(false)
 
   useEffect(() => {
     let cancelled = false
-    void loadOverviewSort().then((saved) => {
+    void Promise.all([loadOverviewSort(), loadNeedsYouFolded()]).then(([savedSort, folded]) => {
       if (!cancelled) {
-        setSort(saved)
+        setSort(savedSort)
+        setNeedsYouFolded(folded)
       }
     })
     return () => {
@@ -86,6 +93,12 @@ export function MobileOverviewScreen() {
   const changeSort = (next: OverviewSort): void => {
     setSort(next)
     void saveOverviewSort(next).catch(() => {})
+  }
+
+  const toggleNeedsYou = (): void => {
+    const next = !needsYouFolded
+    setNeedsYouFolded(next)
+    void saveNeedsYouFolded(next).catch(() => {})
   }
 
   const { snapshot, byKey } = useMemo(() => {
@@ -185,10 +198,26 @@ export function MobileOverviewScreen() {
           </View>
         ) : null}
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{t('overview.mobile.needsYou', 'Needs you')}</Text>
-        </View>
-        {snapshot.attention.length === 0 ? (
+        <Pressable
+          onPress={toggleNeedsYou}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: !needsYouFolded }}
+          style={({ pressed }) => [styles.sectionHeader, pressed && styles.pressed]}
+        >
+          <View style={styles.row}>
+            {needsYouFolded ? (
+              <ChevronRight size={14} color={colors.textSecondary} />
+            ) : (
+              <ChevronDown size={14} color={colors.textSecondary} />
+            )}
+            <Text style={styles.sectionTitle}>
+              {snapshot.attention.length > 0
+                ? `${t('overview.mobile.needsYou', 'Needs you')} · ${snapshot.attention.length}`
+                : t('overview.mobile.needsYou', 'Needs you')}
+            </Text>
+          </View>
+        </Pressable>
+        {needsYouFolded ? null : snapshot.attention.length === 0 ? (
           <Text style={styles.empty}>
             {catalog.isPending
               ? t('overview.mobile.loading', 'Reading your workspaces…')
