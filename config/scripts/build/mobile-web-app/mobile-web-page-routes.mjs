@@ -25,6 +25,12 @@ export const MOBILE_WEB_PAGE_ROUTES = [
     grants: ['navigate', 'storage', 'externalLink', 'haptics', 'native.clipboard.write'],
     optionalGrants: [DEVICE_STORE_GRANT]
   },
+  // Overview needs navigate to open sessions and storage/externalLink for the shared layout wall.
+  {
+    pathname: '/h/[hostId]/overview',
+    grants: ['navigate', 'storage', 'externalLink', 'haptics'],
+    optionalGrants: [DEVICE_STORE_GRANT]
+  },
   {
     pathname: '/h/[hostId]/automations',
     grants: ['navigate', 'storage', 'externalLink', 'haptics'],

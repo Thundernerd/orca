@@ -1,4 +1,5 @@
 import type { GitHistoryRefs } from './git/history/git-history-types'
+import type { OverviewPrefs } from './overview-prefs'
 import type { JiraQuickFilterState } from './jira/jira-quick-filters'
 import type { BrowserDevToolsDockLayout } from './browser/devtools/browser-devtools-dock'
 import type { JiraSavedFilterState } from './jira/jira-saved-filters'
@@ -111,6 +112,8 @@ export type PersistedUIState = {
   /** Agents-view thread grouping. Absent means 'status'. */
   agentsGroupBy?: ActivityGroupBy
   collapsedGroups: string[]
+  /** Overview page pins, hidden/minimized projects and ticket counts; absent means none. */
+  overviewPrefs?: OverviewPrefs
   uiZoomLevel: number
   editorFontZoomLevel: number
   worktreeCardProperties: WorktreeCardProperty[]

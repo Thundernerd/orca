@@ -108,6 +108,8 @@ export const UI_STATE_GLOBAL_FIELDS = [
   'agentsShowSearch',
   'agentsReadFilter',
   'agentsGroupBy',
+  // Stale ids of a moved project only leave unused pins; counts refresh on the next survey.
+  'overviewPrefs',
   'uiZoomLevel',
   'editorFontZoomLevel',
   'worktreeCardProperties',

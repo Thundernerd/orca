@@ -1,5 +1,6 @@
 import type { StatusBarUsageFormat } from '../../../../../shared/status-bar-usage-format'
 import type { PersistedUIState } from '../../../../../shared/persisted-ui-state-types'
+import type { OverviewPrefs } from '../../../../../shared/overview-prefs'
 import type { BrowserDevToolsDockLayout } from '../../../../../shared/browser/devtools/browser-devtools-dock'
 import type {
   ActivityGroupBy,
@@ -92,6 +93,8 @@ export type UISlicePreferences = {
   setAgentsReadFilter: (v: ThreadReadFilter) => void
   agentsGroupBy: ActivityGroupBy
   setAgentsGroupBy: (v: ActivityGroupBy) => void
+  overviewPrefs: OverviewPrefs
+  updateOverviewPrefs: (update: (prev: OverviewPrefs) => OverviewPrefs) => void
   collapsedGroups: Set<string>
   toggleCollapsedGroup: (key: string) => void
   setCollapsedGroups: (keys: Set<string>) => void

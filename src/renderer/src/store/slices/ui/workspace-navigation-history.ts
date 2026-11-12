@@ -19,12 +19,18 @@ import {
 const MAX_HISTORY = 50
 
 // Why: entries may be page sentinels, not just worktree IDs; names keep the "worktree" prefix for call-site stability.
-export type WorktreeNavHistorySimpleViewEntry = 'tasks' | 'automations' | 'artifacts' | 'skills'
+export type WorktreeNavHistorySimpleViewEntry =
+  | 'tasks'
+  | 'automations'
+  | 'artifacts'
+  | 'skills'
+  | 'overview'
 const SIMPLE_VIEW_ENTRIES: readonly WorktreeNavHistorySimpleViewEntry[] = [
   'tasks',
   'automations',
   'artifacts',
-  'skills'
+  'skills',
+  'overview'
 ]
 export type WorktreeNavHistoryTaskDetailEntry =
   | {

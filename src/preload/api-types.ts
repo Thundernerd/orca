@@ -49,6 +49,7 @@ import type {
 } from './api/os-permission-api'
 import type { PetApi } from './api/pet-api'
 import type { AppIconApi } from './api/app-icon-api'
+import type { OverviewApi } from './api/overview-api'
 import type { BrowserPasswordsApi } from './api/browser-passwords-api'
 import type { PluginsApi } from './api/plugin-host-api'
 import type { PreflightApi } from './api/preflight-api'
@@ -128,6 +129,7 @@ export type PreloadApi = {
   skills: SkillsApi
   pet: PetApi
   appIcon: AppIconApi
+  overview: OverviewApi
   browser: BrowserApi
   browserPasswords: BrowserPasswordsApi
   emulator: EmulatorApi

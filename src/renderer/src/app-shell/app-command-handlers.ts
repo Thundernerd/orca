@@ -262,6 +262,13 @@ export function createAppCommandHandlers(
       }
     ],
     [
+      'view.overview',
+      () =>
+        activeView === 'settings'
+          ? false
+          : claim('view.overview', () => useAppStore.getState().openOverviewPage())
+    ],
+    [
       'view.plugins',
       createPluginsSettingsShortcutHandler(input?.target, () =>
         claim('view.plugins', openPluginsSettings)

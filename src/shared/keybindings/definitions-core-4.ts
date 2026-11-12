@@ -5,6 +5,14 @@ const WINDOWS_LINUX_TOGGLE_BINDINGS = ['Mod+Shift+F11', 'Mod+Shift+J']
 
 export const KEYBINDING_DEFINITION_CORE_4: readonly KeybindingDefinition[] = [
   {
+    id: 'view.overview',
+    title: 'Open Overview',
+    group: 'Global',
+    scope: 'global',
+    searchKeywords: ['shortcut', 'overview', 'projects', 'needs you', 'attention'],
+    defaultBindings: platformBindings([])
+  },
+  {
     id: 'sidebar.projects.toggleCollapse',
     title: 'Collapse / Expand All Projects',
     group: 'Global',

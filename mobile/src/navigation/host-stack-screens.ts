@@ -27,6 +27,12 @@ export const HOST_STACK_SCREENS = [
     }
   },
   {
+    name: '[hostId]/overview',
+    get title() {
+      return translate('navigation.hostStackScreens.overview', 'Overview')
+    }
+  },
+  {
     name: '[hostId]/automations',
     get title() {
       return translate('navigation.hostStackScreens.automations', 'Automations')
