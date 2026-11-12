@@ -168,8 +168,8 @@ export function MobileOverviewProjectCard({
               {(
                 [
                   ['launch', t('overview.mobile.tickets.launchButton', 'Launch tickets')],
-                  ['clean', t('overview.mobile.tickets.cleanButton', 'Clean up')],
                   ['queue', t('overview.mobile.tickets.queueButton', 'Merge queue')],
+                  ['clean', t('overview.mobile.tickets.cleanButton', 'Clean up')],
                   ['drafts', t('overview.mobile.tickets.draftsButton', 'Drafts')]
                 ] as const
               ).map(([mode, label]) => (

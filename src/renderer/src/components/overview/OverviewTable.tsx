@@ -142,15 +142,6 @@ export function OverviewTable({
                           />
                         ) : null}
                         {project.mainWorktreeId && !project.hidden ? (
-                          <OverviewCleanUpPopover
-                            projectId={project.id}
-                            projectName={project.name}
-                            busy={projectActions.busy}
-                            variant="ghost"
-                            onClean={(ids) => projectActions.cleanUp(project.id, ids)}
-                          />
-                        ) : null}
-                        {project.mainWorktreeId && !project.hidden ? (
                           <>
                             <OverviewMergeQueuePopover
                               projectId={project.id}
@@ -158,6 +149,13 @@ export function OverviewTable({
                               busy={projectActions.busy}
                               variant="ghost"
                               onMerge={() => projectActions.mergeQueueHead(project.id)}
+                            />
+                            <OverviewCleanUpPopover
+                              projectId={project.id}
+                              projectName={project.name}
+                              busy={projectActions.busy}
+                              variant="ghost"
+                              onClean={(ids) => projectActions.cleanUp(project.id, ids)}
                             />
                             <OverviewWriteTicketPopover
                               projectName={project.name}

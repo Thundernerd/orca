@@ -234,19 +234,19 @@ export function OverviewProjectCard({
                 variant="outline"
                 onLaunch={(tickets) => actions.launchTickets(project.id, tickets)}
               />
-              <OverviewCleanUpPopover
-                projectId={project.id}
-                projectName={project.name}
-                busy={actions.busy}
-                variant="outline"
-                onClean={(ids) => actions.cleanUp(project.id, ids)}
-              />
               <OverviewMergeQueuePopover
                 projectId={project.id}
                 projectName={project.name}
                 busy={actions.busy}
                 variant="outline"
                 onMerge={() => actions.mergeQueueHead(project.id)}
+              />
+              <OverviewCleanUpPopover
+                projectId={project.id}
+                projectName={project.name}
+                busy={actions.busy}
+                variant="outline"
+                onClean={(ids) => actions.cleanUp(project.id, ids)}
               />
               <OverviewWriteTicketPopover
                 projectName={project.name}
