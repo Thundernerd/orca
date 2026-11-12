@@ -20,6 +20,8 @@ import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import { getTicketItemStore, type TicketItemStore } from './ticket-item-store'
 import { queueOrder } from './merge-queue-order'
 
+const MAX_ERROR_STREAK = 3
+
 function withoutAwaitedFix(state: TicketQueueState): TicketQueueState {
   return {
     ...state,
@@ -74,14 +76,32 @@ export class MergeQueue {
       }
       const head = queueOrder(items, parent)[0]
       if (head) {
-        await this.advance(head).catch((error: unknown) =>
-          this.pause(
-            head,
-            `The merge queue hit an error: ${error instanceof Error ? error.message : String(error)}`
-          )
-        )
+        await this.advance(head).catch((error: unknown) => this.recordError(head.id, error))
       }
     }
+  }
+
+  /** Retries on the next ticks; only an error that keeps coming back pauses the queue. */
+  private async recordError(itemId: string, error: unknown): Promise<void> {
+    const item = (await this.store.list()).find((i) => i.id === itemId)
+    if (!item) {
+      return
+    }
+    const message = error instanceof Error ? error.message : String(error)
+    const queue = item.queue ?? { status: 'waiting-ci', detail: '', fixAttempts: {} }
+    const errorStreak = (queue.errorStreak ?? 0) + 1
+    if (errorStreak >= MAX_ERROR_STREAK) {
+      await this.pause(
+        { ...item, queue: { ...queue, errorStreak } },
+        `The merge queue hit an error ${errorStreak} times in a row: ${message}`
+      )
+      return
+    }
+    await this.setQueue(item, {
+      ...queue,
+      errorStreak,
+      detail: `GitHub returned an error; retrying on the next check. (${message})`
+    })
   }
 
   private async setQueue(item: TicketItem, queue: TicketQueueState): Promise<void> {
@@ -107,7 +127,8 @@ export class MergeQueue {
       await this.setQueue(item, {
         ...(item.queue ?? { fixAttempts: {} }),
         status: 'waiting-ci',
-        detail: 'Reading the PR from GitHub.'
+        detail: 'Reading the PR from GitHub.',
+        errorStreak: undefined
       })
       return
     }
@@ -162,10 +183,10 @@ export class MergeQueue {
       observed: MergeQueueObservation
     }
   ): Promise<void> {
-    const stored: TicketQueueState = item.queue ?? {
-      status: 'waiting-ci',
-      detail: '',
-      fixAttempts: {}
+    // Reaching a step means GitHub answered, so the error streak is over.
+    const stored: TicketQueueState = {
+      ...(item.queue ?? { status: 'waiting-ci', detail: '', fixAttempts: {} }),
+      errorStreak: undefined
     }
     // Still waiting on a fix keeps the awaited head; any other step means the fix landed.
     const stillFixing = action.kind === 'wait' && action.status === 'fixing'

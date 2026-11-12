@@ -142,6 +142,8 @@ export type TicketQueueState = {
   awaitingCause?: TicketFixCause
   /** The head whose failed jobs were already rerun once as a possible flake. */
   rerunHead?: string
+  /** Ticks in a row that failed with an error; a passing GitHub hiccup must not pause the queue. */
+  errorStreak?: number
 }
 
 export type WorkspaceCleanRow = {
