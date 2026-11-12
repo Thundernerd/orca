@@ -1,5 +1,6 @@
 import type { SessionOptionValue } from '../../shared/native-chat/input/native-chat-session-options'
 import { conversationRecordReader } from './orchestration/addressing/session-lineage/structured-session-lineage'
+import { startTicketTracker } from '../ticket-pipeline/ticket-tracker'
 import type { RuntimeLinearCommandSurface } from './integrations/linear/runtime-linear-command-surface'
 import { installRuntimeLinearCommandSurface } from './integrations/linear/runtime-linear-command-surface'
 import { publishNativeChatPreferenceChanges } from './agent-session/launch/runtime-native-chat-preference-events'
@@ -256,6 +257,8 @@ class OrcaRuntimeService extends OrcaRuntimeSidebarBase {
     this.agentLaunchRecordWarmup.startupSettled()
     // Desktop and serve: CI-line watches start here, past first paint, chat or no chat.
     this.startPullRequestWatches()
+    // Launched tickets keep moving to review and merge whether or not Overview is open.
+    startTicketTracker(this)
   }
 
   /** Warm up before the first client launch so that launch does not open the record. */

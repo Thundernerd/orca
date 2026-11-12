@@ -18,11 +18,14 @@ import type { OverviewProject } from '../../../../shared/overview/overview-model
 import { OVERVIEW_SKILLS, type OverviewSkill } from './overview-actions'
 import { OverviewWorkspaceTable } from './OverviewWorkspaceTable'
 import { OverviewWriteTicketPopover } from './OverviewWriteTicketPopover'
+import { OverviewLaunchTicketsPopover } from './OverviewLaunchTicketsPopover'
+import type { TicketLaunchSelection } from '../../../../shared/ticket-pipeline/ticket-types'
 
 export type OverviewProjectCardActions = {
   busy: boolean
   open: (worktreeId: string) => void
   runSkill: (projectId: string, skill: OverviewSkill, args?: string) => void
+  launchTickets: (projectId: string, tickets: TicketLaunchSelection[]) => void
   refreshTickets: (ticketSource: string) => void
   togglePinned: (projectId: string) => void
   toggleMinimized: (projectId: string) => void
@@ -222,6 +225,13 @@ export function OverviewProjectCard({
 
           {canRunSkills ? (
             <div className="flex flex-wrap gap-1">
+              <OverviewLaunchTicketsPopover
+                projectId={project.id}
+                projectName={project.name}
+                busy={actions.busy}
+                variant="outline"
+                onLaunch={(tickets) => actions.launchTickets(project.id, tickets)}
+              />
               {OVERVIEW_SKILLS.map((skill) =>
                 skill === 'write-ticket' ? (
                   <OverviewWriteTicketPopover

@@ -1,6 +1,4 @@
-// Parses the TSV the launch-tickets skill's survey.sh prints:
-//   source: <issues|files> (<main>)
-//   <status>\t<id>\t<title>\t<blockers>\t<ref>
+import type { TicketSurveyRow } from '../ticket-pipeline/ticket-types'
 
 export type OverviewTicketCounts = {
   ready: number
@@ -13,14 +11,10 @@ export type OverviewTicketCounts = {
   error: string | null
 }
 
-const STATUSES = ['ready', 'blocked', 'launched', 'owned', 'claimed'] as const
-type SurveyStatus = (typeof STATUSES)[number]
-
-function isSurveyStatus(value: string): value is SurveyStatus {
-  return STATUSES.some((status) => status === value)
-}
-
-export function parseTicketSurvey(stdout: string, now: number): OverviewTicketCounts {
+export function countTicketSurvey(
+  rows: readonly TicketSurveyRow[],
+  now: number
+): OverviewTicketCounts {
   const counts: OverviewTicketCounts = {
     ready: 0,
     blocked: 0,
@@ -31,14 +25,10 @@ export function parseTicketSurvey(stdout: string, now: number): OverviewTicketCo
     fetchedAt: now,
     error: null
   }
-  for (const line of stdout.split('\n')) {
-    const [status, id, title] = line.split('\t')
-    if (!status || !isSurveyStatus(status)) {
-      continue
-    }
-    counts[status] += 1
-    if (status === 'ready' && id) {
-      counts.readyTitles.push(`${id} ${title ?? ''}`.trim())
+  for (const row of rows) {
+    counts[row.status] += 1
+    if (row.status === 'ready') {
+      counts.readyTitles.push(`${row.ticket.id} ${row.ticket.title}`.trim())
     }
   }
   return counts

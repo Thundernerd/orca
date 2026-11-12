@@ -77,6 +77,7 @@ export const CLI_COMMAND_NAMES = [
   'tab',
   'terminal',
   'terminal-daemon',
+  'tickets',
   'type',
   'uncheck',
   'upload',

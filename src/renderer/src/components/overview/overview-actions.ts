@@ -19,12 +19,8 @@ import type {
   OverviewWorktreeInput
 } from '../../../../shared/overview/overview-model-types'
 
-export const OVERVIEW_SKILLS = [
-  'launch-tickets',
-  'merge-tickets',
-  'clean-workspaces',
-  'write-ticket'
-] as const
+// Launching tickets is native (OverviewLaunchTicketsPopover); these still drive agent skills.
+export const OVERVIEW_SKILLS = ['merge-tickets', 'clean-workspaces', 'write-ticket'] as const
 export type OverviewSkill = (typeof OVERVIEW_SKILLS)[number]
 
 export type OverviewActionResult = { ok: true; message: string } | { ok: false; message: string }

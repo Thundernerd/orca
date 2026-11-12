@@ -20115,7 +20115,18 @@
           "groupNone": "No grouping",
           "groupProjectGroup": "By project group"
         },
-        "keyboardHint": "↑/↓ or J/K select what needs you · Enter open · R reply · E mark read · Esc clear"
+        "keyboardHint": "↑/↓ or J/K select what needs you · Enter open · R reply · E mark read · Esc clear",
+        "launchTickets": {
+          "button": "Launch tickets",
+          "title": "Launch ready tickets in {{project}}",
+          "loading": "Checking which tickets are ready…",
+          "none": "No ticket is ready: {{count}} are blocked, launched, claimed or yours.",
+          "type": "Commit type",
+          "hint": "Each gets its own workspace and a Claude agent that works until its PR is up.",
+          "launch": "Launch {{count}}",
+          "unavailable": "Tickets cannot be launched for {{project}} from here.",
+          "result": "Launched {{count}} of {{total}} tickets in {{project}}."
+        }
       }
     },
     "i18n": {

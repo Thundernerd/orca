@@ -55,7 +55,6 @@ import { shellApi } from './api/shell-bridge'
 import { skillsApi } from './api/skills-bridge'
 import { petApi } from './api/pet-bridge'
 import { appIconApi } from './api/app-icon-bridge'
-import { overviewApi } from './api/overview-bridge'
 import { browserPasswordsApi } from './api/browser-passwords-bridge'
 import { browserApi } from './api/browser/browser-bridge'
 import { emulatorApi } from './api/emulator-bridge'
@@ -162,7 +161,6 @@ const api = {
   skills: skillsApi,
   pet: petApi,
   appIcon: appIconApi,
-  overview: overviewApi,
   browser: browserApi,
   browserPasswords: browserPasswordsApi,
   emulator: emulatorApi,

@@ -10,6 +10,7 @@ import type { OverviewAttentionCardActions } from './OverviewAttentionCard'
 import { OverviewTableRow } from './OverviewTableRow'
 import type { OverviewTriage } from './use-overview-keyboard-triage'
 import { OverviewWriteTicketPopover } from './OverviewWriteTicketPopover'
+import { OverviewLaunchTicketsPopover } from './OverviewLaunchTicketsPopover'
 
 /** Every workspace in one table, grouped by project; collapsing a group minimizes its card too. */
 export function OverviewTable({
@@ -128,6 +129,17 @@ export function OverviewTable({
                         </Button>
                       ) : null}
                       <span className="ml-auto flex flex-wrap items-center gap-1">
+                        {project.mainWorktreeId && !project.hidden ? (
+                          <OverviewLaunchTicketsPopover
+                            projectId={project.id}
+                            projectName={project.name}
+                            busy={projectActions.busy}
+                            variant="ghost"
+                            onLaunch={(tickets) =>
+                              projectActions.launchTickets(project.id, tickets)
+                            }
+                          />
+                        ) : null}
                         {project.mainWorktreeId && !project.hidden
                           ? OVERVIEW_SKILLS.map((skill) =>
                               skill === 'write-ticket' ? (

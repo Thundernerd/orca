@@ -2,17 +2,18 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAppStore } from '@/store/index'
 import type { OverviewProject } from '../../../../shared/overview/overview-model-types'
 import {
-  failedTicketSurvey,
-  parseTicketSurvey
+  countTicketSurvey,
+  failedTicketSurvey
 } from '../../../../shared/overview/overview-ticket-survey'
+import { surveyOverviewProject } from './overview-ticket-pipeline'
 
 const TICKETS_MS = 5 * 60_000
 const SURVEY_CONCURRENCY = 2
 
-/** Runs the launch-tickets survey per project while the page is open: at most two at a time. */
+/** Surveys each project's tickets while the page is open: at most two at a time. */
 export function useOverviewTicketSurveys(): {
   ticketsLoading: ReadonlySet<string>
-  /** Surveys are unavailable here (no script, or a web client); hides the counts. */
+  /** Surveys are unavailable here (a folder project, or no reachable host); hides the counts. */
   unavailable: ReadonlySet<string>
   requestSurvey: (projectId: string) => void
   scheduleStale: (projects: readonly OverviewProject[]) => void
@@ -32,13 +33,8 @@ export function useOverviewTicketSurveys(): {
   }, [])
 
   const runOne = useCallback(async (projectId: string): Promise<void> => {
-    const result = await window.api.overview
-      ?.surveyTickets({ repoId: projectId })
-      .catch((error: unknown) => ({
-        status: 'failed' as const,
-        error: error instanceof Error ? error.message : String(error)
-      }))
-    if (!result || result.status === 'unavailable') {
+    const result = await surveyOverviewProject(projectId)
+    if (result.status === 'unavailable') {
       if (mounted.current) {
         setUnavailable((current) => new Set(current).add(projectId))
       }
@@ -51,7 +47,7 @@ export function useOverviewTicketSurveys(): {
         ...prefs.tickets,
         [projectId]:
           result.status === 'ok'
-            ? parseTicketSurvey(result.stdout, now)
+            ? countTicketSurvey(result.result.rows, now)
             : failedTicketSurvey(result.error, now, prefs.tickets[projectId] ?? null)
       }
     }))
