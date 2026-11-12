@@ -9,8 +9,15 @@ import { launchAgentInNewTabWithOutcome } from '@/lib/agent-session/launch/new-t
 import { parsePaneKey } from '../../../../shared/workspace-layout/stable-pane-id'
 import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
 import { createNonSecureContextUuid } from '../../../../shared/non-secure-context-uuid'
-import { agentsByUrgency, isIdleClaude, isWaitingAgent } from './overview-model'
-import type { OverviewAgentInput, OverviewWorktreeInput } from './overview-model-types'
+import {
+  agentsByUrgency,
+  isIdleClaude,
+  isWaitingAgent
+} from '../../../../shared/overview/overview-model'
+import type {
+  OverviewAgentInput,
+  OverviewWorktreeInput
+} from '../../../../shared/overview/overview-model-types'
 
 export const OVERVIEW_SKILLS = [
   'launch-tickets',

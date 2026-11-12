@@ -3,7 +3,7 @@ import type {
   OverviewAttentionKind,
   OverviewChecks,
   OverviewPr
-} from './overview-model-types'
+} from '../../../../shared/overview/overview-model-types'
 import { translate } from '@/i18n/i18n'
 
 /** Status chip and card-border classes per attention kind, from the documented status tokens. */

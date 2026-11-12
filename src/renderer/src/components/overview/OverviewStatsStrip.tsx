@@ -1,6 +1,6 @@
 import { cn } from '@/lib/class-names'
 import { useTranslate } from '@/i18n/use-translate'
-import type { OverviewSnapshot } from './overview-model-types'
+import type { OverviewSnapshot } from '../../../../shared/overview/overview-model-types'
 
 /** Totals across the visible projects, shown above the table layout. */
 export function OverviewStatsStrip({

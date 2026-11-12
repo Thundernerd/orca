@@ -17,7 +17,7 @@ import type {
   OverviewPr,
   OverviewRepoInput,
   OverviewWorktreeInput
-} from './overview-model-types'
+} from '../../../../shared/overview/overview-model-types'
 
 export type OverviewStoreSlice = Pick<
   AppState,

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { OverviewAttentionItem } from './overview-model-types'
+import type { OverviewAttentionItem } from '../../../../shared/overview/overview-model-types'
 
 /** What the cards and table rows read to show the selection and an open reply. */
 export type OverviewTriage = {

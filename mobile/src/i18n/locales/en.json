@@ -700,7 +700,8 @@
       "accounts": "Accounts",
       "tasks": "Tasks",
       "moreActions": "More actions",
-      "automations": "Automations"
+      "automations": "Automations",
+      "overview": "Overview"
     },
     "hostScreenOverlays": {
       "deleteWorktree": "Delete Worktree",
@@ -845,7 +846,8 @@
       "changes": "Changes",
       "pullRequest": "Pull Request",
       "workspace": "Workspace",
-      "automations": "Automations"
+      "automations": "Automations",
+      "overview": "Overview"
     }
   },
   "notifications": {
@@ -4964,6 +4966,63 @@
     "activity": {
       "needsWindow": "Couldn’t update. Open Orca on {{desktop}}.",
       "failed": "Couldn’t update the agent list."
+    }
+  },
+  "overview": {
+    "mobile": {
+      "kind": {
+        "agentWaiting": "Agent waiting",
+        "ciFailing": "CI failing",
+        "prReady": "Ready to merge",
+        "flagged": "Flagged"
+      },
+      "open": "Open",
+      "reply": "Reply",
+      "markRead": "Mark read",
+      "mainLabel": "(main)",
+      "cleanUp": "clean up",
+      "stat": {
+        "needYou": "{{count}} need you",
+        "working": "{{count}} working",
+        "ready": "{{count}} ready",
+        "openPrs_one": "{{count}} open PR",
+        "openPrs_other": "{{count}} open PRs",
+        "workspaces_one": "{{count}} workspace",
+        "workspaces_other": "{{count}} workspaces"
+      },
+      "title": "Overview",
+      "needYouCount": "{{count}} need you",
+      "markAllRead": "Mark all {{count}} read",
+      "dismiss": "Dismiss",
+      "needsYou": "Needs you",
+      "loading": "Reading your workspaces…",
+      "allClear": "Nothing needs you right now.",
+      "projects": "Projects",
+      "replyTitle": "Reply to {{name}}",
+      "writeTicketTitle": "Write a ticket for {{project}}",
+      "writeTicketMessage": "What is broken, awkward or wanted? Claude investigates and asks you to confirm.",
+      "replyPlaceholder": "Reply to the agent…",
+      "writeTicketPlaceholder": "One item, or a list",
+      "send": "Send",
+      "writeTicket": "Write ticket",
+      "waitingForDesktop": "Waiting for desktop...",
+      "loadSessionsFailed": "Unable to load agent sessions",
+      "sendFailed": "The message was not sent",
+      "markedRead": "Marked {{count}} read",
+      "markReadFailed": "{{count}} could not be marked read",
+      "replied": "Replied in {{name}}",
+      "replyRefused": "No agent in {{name}} took the reply",
+      "sentSkill": "Sent /{{skill}} to the idle Claude session in {{project}}",
+      "promptNotSent": "Claude started in {{project}}, but /{{skill}} wasn't sent",
+      "launched": "Started Claude with /{{skill}} in {{project}}",
+      "updateRequired": "Update Orca on your computer to start an agent from your phone.",
+      "pr": {
+        "merged": "#{{number}} merged",
+        "closed": "#{{number}} closed",
+        "failing": "#{{number}} failing",
+        "pending": "#{{number}} pending",
+        "green": "#{{number}} green"
+      }
     }
   }
 }

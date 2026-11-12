@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAppStore } from '@/store/index'
-import { buildOverviewSnapshot, isMergingTickets } from './overview-model'
-import type { OverviewSnapshot, OverviewWorktreeInput } from './overview-model-types'
+import { getIntlLocale } from '@/i18n/i18n'
+import { buildOverviewSnapshot, isMergingTickets } from '../../../../shared/overview/overview-model'
+import type {
+  OverviewSnapshot,
+  OverviewWorktreeInput
+} from '../../../../shared/overview/overview-model-types'
 import { buildOverviewStoreInputs, selectOverviewStoreSlice } from './overview-store-inputs'
 import { useSidebarHostScopeOptions } from '@/components/sidebar/worktree-list/controls/use-sidebar-host-scope-options'
 import { sidebarHostDisplayLabel } from '@/components/sidebar/worktree-list/controls/sidebar-host-options'
@@ -42,7 +46,8 @@ export function useOverviewData(ticketsLoading: ReadonlySet<string> = EMPTY_SET)
         pendingMerges: new Set(pendingMerges.keys()),
         hidden: new Set(prefs.hidden),
         pinned: new Set(prefs.pinned),
-        sort: prefs.sort ?? 'attention'
+        sort: prefs.sort ?? 'attention',
+        locale: getIntlLocale()
       }),
     [inputs, prefs, ticketsLoading, pendingMerges]
   )

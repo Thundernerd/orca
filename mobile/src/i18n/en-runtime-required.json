@@ -203,6 +203,16 @@
       "activeFilters_other": "Workspace options ({{count}} filters active)"
     }
   },
+  "overview": {
+    "mobile": {
+      "stat": {
+        "openPrs_one": "{{count}} open PR",
+        "openPrs_other": "{{count}} open PRs",
+        "workspaces_one": "{{count}} workspace",
+        "workspaces_other": "{{count}} workspaces"
+      }
+    }
+  },
   "pullRequest": {
     "commentCard": {
       "daysAgo_one": "{{count}}d ago",

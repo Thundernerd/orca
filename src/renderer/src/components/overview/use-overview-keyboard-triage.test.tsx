@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { OverviewAttentionItem } from './overview-model-types'
+import type { OverviewAttentionItem } from '../../../../shared/overview/overview-model-types'
 import { useOverviewKeyboardTriage } from './use-overview-keyboard-triage'
 
 function item(worktreeId: string, overrides: Partial<OverviewAttentionItem> = {}) {

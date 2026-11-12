@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { useTranslate } from '@/i18n/use-translate'
-import type { OverviewSort } from './overview-model-types'
+import type { OverviewSort } from '../../../../shared/overview/overview-model-types'
 import type { OverviewGroupBy } from './overview-project-sections'
 
 /** Sort and grouping for the projects, shared by both layouts. */

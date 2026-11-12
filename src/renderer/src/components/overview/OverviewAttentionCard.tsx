@@ -15,7 +15,7 @@ import { cn } from '@/lib/class-names'
 import { useTranslate } from '@/i18n/use-translate'
 import { formatRelativeTime } from '@/components/activity/activity-thread-presentation'
 import { openHttpLink } from '@/lib/browser/navigation/http-link-routing'
-import type { OverviewAttentionItem } from './overview-model-types'
+import type { OverviewAttentionItem } from '../../../../shared/overview/overview-model-types'
 import { OVERVIEW_TRIAGE_ATTRIBUTE, type OverviewTriage } from './use-overview-keyboard-triage'
 import { ATTENTION_TONE, attentionKindLabel } from './overview-presentation'
 

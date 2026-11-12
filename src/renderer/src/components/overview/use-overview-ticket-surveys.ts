@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAppStore } from '@/store/index'
-import type { OverviewProject } from './overview-model-types'
-import { failedTicketSurvey, parseTicketSurvey } from './overview-ticket-survey'
+import type { OverviewProject } from '../../../../shared/overview/overview-model-types'
+import {
+  failedTicketSurvey,
+  parseTicketSurvey
+} from '../../../../shared/overview/overview-ticket-survey'
 
 const TICKETS_MS = 5 * 60_000
 const SURVEY_CONCURRENCY = 2

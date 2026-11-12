@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { defineFixture } from '../../component-fixtures/component-fixture'
 import { OverviewReplyPopover } from './OverviewReplyPopover'
-import type { OverviewWorkspaceRow } from './overview-model-types'
+import type { OverviewWorkspaceRow } from '../../../../shared/overview/overview-model-types'
 
 const row: OverviewWorkspaceRow = {
   worktreeId: 'alpha::/code/alpha/feat',

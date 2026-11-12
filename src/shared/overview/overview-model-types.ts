@@ -1,5 +1,5 @@
 import type { OverviewTicketCounts } from './overview-ticket-survey'
-import type { ExecutionHostId } from '../../../../shared/execution-host'
+import type { ExecutionHostId } from '../execution-host'
 
 export type OverviewAttentionKind = 'agent-waiting' | 'ci-failing' | 'pr-ready' | 'flagged'
 export type OverviewAgentState = 'blocked' | 'waiting' | 'working' | 'done'
@@ -66,6 +66,8 @@ export type OverviewModelInput = {
   hidden: ReadonlySet<string>
   pinned: ReadonlySet<string>
   sort: OverviewSort
+  /** UI language for the name sort; the caller's, since this model runs on desktop and phone. */
+  locale?: string
 }
 
 export type OverviewWorkspaceRow = {

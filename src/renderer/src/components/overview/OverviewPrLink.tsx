@@ -1,7 +1,7 @@
 import { cn } from '@/lib/class-names'
 import { useTranslate } from '@/i18n/use-translate'
 import { openHttpLink } from '@/lib/browser/navigation/http-link-routing'
-import type { OverviewPr } from './overview-model-types'
+import type { OverviewPr } from '../../../../shared/overview/overview-model-types'
 import { prChecksClass, prSummary } from './overview-presentation'
 
 /** A workspace's PR state; opens the PR where links open, and names failing checks on hover. */

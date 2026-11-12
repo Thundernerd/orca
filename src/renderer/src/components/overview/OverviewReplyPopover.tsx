@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useTranslate } from '@/i18n/use-translate'
-import type { OverviewWorkspaceRow } from './overview-model-types'
+import type { OverviewWorkspaceRow } from '../../../../shared/overview/overview-model-types'
 
 /** The table's reply to a waiting agent, shown beside its row. */
 export function OverviewReplyPopover({

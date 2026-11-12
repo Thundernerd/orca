@@ -9,7 +9,6 @@ import type {
   OverviewWorkspaceRow,
   OverviewWorktreeInput
 } from './overview-model-types'
-import { getIntlLocale } from '@/i18n/i18n'
 
 const MAX_CHECK_NAMES = 3
 
@@ -246,7 +245,7 @@ export function buildOverviewSnapshot(input: OverviewModelInput): OverviewSnapsh
   }
 
   // Built per sort: the UI language can change while the app runs.
-  const collator = new Intl.Collator(getIntlLocale(), { sensitivity: 'base' })
+  const collator = new Intl.Collator(input.locale, { sensitivity: 'base' })
   projects.sort(
     (a, b) =>
       Number(a.hidden) - Number(b.hidden) ||

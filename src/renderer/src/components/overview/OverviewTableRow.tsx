@@ -1,7 +1,7 @@
 import { cn } from '@/lib/class-names'
 import { useTranslate } from '@/i18n/use-translate'
 import { formatRelativeTime } from '@/components/activity/activity-thread-presentation'
-import type { OverviewWorkspaceRow } from './overview-model-types'
+import type { OverviewWorkspaceRow } from '../../../../shared/overview/overview-model-types'
 import type { OverviewAttentionCardActions } from './OverviewAttentionCard'
 import {
   AGENT_STATE_CLASS,

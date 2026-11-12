@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ProjectGroup } from '../../../../shared/project-group-types'
-import type { OverviewProject } from './overview-model-types'
+import type { OverviewProject } from '../../../../shared/overview/overview-model-types'
 import { sectionOverviewProjects } from './overview-project-sections'
 
 function group(id: string, name: string, tabOrder: number, parentGroupId: string | null = null) {

@@ -1,5 +1,5 @@
 import type { AppState } from '@/store/types'
-import { buildOverviewSnapshot } from './overview-model'
+import { buildOverviewSnapshot } from '../../../../shared/overview/overview-model'
 import {
   buildOverviewStoreInputs,
   selectOverviewStoreSlice,

@@ -5,7 +5,7 @@ import { cn } from '@/lib/class-names'
 import { useTranslate } from '@/i18n/use-translate'
 import type { OverviewLayout } from '../../../../shared/overview-prefs'
 import type { OverviewActionResult } from './overview-actions'
-import type { OverviewProject } from './overview-model-types'
+import type { OverviewProject } from '../../../../shared/overview/overview-model-types'
 
 export function OverviewHeader({
   needYou,
