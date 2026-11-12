@@ -23,6 +23,8 @@ export const HOURLY_RELEASE_REPO = 'stablyai/orca-hourly'
 export const DAILY_RELEASE_REPO = 'stablyai/orca-daily'
 export const ADHOC_RELEASE_REPO = 'stablyai/orca-adhoc'
 export const MAIN_RELEASE_REPO = 'stablyai/orca'
+/** COrca: where this fork's own app builds are published and updated from. */
+export const APP_RELEASE_REPO = 'Thundernerd/orca'
 
 /** The dev channels, each published to its own repo rather than the main one. */
 const DEDICATED_REPO_CHANNELS = ['hourly', 'daily', 'adhoc'] as const
@@ -30,8 +32,8 @@ const DEDICATED_REPO_CHANNELS = ['hourly', 'daily', 'adhoc'] as const
 export type DedicatedRepoChannel = (typeof DEDICATED_REPO_CHANNELS)[number]
 
 const CHANNEL_RELEASE_REPOS: Record<ReleaseChannel, string> = {
-  stable: MAIN_RELEASE_REPO,
-  rc: MAIN_RELEASE_REPO,
+  stable: APP_RELEASE_REPO,
+  rc: APP_RELEASE_REPO,
   hourly: HOURLY_RELEASE_REPO,
   daily: DAILY_RELEASE_REPO,
   adhoc: ADHOC_RELEASE_REPO
@@ -177,7 +179,7 @@ export function getVersionChannel(version: string): ReleaseChannel | null {
 /** Dev tags need their publishing repo or links 404. Missing versions use the releases list; latest can fail during GitHub API degradation. */
 export function getReleaseNotesUrlForVersion(version: string | null): string {
   const channel = version ? getVersionChannel(version) : null
-  const repo = channel ? getReleaseRepoForChannel(channel) : MAIN_RELEASE_REPO
+  const repo = channel ? getReleaseRepoForChannel(channel) : APP_RELEASE_REPO
   return version
     ? `https://github.com/${repo}/releases/tag/v${normalizeTagToVersion(version)}`
     : `https://github.com/${repo}/releases`

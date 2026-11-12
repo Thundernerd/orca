@@ -34,7 +34,7 @@ vi.mock('expo-router', () => ({
   useRouter: () => ({ replace: vi.fn(), push: vi.fn(), back: vi.fn(), dismissTo: vi.fn() })
 }))
 
-const RELEASES_URL = 'https://github.com/stablyai/orca/releases'
+const RELEASES_URL = 'https://github.com/Thundernerd/orca/releases'
 
 let renderer: ReactTestRenderer | null = null
 

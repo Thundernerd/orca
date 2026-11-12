@@ -2,8 +2,9 @@ import { z } from 'zod'
 import { compareAppVersions } from '../../../src/shared/app-version'
 import type { AppUpdateCheckResult, AppUpdateSource } from './app-update-source'
 import { isNewerReleaseVersion } from './app-update-source'
+import { CORCA_RELEASE_REPO } from './corca-release-repo'
 
-const REPO_API = 'https://api.github.com/repos/stablyai/orca'
+const REPO_API = `https://api.github.com/repos/${CORCA_RELEASE_REPO}`
 // Use tag refs: newest-first release/Atom windows can fill with desktop releases and hide mobile updates; mobile-android releases all carry prerelease flag.
 const TAG_PREFIX = 'mobile-android-v'
 // Probe bounded older candidates: workflow tags before APK build, so failed build can leave unpublished tag.

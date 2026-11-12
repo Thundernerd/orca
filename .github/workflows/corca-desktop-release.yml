@@ -1,0 +1,270 @@
+name: COrca Desktop Release
+
+# COrca (this fork's build of Orca): tag `v<major>.<minor>.<upstream patch × 100 + build>` on `mine`,
+# e.g. upstream 1.4.214 + build 1 → v1.4.21401. Builds macOS arm64 and Linux x64 and publishes one
+# GitHub Release the in-app updater reads (APP_RELEASE_REPO in src/shared/release-channel.ts).
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: corca-desktop-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: github.repository != 'stablyai/orca'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Resolve the COrca version from the tag
+        id: version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$TAG" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "::error::Tag $TAG is not v<major>.<minor>.<patch>"
+            exit 1
+          fi
+          major="${BASH_REMATCH[1]}" minor="${BASH_REMATCH[2]}" patch="${BASH_REMATCH[3]}"
+          base=$(node -p "require('./package.json').version")
+          IFS=. read -r base_major base_minor base_patch <<<"$base"
+          build=$((patch % 100))
+          if [ "$major" != "$base_major" ] || [ "$minor" != "$base_minor" ] || [ "$((patch / 100))" != "$base_patch" ] || [ "$build" -lt 1 ]; then
+            echo "::error::Tag $TAG must be v$base_major.$base_minor.$((base_patch * 100 + 1)) to v$base_major.$base_minor.$((base_patch * 100 + 99)) for upstream $base"
+            exit 1
+          fi
+          echo "tag=$TAG" >>"$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >>"$GITHUB_OUTPUT"
+
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --verify-tag \
+              --title "COrca $TAG" --generate-notes
+          fi
+
+  build-mac:
+    needs: prepare
+    runs-on: macos-15
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    env:
+      ORCA_BACKGROUND_LAUNCH: '1'
+      NODE_OPTIONS: --max-old-space-size=4096
+      ORCA_BUILD_IDENTITY: stable
+      ORCA_COMPUTER_MACOS_BUNDLE_ID: net.tnrd.corca.computer-use
+      CSC_NAME: COrca Code Signing
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.prepare.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/setup@v2
+        with:
+          install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          check-latest: true
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            mobile/pnpm-lock.yaml
+
+      - name: Locate the pinned Node runtime cache
+        run: echo "ORCA_NODE_RUNTIME_CACHE_DIR=$HOME/Library/Caches/orca-node-runtime" >>"$GITHUB_ENV"
+
+      - name: Cache the pinned Node runtime
+        uses: actions/cache@v5
+        with:
+          path: ~/Library/Caches/orca-node-runtime
+          key: orca-node-runtime-mac-${{ hashFiles('src/shared/node-runtime-pin.ts') }}
+
+      - name: Cache electron-builder downloads
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/Library/Caches/electron
+            ~/Library/Caches/electron-builder
+          key: electron-builder-mac-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            electron-builder-mac-
+
+      - name: Install dependencies
+        uses: nick-fields/retry@v4
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: pnpm install --frozen-lockfile
+
+      - uses: ./.github/actions/install-mobile-dependencies
+
+      - name: Stamp the COrca version
+        run: npm pkg set version="${{ needs.prepare.outputs.version }}"
+
+      # Self-signed: the updater only needs every build signed by the same certificate.
+      # Trusting it on the runner lets electron-builder find it (`security find-identity -v`).
+      - name: Import the COrca signing certificate
+        env:
+          CERT_P12: ${{ secrets.CORCA_MAC_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.CORCA_MAC_CERT_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CERT_P12" ] || [ -z "$CERT_PASSWORD" ]; then
+            echo "::error::Set the CORCA_MAC_CERT_P12 and CORCA_MAC_CERT_PASSWORD secrets"
+            exit 1
+          fi
+          keychain="$RUNNER_TEMP/corca-signing.keychain-db"
+          keychain_password=$(openssl rand -hex 16)
+          echo "$CERT_P12" | base64 --decode >"$RUNNER_TEMP/corca.p12"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$RUNNER_TEMP/corca.p12" -k "$keychain" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$keychain_password" "$keychain" >/dev/null
+          existing=()
+          while IFS= read -r line; do existing+=("$(echo "$line" | tr -d '" ')"); done < <(security list-keychains -d user)
+          security list-keychains -d user -s "$keychain" "${existing[@]}"
+          openssl pkcs12 -in "$RUNNER_TEMP/corca.p12" -passin env:CERT_PASSWORD -nokeys -clcerts -legacy -out "$RUNNER_TEMP/corca.pem" 2>/dev/null \
+            || openssl pkcs12 -in "$RUNNER_TEMP/corca.p12" -passin env:CERT_PASSWORD -nokeys -clcerts -out "$RUNNER_TEMP/corca.pem"
+          sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain "$RUNNER_TEMP/corca.pem"
+          rm -f "$RUNNER_TEMP/corca.p12"
+          security find-identity -v -p codesigning "$keychain" | grep -q "COrca Code Signing"
+
+      - name: Build app
+        run: pnpm run build:release
+
+      - name: Package and upload (macOS arm64)
+        run: |
+          set -euo pipefail
+          node config/scripts/orcad-distribution/prebuilds/pinned-node-downloads.mjs darwin-arm64
+          node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=electron
+          pnpm exec electron-builder --config config/electron-builder.config.cjs \
+            --mac dmg zip --arm64 --publish always \
+            -c.publish.releaseType=draft \
+            -c.dmg.artifactName="corca-macos-\${arch}.\${ext}"
+
+      - name: Verify the app signature
+        run: |
+          set -euo pipefail
+          app=$(find dist -maxdepth 2 -name COrca.app -type d | head -1)
+          codesign --verify --deep --strict "$app"
+          codesign -d -r- "$app" 2>&1 | grep 'designated =>'
+
+      - name: Stamp the minimum macOS on the update manifest
+        run: |
+          set -euo pipefail
+          node config/scripts/desktop-distribution/macos/gate-mac-update-manifests.mjs dist
+          gh release upload "$TAG" dist/*-mac.yml --repo "$GITHUB_REPOSITORY" --clobber
+
+  build-linux:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
+      ORCA_BUILD_IDENTITY: stable
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/setup@v2
+        with:
+          install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          check-latest: true
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            mobile/pnpm-lock.yaml
+
+      - name: Use external node-gyp to avoid pnpm's bundled copy
+        run: |
+          npm install -g node-gyp@11.5.0
+          echo "npm_config_node_gyp=$(npm root -g)/node-gyp/bin/node-gyp.js" >> "$GITHUB_ENV"
+
+      - name: Cache electron-builder downloads
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: electron-builder-linux-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            electron-builder-linux-
+
+      - name: Install dependencies
+        uses: nick-fields/retry@v4
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: pnpm install --frozen-lockfile
+
+      - uses: ./.github/actions/install-mobile-dependencies
+
+      - name: Install Linux computer-use provider dependencies
+        run: sudo apt-get update && sudo apt-get install -y python3-gi gir1.2-atspi-2.0 at-spi2-core xclip xdotool
+
+      - name: Stamp the COrca version
+        run: npm pkg set version="${{ needs.prepare.outputs.version }}"
+
+      - name: Build app
+        run: pnpm run build:release
+
+      - name: Package and upload (Linux x64)
+        run: |
+          set -euo pipefail
+          node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=electron
+          pnpm exec electron-builder --config config/electron-builder.config.cjs \
+            --linux AppImage deb --x64 --publish always \
+            -c.publish.releaseType=draft \
+            -c.appImage.artifactName="corca-linux.\${ext}" \
+            -c.deb.artifactName="corca_\${version}_\${arch}.\${ext}"
+
+  publish:
+    needs: [prepare, build-mac, build-linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # The updater only offers a release whose latest-mac.yml and latest-linux.yml are both present.
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          set -euo pipefail
+          assets=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')
+          for manifest in latest-mac.yml latest-linux.yml; do
+            grep -qx "$manifest" <<<"$assets" || { echo "::error::$manifest missing from $TAG"; exit 1; }
+          done
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
