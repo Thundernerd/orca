@@ -20126,6 +20126,32 @@
           "launch": "Launch {{count}}",
           "unavailable": "Tickets cannot be launched for {{project}} from here.",
           "result": "Launched {{count}} of {{total}} tickets in {{project}}."
+        },
+        "cleanUpWorkspaces": {
+          "button": "Clean up",
+          "title": "Clean up workspaces in {{project}}",
+          "loading": "Checking which workspaces are done…",
+          "none": "The main workspace has no child workspaces.",
+          "auto": "Remove a ticket workspace automatically once its PR merges",
+          "hint": "Removal deletes the folder and closes its terminals. It cannot be undone.",
+          "remove": "Remove {{count}}",
+          "unavailable": "This project cannot be cleaned up from here.",
+          "result": "Removed {{count}} of {{total}} workspaces in {{project}}.",
+          "leftoverBranches": "Kept unmerged branches: {{branches}}.",
+          "reason": {
+            "notInOrca": "not in Orca",
+            "hasChildren": "has workspaces of its own",
+            "folderGone": "folder already gone",
+            "dirty": "uncommitted or untracked changes",
+            "mergeInProgress": "merge or rebase in progress",
+            "agentActive": "an agent may be working",
+            "mergedIntoBase": "every commit is in the default branch",
+            "reviewMerged": "PR merged",
+            "reviewMergedExtra": "PR merged, but it has commits the PR never had",
+            "reviewOpen": "PR still open",
+            "reviewClosed": "PR closed without merging",
+            "notMerged": "not merged and no PR"
+          }
         }
       }
     },

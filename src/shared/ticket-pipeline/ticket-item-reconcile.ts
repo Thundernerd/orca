@@ -18,7 +18,7 @@ export function reconcileTicketItem(
   observed: TicketItemObservation
 ): TicketItemUpdate | null {
   let stage: TicketItemStage
-  if (item.stage === 'merged' || item.stage === 'closed') {
+  if (item.stage === 'merged' || item.stage === 'closed' || item.stage === 'cleaned') {
     stage = item.stage
   } else if (observed.review?.state === 'merged') {
     stage = 'merged'

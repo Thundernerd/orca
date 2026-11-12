@@ -11,6 +11,7 @@ import { OverviewTableRow } from './OverviewTableRow'
 import type { OverviewTriage } from './use-overview-keyboard-triage'
 import { OverviewWriteTicketPopover } from './OverviewWriteTicketPopover'
 import { OverviewLaunchTicketsPopover } from './OverviewLaunchTicketsPopover'
+import { OverviewCleanUpPopover } from './OverviewCleanUpPopover'
 
 /** Every workspace in one table, grouped by project; collapsing a group minimizes its card too. */
 export function OverviewTable({
@@ -138,6 +139,15 @@ export function OverviewTable({
                             onLaunch={(tickets) =>
                               projectActions.launchTickets(project.id, tickets)
                             }
+                          />
+                        ) : null}
+                        {project.mainWorktreeId && !project.hidden ? (
+                          <OverviewCleanUpPopover
+                            projectId={project.id}
+                            projectName={project.name}
+                            busy={projectActions.busy}
+                            variant="ghost"
+                            onClean={(ids) => projectActions.cleanUp(project.id, ids)}
                           />
                         ) : null}
                         {project.mainWorktreeId && !project.hidden

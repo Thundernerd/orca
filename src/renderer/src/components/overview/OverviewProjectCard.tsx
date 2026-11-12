@@ -19,6 +19,7 @@ import { OVERVIEW_SKILLS, type OverviewSkill } from './overview-actions'
 import { OverviewWorkspaceTable } from './OverviewWorkspaceTable'
 import { OverviewWriteTicketPopover } from './OverviewWriteTicketPopover'
 import { OverviewLaunchTicketsPopover } from './OverviewLaunchTicketsPopover'
+import { OverviewCleanUpPopover } from './OverviewCleanUpPopover'
 import type { TicketLaunchSelection } from '../../../../shared/ticket-pipeline/ticket-types'
 
 export type OverviewProjectCardActions = {
@@ -26,6 +27,7 @@ export type OverviewProjectCardActions = {
   open: (worktreeId: string) => void
   runSkill: (projectId: string, skill: OverviewSkill, args?: string) => void
   launchTickets: (projectId: string, tickets: TicketLaunchSelection[]) => void
+  cleanUp: (projectId: string, worktreeIds: string[]) => void
   refreshTickets: (ticketSource: string) => void
   togglePinned: (projectId: string) => void
   toggleMinimized: (projectId: string) => void
@@ -231,6 +233,13 @@ export function OverviewProjectCard({
                 busy={actions.busy}
                 variant="outline"
                 onLaunch={(tickets) => actions.launchTickets(project.id, tickets)}
+              />
+              <OverviewCleanUpPopover
+                projectId={project.id}
+                projectName={project.name}
+                busy={actions.busy}
+                variant="outline"
+                onClean={(ids) => actions.cleanUp(project.id, ids)}
               />
               {OVERVIEW_SKILLS.map((skill) =>
                 skill === 'write-ticket' ? (

@@ -236,7 +236,13 @@ export const HANDLER_GROUPS: readonly HandlerGroup[] = [
   },
   {
     name: 'tickets',
-    keys: ['tickets survey', 'tickets launch', 'tickets items'],
+    keys: [
+      'tickets survey',
+      'tickets launch',
+      'tickets items',
+      'tickets clean',
+      'tickets settings'
+    ],
     load: async () => (await import('./handlers/tickets.js')).TICKET_HANDLERS
   },
   {

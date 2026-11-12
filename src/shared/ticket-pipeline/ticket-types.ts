@@ -1,3 +1,5 @@
+import type { WorkspaceCleanReason } from './workspace-clean-verdict'
+
 export type TicketSourceKind = 'github-issues' | 'repo-files'
 
 /** A ticket as its tracker reports it, before readiness is decided. */
@@ -70,10 +72,17 @@ export type TicketLaunchResult = {
 }
 
 /**
- * Where a launched ticket stands. Merge and clean-up stages arrive in later phases;
+ * Where a launched ticket stands. The merge queue arrives in a later phase;
  * `agent-waiting` means the agent stopped for the user (a question, a permission, or blocked).
  */
-export type TicketItemStage = 'implementing' | 'agent-waiting' | 'in-review' | 'merged' | 'closed'
+export type TicketItemStage =
+  | 'implementing'
+  | 'agent-waiting'
+  | 'in-review'
+  | 'merged'
+  | 'closed'
+  /** Merged, and its workspace has been removed. */
+  | 'cleaned'
 
 export type TicketItem = {
   id: string
@@ -92,3 +101,32 @@ export type TicketItem = {
   createdAt: number
   updatedAt: number
 }
+
+export type WorkspaceCleanRow = {
+  worktreeId: string
+  name: string
+  branch: string
+  verdict: 'remove' | 'keep'
+  reason: WorkspaceCleanReason
+  reviewNumber: number | null
+}
+
+export type WorkspaceCleanSurveyResult = {
+  parentWorktreeId: string
+  baseRef: string
+  rows: WorkspaceCleanRow[]
+}
+
+export type WorkspaceCleanOutcome =
+  | { worktreeId: string; status: 'removed'; branchLeftover?: string }
+  | { worktreeId: string; status: 'kept'; reason: string }
+
+export type WorkspaceCleanResult = { outcomes: WorkspaceCleanOutcome[] }
+
+/** Per project; everything defaults off so nothing irreversible happens unasked. */
+export type TicketPipelineSettings = {
+  /** Remove a ticket's workspace once its PR merges and the clean-up survey says it is safe. */
+  autoClean: boolean
+}
+
+export const DEFAULT_TICKET_PIPELINE_SETTINGS: TicketPipelineSettings = { autoClean: false }

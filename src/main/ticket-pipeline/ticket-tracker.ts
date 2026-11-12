@@ -9,7 +9,9 @@ import {
   type TicketItemObservation
 } from '../../shared/ticket-pipeline/ticket-item-reconcile'
 import type { TicketItem } from '../../shared/ticket-pipeline/ticket-types'
+import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import { getTicketItemStore, type TicketItemStore } from './ticket-item-store'
+import { cleanWorkspaces } from './workspace-clean'
 
 export type TicketTrackerRuntime = {
   getWorktreePs(limit: number): Promise<RuntimeWorktreePsResult>
@@ -39,7 +41,7 @@ function isPRState(value: string): value is PRState {
 }
 
 function isActive(item: TicketItem): boolean {
-  return item.stage !== 'merged' && item.stage !== 'closed'
+  return item.stage !== 'merged' && item.stage !== 'closed' && item.stage !== 'cleaned'
 }
 
 /** The workspace status a stage puts on the board; null leaves the user's choice alone. */
@@ -52,6 +54,7 @@ function boardStatusFor(stage: TicketItem['stage']): string | null {
     case 'implementing':
     case 'agent-waiting':
     case 'closed':
+    case 'cleaned':
       return null
   }
 }
@@ -88,8 +91,24 @@ export class TicketTracker {
 
   constructor(
     private readonly runtime: TicketTrackerRuntime,
+    /** Removes a merged item's workspace if the clean-up survey clears it; absent disables auto-clean. */
+    private readonly autoClean?: (item: TicketItem) => Promise<void>,
     private readonly store: TicketItemStore = getTicketItemStore()
   ) {}
+
+  /** Merged items whose project cleans up automatically stay in the loop until their workspace goes. */
+  private async awaitingAutoClean(items: readonly TicketItem[]): Promise<TicketItem[]> {
+    if (!this.autoClean) {
+      return []
+    }
+    const waiting: TicketItem[] = []
+    for (const item of items.filter((i) => i.stage === 'merged')) {
+      if ((await this.store.getSettings(item.repoId)).autoClean) {
+        waiting.push(item)
+      }
+    }
+    return waiting
+  }
 
   /** Idempotent: ticks now and keeps ticking while any item is active. */
   start(): void {
@@ -118,8 +137,10 @@ export class TicketTracker {
 
   /** One pass over the active items; false when none are left, so the timer stops until the next launch. */
   async tick(): Promise<boolean> {
-    const active = (await this.store.list()).filter(isActive)
-    if (active.length === 0) {
+    const items = await this.store.list()
+    const active = items.filter(isActive)
+    const cleanable = await this.awaitingAutoClean(items)
+    if (active.length === 0 && cleanable.length === 0) {
       return false
     }
     const [ps, listed] = await Promise.all([
@@ -150,13 +171,23 @@ export class TicketTracker {
           .catch((error: unknown) => console.warn('[tickets] could not update workspace', error))
       }
     }
+    // Includes items that merged this tick; a kept workspace (an agent still busy) is retried next tick.
+    for (const item of await this.awaitingAutoClean(await this.store.list())) {
+      await this.autoClean?.(item).catch((error: unknown) =>
+        console.warn('[tickets] auto-clean failed', error)
+      )
+    }
     return true
   }
 }
 
 let tracker: TicketTracker | null = null
 
-export function startTicketTracker(runtime: TicketTrackerRuntime): void {
-  tracker ??= new TicketTracker(runtime)
+export function startTicketTracker(runtime: OrcaRuntimeService): void {
+  tracker ??= new TicketTracker(runtime, async (item) => {
+    await cleanWorkspaces({ runtime }, { worktree: `id:${item.parentWorktreeId}` }, [
+      item.childWorktreeId
+    ])
+  })
   tracker.start()
 }

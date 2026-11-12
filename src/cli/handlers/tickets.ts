@@ -5,8 +5,12 @@ import {
   type TicketLaunchResult,
   type TicketLaunchSelection,
   type TicketSourceKind,
-  type TicketSurveyResult
+  type TicketPipelineSettings,
+  type TicketSurveyResult,
+  type WorkspaceCleanResult,
+  type WorkspaceCleanSurveyResult
 } from '../../shared/ticket-pipeline/ticket-types'
+import type { RuntimeWorktreeRecord } from '../../shared/runtime-worktree-contracts'
 import type { CommandHandler } from '../dispatch'
 import { getOptionalStringFlag, getRepeatedStringFlag } from '../flags'
 import { printResult } from '../format'
@@ -77,6 +81,40 @@ function formatItems(result: { items: TicketItem[] }): string {
     .join('\n')
 }
 
+function formatCleanSurvey(result: WorkspaceCleanSurveyResult): string {
+  if (result.rows.length === 0) {
+    return 'This workspace has no child workspaces.'
+  }
+  return [...result.rows]
+    .sort((a, b) => (a.verdict === b.verdict ? 0 : a.verdict === 'remove' ? -1 : 1))
+    .map((row) => [row.verdict, row.name, row.reason, row.worktreeId].join('\t'))
+    .join('\n')
+}
+
+function formatClean(result: WorkspaceCleanResult): string {
+  if (result.outcomes.length === 0) {
+    return 'Nothing to remove.'
+  }
+  return result.outcomes
+    .map((o) =>
+      o.status === 'removed'
+        ? `removed\t${o.worktreeId}${o.branchLeftover ? `\tbranch ${o.branchLeftover} left: not fully merged` : ''}`
+        : `kept\t${o.worktreeId}\t${o.reason}`
+    )
+    .join('\n')
+}
+
+async function currentWorktree(
+  flags: Map<string, string | boolean>,
+  cwd: string,
+  client: Parameters<CommandHandler>[0]['client']
+): Promise<string> {
+  return (
+    (await getOptionalWorktreeSelector(flags, 'worktree', cwd, client)) ??
+    (await resolveCurrentWorktreeSelector(cwd, client, 'worktree'))
+  )
+}
+
 function formatSurvey(result: TicketSurveyResult): string {
   const lines = [`source: ${result.source} (${result.baseRef})`]
   for (const row of result.rows) {
@@ -113,6 +151,37 @@ export const TICKET_HANDLERS: Record<string, CommandHandler> = {
       { timeoutMs: 10 * 60_000 }
     )
     printResult(result, json, formatLaunch)
+  },
+  'tickets clean': async ({ flags, client, cwd, json }) => {
+    const worktree = await currentWorktree(flags, cwd, client)
+    const survey = await client.call<WorkspaceCleanSurveyResult>('tickets.cleanSurvey', {
+      worktree
+    })
+    const removable = survey.result.rows.filter((row) => row.verdict === 'remove')
+    if (flags.get('apply') !== true || removable.length === 0) {
+      printResult(survey, json, formatCleanSurvey)
+      return
+    }
+    const result = await client.call<WorkspaceCleanResult>(
+      'tickets.clean',
+      { worktree, worktreeIds: removable.map((row) => row.worktreeId) },
+      { timeoutMs: 10 * 60_000 }
+    )
+    printResult(result, json, formatClean)
+  },
+  'tickets settings': async ({ flags, client, cwd, json }) => {
+    const shown = await client.call<{ worktree: RuntimeWorktreeRecord }>('worktree.show', {
+      worktree: await currentWorktree(flags, cwd, client)
+    })
+    const autoClean = getOptionalStringFlag(flags, 'auto-clean')
+    if (autoClean !== undefined && autoClean !== 'on' && autoClean !== 'off') {
+      throw new RuntimeClientError('invalid_argument', '--auto-clean takes on or off')
+    }
+    const result = await client.call<TicketPipelineSettings>('tickets.settings', {
+      repo: `id:${shown.result.worktree.repoId}`,
+      ...(autoClean ? { patch: { autoClean: autoClean === 'on' } } : {})
+    })
+    printResult(result, json, (s) => `auto-clean: ${s.autoClean ? 'on' : 'off'}`)
   },
   'tickets items': async ({ flags, client, json }) => {
     const repo = getOptionalStringFlag(flags, 'repo')

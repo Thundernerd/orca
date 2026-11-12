@@ -7,8 +7,6 @@ import {
   resolveClientAutomationWorkspaceProvenance
 } from '../../../../automations/workspace-provenance'
 import { getLocalWorktreeCatalogVersion } from '../../../../workspaces/catalog/local-worktree-scan-generation'
-import { getExplicitWorktreeIdSelector } from '../../../workspaces/catalog/runtime-worktree-selection'
-import { splitWorktreeId } from '../../../../../shared/worktree/id'
 import { buildCliWorkspaceProvenance } from '../../../../../shared/cli-workspace-provenance'
 import { createWorktreeWithStartupAgent } from '../../../../agent-launch/startup-agent-worktree-create'
 import { defineMethod } from '../../core'
@@ -35,10 +33,9 @@ import {
 } from '../../../../../shared/rpc-contract/worktree-params'
 import { WORKTREE_CATALOG_METHODS } from './worktree-catalog-methods'
 import { WORKTREE_PROVISIONED_ROOT_METHOD } from './worktree-provisioned-root-method'
-import { waitsForWorktreeRemoval } from '../../worktree-removal-marker-projection'
-import { queueWorkspaceDelete } from '../../../workspaces/lifecycle/workspace-lifecycle-commands'
 import { WORKTREE_SLEEP_METHOD } from './worktree-sleep-method'
 import { WORKTREE_SET_METHOD } from './worktree-set-method'
+import { removeWorktreeForRpc } from './worktree-removal-rpc'
 import { runApprovedCreatedWorktreeSetup } from '../../../workspaces/creation/created-worktree-approved-setup'
 
 export const WORKTREE_METHODS = [
@@ -218,59 +215,7 @@ export const WORKTREE_METHODS = [
     name: 'worktree.rm',
     permission: 'workspace',
     params: WorktreeRemove,
-    handler: async (params, context) => {
-      const { runtime } = context
-      if (runtime.ownsRecipeWorkspaceRemoval?.(params)) {
-        return runtime.removeRecipeWorkspace(params)
-      }
-      // Translate a paired client's runtime-local host spelling before host-qualified reads.
-      let resolvedHostId = resolvePairedCallerHostId(
-        () => runtime.listRepos(),
-        params.worktree,
-        params.hostId
-      )
-      // Older mobile omits hostId; resolve ambiguity before pinning removal and refuse ids shared by two hosts.
-      if (!resolvedHostId) {
-        try {
-          resolvedHostId = (await runtime.showManagedWorktree(params.worktree)).hostId
-          if (!resolvedHostId) {
-            throw new Error('worktree.rm could not resolve the workspace host')
-          }
-        } catch (error) {
-          // Git may omit a stale path: selector_not_found must reach removeManagedWorktree; propagate other resolution failures.
-          if (!(error instanceof Error) || error.message !== 'selector_not_found') {
-            throw error
-          }
-        }
-      }
-      // Parse id: selectors for repo stamping; resolving again scans and rejects ids shared by hosts. Leave other selectors unstamped.
-      const explicitWorktreeId = getExplicitWorktreeIdSelector(params.worktree)
-      const repoId = explicitWorktreeId ? splitWorktreeId(explicitWorktreeId)?.repoId : undefined
-      const result = await queueWorkspaceDelete(
-        runtime,
-        params.worktree,
-        resolvedHostId,
-        params,
-        (removal) => {
-          const options = {
-            ...removal,
-            waitForBackgroundRemoval: waitsForWorktreeRemoval(context, params)
-          }
-          return params.approvedNestedWorktrees
-            ? runtime.removeManagedWorktreeWithNested(
-                params.worktree,
-                params.approvedNestedWorktrees,
-                options
-              )
-            : runtime.removeManagedWorktree(params.worktree, options)
-        }
-      )
-      return {
-        removed: result.removing !== true,
-        ...result,
-        ...(repoId ? { catalogVersion: getLocalWorktreeCatalogVersion(repoId) } : {})
-      }
-    }
+    handler: async (params, context) => removeWorktreeForRpc(params, context)
   }),
   defineMethod({
     name: 'worktree.previewNestedRemoval',

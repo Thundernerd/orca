@@ -5,7 +5,7 @@ import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
 import type { OverviewPrefs } from '../../../../shared/overview-prefs'
 import { useOverviewData } from './use-overview-data'
 import { useOverviewTicketSurveys } from './use-overview-ticket-surveys'
-import { launchOverviewTickets } from './overview-ticket-pipeline'
+import { cleanOverviewWorkspaces, launchOverviewTickets } from './overview-ticket-pipeline'
 import type { TicketLaunchSelection } from '../../../../shared/ticket-pipeline/ticket-types'
 import {
   markOverviewWorkspaceRead,
@@ -217,11 +217,21 @@ export default function OverviewPage(): React.JSX.Element {
     },
     [run, snapshot.projects, surveys]
   )
+  const cleanUp = useCallback(
+    (projectId: string, worktreeIds: string[]) => {
+      const project = snapshot.projects.find((p) => p.id === projectId)
+      if (project) {
+        void run(() => cleanOverviewWorkspaces(projectId, project.name, worktreeIds))
+      }
+    },
+    [run, snapshot.projects]
+  )
   const projectActions: OverviewProjectCardActions = {
     busy,
     open,
     runSkill,
     launchTickets,
+    cleanUp,
     refreshTickets: surveys.requestSurvey,
     togglePinned: (id) => updatePrefs((p) => toggled(p, 'pinned', id)),
     toggleMinimized: (id) => updatePrefs((p) => toggled(p, 'minimized', id)),

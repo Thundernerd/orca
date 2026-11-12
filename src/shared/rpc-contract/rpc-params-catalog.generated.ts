@@ -720,7 +720,14 @@ import {
   TerminalUnsubscribe,
   TerminalUpdateViewport
 } from './terminal-viewport-schemas-params'
-import { TicketItemsList, TicketLaunch, TicketSurvey } from './ticket-params'
+import {
+  TicketClean,
+  TicketCleanSurvey,
+  TicketItemsList,
+  TicketLaunch,
+  TicketSettings,
+  TicketSurvey
+} from './ticket-params'
 import { UpdaterCheckParams } from './updater-params'
 import {
   UsageCredentialApiKeyParams,
@@ -1612,8 +1619,11 @@ export const RPC_PARAMS_BY_METHOD = {
   'terminalDaemon.restartSevered': TerminalDaemonRestartSeveredParams,
   'terminalDaemon.setLimit': TerminalLimitUpdateParams,
   'terminalDaemon.severedStatus': null,
+  'tickets.clean': TicketClean,
+  'tickets.cleanSurvey': TicketCleanSurvey,
   'tickets.items': TicketItemsList,
   'tickets.launch': TicketLaunch,
+  'tickets.settings': TicketSettings,
   'tickets.survey': TicketSurvey,
   'ui.get': null,
   'ui.getJiraQuickFilters': null,

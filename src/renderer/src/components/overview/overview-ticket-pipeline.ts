@@ -7,7 +7,10 @@ import type { RuntimeClientTarget } from '../../../../shared/runtime-client-targ
 import type {
   TicketLaunchResult,
   TicketLaunchSelection,
-  TicketSurveyResult
+  TicketPipelineSettings,
+  TicketSurveyResult,
+  WorkspaceCleanResult,
+  WorkspaceCleanSurveyResult
 } from '../../../../shared/ticket-pipeline/ticket-types'
 import type { OverviewActionResult } from './overview-actions'
 
@@ -84,6 +87,78 @@ export async function launchOverviewTickets(
         { count: launched.length, total: result.outcomes.length, project: projectName }
       ),
       ...details
+    ].join(' ')
+  }
+}
+
+function requireProjectTarget(projectId: string): RuntimeClientTarget {
+  const target = projectTarget(projectId)
+  if (!target) {
+    throw new Error(
+      translate(
+        'auto.components.overview.cleanUpWorkspaces.unavailable',
+        'This project cannot be cleaned up from here.'
+      )
+    )
+  }
+  return target
+}
+
+export function surveyOverviewClean(projectId: string): Promise<WorkspaceCleanSurveyResult> {
+  return callRuntimeRpc<WorkspaceCleanSurveyResult>(
+    requireProjectTarget(projectId),
+    'tickets.cleanSurvey',
+    { repo: projectId },
+    { timeoutMs: SURVEY_TIMEOUT_MS }
+  )
+}
+
+export function overviewTicketSettings(
+  projectId: string,
+  patch?: Partial<TicketPipelineSettings>
+): Promise<TicketPipelineSettings> {
+  return callRuntimeRpc<TicketPipelineSettings>(
+    requireProjectTarget(projectId),
+    'tickets.settings',
+    {
+      repo: projectId,
+      ...(patch ? { patch } : {})
+    }
+  )
+}
+
+/** Removes the confirmed workspaces the host still clears, and summarises what happened. */
+export async function cleanOverviewWorkspaces(
+  projectId: string,
+  projectName: string,
+  worktreeIds: readonly string[]
+): Promise<OverviewActionResult> {
+  const result = await callRuntimeRpc<WorkspaceCleanResult>(
+    requireProjectTarget(projectId),
+    'tickets.clean',
+    { repo: projectId, worktreeIds },
+    { timeoutMs: LAUNCH_TIMEOUT_MS }
+  )
+  const removed = result.outcomes.filter((o) => o.status === 'removed')
+  const kept = result.outcomes.length - removed.length
+  const leftovers = removed.flatMap((o) => (o.branchLeftover ? [o.branchLeftover] : []))
+  return {
+    ok: kept === 0,
+    message: [
+      translate(
+        'auto.components.overview.cleanUpWorkspaces.result',
+        'Removed {{count}} of {{total}} workspaces in {{project}}.',
+        { count: removed.length, total: result.outcomes.length, project: projectName }
+      ),
+      ...(leftovers.length > 0
+        ? [
+            translate(
+              'auto.components.overview.cleanUpWorkspaces.leftoverBranches',
+              'Kept unmerged branches: {{branches}}.',
+              { branches: leftovers.join(', ') }
+            )
+          ]
+        : [])
     ].join(' ')
   }
 }

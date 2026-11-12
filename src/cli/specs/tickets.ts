@@ -39,5 +39,27 @@ export const TICKET_COMMAND_SPECS: CommandSpec[] = [
     usage: 'orca tickets items [--repo <selector>] [--json]',
     allowedFlags: [...GLOBAL_FLAGS, 'repo'],
     examples: ['orca tickets items', 'orca tickets items --json']
+  },
+  {
+    path: ['tickets', 'clean'],
+    summary: 'Show which child workspaces hold nothing worth keeping, and remove them with --apply',
+    usage: 'orca tickets clean [--worktree <selector>] [--apply] [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'worktree', 'apply'],
+    notes: [
+      'Without --apply this only prints the plan: remove or keep, with the reason, per child of the workspace.',
+      'A child is removed only when its checkout is clean, it has no children, its agent is quiet, and its work is in the default branch or a merged PR it has nothing beyond.',
+      'Removal is never forced; a leftover local branch is deleted only with git branch -d.'
+    ],
+    examples: ['orca tickets clean', 'orca tickets clean --apply']
+  },
+  {
+    path: ['tickets', 'settings'],
+    summary: "Show or change the project's ticket settings",
+    usage: 'orca tickets settings [--worktree <selector>] [--auto-clean on|off] [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'worktree', 'auto-clean'],
+    notes: [
+      'With --auto-clean on, Corka removes a ticket workspace once its PR merges and the clean-up survey clears it.'
+    ],
+    examples: ['orca tickets settings', 'orca tickets settings --auto-clean on']
   }
 ]

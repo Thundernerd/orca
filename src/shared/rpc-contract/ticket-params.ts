@@ -41,3 +41,21 @@ export const TicketLaunch = z
   })
 
 export const TicketItemsList = z.object({ repo: Selector.optional() })
+
+const ScopeFields = { worktree: Selector.optional(), repo: Selector.optional() }
+const exactlyOneScope = (params: { worktree?: string; repo?: string }) =>
+  (params.worktree === undefined) !== (params.repo === undefined)
+const scopeMessage = { message: 'Pass exactly one of worktree or repo' }
+
+/** Children of a parent workspace (or the project's main one) that are safe to remove. */
+export const TicketCleanSurvey = z.object(ScopeFields).refine(exactlyOneScope, scopeMessage)
+
+export const TicketClean = z
+  .object({ ...ScopeFields, worktreeIds: z.array(z.string().min(1).max(4096)).min(1).max(200) })
+  .refine(exactlyOneScope, scopeMessage)
+
+/** Reads a project's ticket settings; `patch` changes them first. */
+export const TicketSettings = z.object({
+  repo: Selector,
+  patch: z.object({ autoClean: z.boolean().optional() }).optional()
+})
