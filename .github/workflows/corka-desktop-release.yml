@@ -161,8 +161,7 @@ jobs:
           node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=electron
           pnpm exec electron-builder --config config/electron-builder.config.cjs \
             --mac dmg zip --arm64 --publish always \
-            -c.publish.releaseType=draft \
-            -c.dmg.artifactName="corka-macos-\${arch}.\${ext}"
+            -c.publish.releaseType=draft
 
       - name: Verify the app signature
         run: |
@@ -246,9 +245,7 @@ jobs:
           node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=electron
           pnpm exec electron-builder --config config/electron-builder.config.cjs \
             --linux AppImage deb --x64 --publish always \
-            -c.publish.releaseType=draft \
-            -c.appImage.artifactName="corka-linux.\${ext}" \
-            -c.deb.artifactName="corka_\${version}_\${arch}.\${ext}"
+            -c.publish.releaseType=draft
 
   publish:
     needs: [prepare, build-mac, build-linux]

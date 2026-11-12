@@ -112,7 +112,10 @@ jobs:
           set -euo pipefail
           apksigner="$(find "$ANDROID_HOME"/build-tools -maxdepth 2 -name apksigner | sort -V | tail -1)"
           apks=(android/app/build/outputs/apk/release/*.apk)
-          certs="$("$apksigner" verify --print-certs "${apks[0]}" | sed -n 's/^Signer #[0-9]* certificate SHA-256 digest: //p' | sort -u)"
+          echo "Verifying ${apks[0]} with $apksigner"
+          signers="$("$apksigner" verify --verbose --print-certs "${apks[0]}" 2>&1)"
+          printf '%s\n' "$signers"
+          certs="$(sed -n 's/^Signer.* certificate SHA-256 digest: //p' <<<"$signers" | sort -u)"
           expected="$(printf '%s' "$EXPECTED_CERT_SHA256" | tr -d ': ' | tr 'A-F' 'a-f')"
           if [ -z "$expected" ] || [ "$certs" != "$expected" ]; then
             echo "::error::The APK signing certificate ($certs) does not match ORCA_ANDROID_RELEASE_CERT_SHA256 ($expected)."
