@@ -20058,10 +20058,7 @@
         },
         "result": {
           "replied": "Replied in {{name}}.",
-          "replyRefused": "No agent in {{name}} took the reply.",
-          "sentSkill": "Sent {{prompt}} to the idle Claude session in {{project}}.",
-          "launchRefused": "Claude did not start in {{project}}.",
-          "launched": "Started Claude with {{prompt}} in {{project}}."
+          "replyRefused": "No agent in {{name}} took the reply."
         },
         "kind": {
           "agentWaiting": "Agent waiting",
@@ -20097,9 +20094,16 @@
           "title": "Write a ticket for {{project}}",
           "placeholder": "What is broken, awkward or wanted? One item, or a list.",
           "label": "Ticket description",
-          "hint": "Claude investigates and asks you to confirm the drafts.",
           "send": "Write ticket",
-          "sendEmpty": "Start without text"
+          "button": "Write ticket",
+          "hintNative": "Claude investigates and drafts; you review the drafts here before anything is published.",
+          "drafting": "Claude is drafting…",
+          "readyToReview": "{{count}} drafts to review",
+          "published": "Published {{numbers}}",
+          "discarded": "Discarded",
+          "review": "Review",
+          "started": "Claude is drafting tickets in {{project}}; review them from Write ticket when they are ready.",
+          "publishedNotice": "Published {{numbers}} in {{project}}."
         },
         "markAllRead": "Mark all read ({{count}})",
         "openPr": "PR",
@@ -20169,6 +20173,18 @@
           "notReady": "{{ticket}} is not ready to merge yet: {{detail}}",
           "empty": "No ticket PRs are waiting to merge in {{project}}.",
           "merged": "Merged {{ticket}} in {{project}}."
+        },
+        "draftReview": {
+          "title": "Review ticket drafts for {{project}}",
+          "titleLabel": "Title",
+          "bodyLabel": "Body",
+          "labels": "Labels, comma separated",
+          "blockedBy": "Blocked by: {{blockers}}",
+          "none": "nothing",
+          "covers": "Covers: {{items}}",
+          "decisions": "Decisions Claude made on its own",
+          "discard": "Discard drafts",
+          "publish": "Publish {{count}} tickets"
         }
       }
     },

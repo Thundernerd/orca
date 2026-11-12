@@ -1,6 +1,12 @@
 import {
   TicketClean,
   TicketCleanSurvey,
+  TicketCreate,
+  TicketDraftDiscard,
+  TicketDraftList,
+  TicketDraftPublish,
+  TicketDraftStart,
+  TicketDraftSubmit,
   TicketItemsList,
   TicketLaunch,
   TicketMerge,
@@ -14,6 +20,14 @@ import { surveyTickets } from '../../../../ticket-pipeline/ticket-survey'
 import { startTicketTracker } from '../../../../ticket-pipeline/ticket-tracker'
 import { cleanWorkspaces, surveyWorkspaceClean } from '../../../../ticket-pipeline/workspace-clean'
 import { getMergeQueue } from '../../../../ticket-pipeline/merge-queue'
+import {
+  createFindingTicket,
+  discardTicketDrafts,
+  listTicketDraftBatches,
+  publishTicketDrafts,
+  startTicketDrafting,
+  submitTicketDrafts
+} from '../../../../ticket-pipeline/ticket-drafts'
 import {
   queueOrder,
   resumeTicketQueue,
@@ -133,5 +147,59 @@ export const TICKET_METHODS = [
       startTicketTracker(runtime)
       return ticketQueueView(item.parentWorktreeId, item.repoId)
     }
+  }),
+  defineMethod({
+    name: 'tickets.draftStart',
+    permission: 'workspace',
+    params: TicketDraftStart,
+    handler: async (params, context) =>
+      startTicketDrafting(context, ticketParentScope(params), params.request)
+  }),
+  defineMethod({
+    name: 'tickets.draftSubmit',
+    permission: 'workspace',
+    params: TicketDraftSubmit,
+    handler: async (params, { runtime }) =>
+      submitTicketDrafts(runtime, params.batchId, params.drafts, params.decisions)
+  }),
+  defineMethod({
+    name: 'tickets.draftList',
+    permission: 'workspace',
+    params: TicketDraftList,
+    handler: async (params, { runtime }) => ({
+      batches: await listTicketDraftBatches(
+        params.repo ? (await runtime.showRepo(params.repo)).id : null
+      )
+    })
+  }),
+  defineMethod({
+    name: 'tickets.draftPublish',
+    permission: 'workspace',
+    params: TicketDraftPublish,
+    handler: async (params, { runtime }) =>
+      publishTicketDrafts(runtime, params.batchId, params.drafts)
+  }),
+  defineMethod({
+    name: 'tickets.draftDiscard',
+    permission: 'workspace',
+    params: TicketDraftDiscard,
+    handler: async (params) => discardTicketDrafts(params.batchId)
+  }),
+  defineMethod({
+    name: 'tickets.create',
+    permission: 'workspace',
+    params: TicketCreate,
+    handler: async (params, { runtime }) =>
+      createFindingTicket(
+        runtime,
+        { worktree: params.worktree },
+        {
+          title: params.title,
+          body: params.body,
+          labels: params.labels,
+          blockedBy: params.blockedBy,
+          ...(params.findingOf ? { findingOf: params.findingOf } : {})
+        }
+      )
   })
 ]

@@ -1,4 +1,5 @@
 import type { WorkspaceCleanReason } from './workspace-clean-verdict'
+import type { TicketFinding } from './ticket-draft-types'
 
 export type TicketSourceKind = 'github-issues' | 'repo-files'
 
@@ -102,6 +103,8 @@ export type TicketItem = {
   agentTerminalHandle?: string
   /** Where the merge queue has this item; absent until it reaches the head of the queue. */
   queue?: TicketQueueState
+  /** Tickets its agent filed for problems outside this ticket's scope. */
+  findings?: TicketFinding[]
   createdAt: number
   updatedAt: number
 }

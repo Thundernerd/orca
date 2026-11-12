@@ -13,6 +13,10 @@ import type {
   WorkspaceCleanResult,
   WorkspaceCleanSurveyResult
 } from '../../../../shared/ticket-pipeline/ticket-types'
+import type {
+  TicketDraft,
+  TicketDraftBatch
+} from '../../../../shared/ticket-pipeline/ticket-draft-types'
 import type { OverviewActionResult } from './overview-actions'
 
 const SURVEY_TIMEOUT_MS = 120_000
@@ -225,6 +229,81 @@ export async function mergeOverviewQueueHead(
         ticket: head.ticketId,
         project: projectName
       }
+    )
+  }
+}
+
+export function startOverviewDrafting(
+  projectId: string,
+  request: string
+): Promise<TicketDraftBatch> {
+  return callRuntimeRpc<TicketDraftBatch>(
+    requireProjectTarget(projectId),
+    'tickets.draftStart',
+    { repo: projectId, request },
+    { timeoutMs: LAUNCH_TIMEOUT_MS }
+  )
+}
+
+export async function overviewDraftBatches(projectId: string): Promise<TicketDraftBatch[]> {
+  const result = await callRuntimeRpc<{ batches: TicketDraftBatch[] }>(
+    requireProjectTarget(projectId),
+    'tickets.draftList',
+    { repo: projectId },
+    { timeoutMs: SURVEY_TIMEOUT_MS }
+  )
+  return result.batches
+}
+
+export function publishOverviewDrafts(
+  projectId: string,
+  batchId: string,
+  drafts: TicketDraft[]
+): Promise<TicketDraftBatch> {
+  return callRuntimeRpc<TicketDraftBatch>(
+    requireProjectTarget(projectId),
+    'tickets.draftPublish',
+    { batchId, drafts },
+    { timeoutMs: LAUNCH_TIMEOUT_MS }
+  )
+}
+
+export function discardOverviewDrafts(
+  projectId: string,
+  batchId: string
+): Promise<TicketDraftBatch> {
+  return callRuntimeRpc<TicketDraftBatch>(requireProjectTarget(projectId), 'tickets.draftDiscard', {
+    batchId
+  })
+}
+
+/** Starts drafting and says where the drafts will appear. */
+export async function startOverviewDraftingWithNotice(
+  projectId: string,
+  projectName: string,
+  request: string
+): Promise<OverviewActionResult> {
+  await startOverviewDrafting(projectId, request)
+  return {
+    ok: true,
+    message: translate(
+      'auto.components.overview.writeTicket.started',
+      'Claude is drafting tickets in {{project}}; review them from Write ticket when they are ready.',
+      { project: projectName }
+    )
+  }
+}
+
+export function publishedDraftsNotice(
+  batch: TicketDraftBatch,
+  projectName: string
+): OverviewActionResult {
+  return {
+    ok: true,
+    message: translate(
+      'auto.components.overview.writeTicket.publishedNotice',
+      'Published {{numbers}} in {{project}}.',
+      { numbers: batch.published.map((p) => `#${p.number}`).join(', '), project: projectName }
     )
   }
 }

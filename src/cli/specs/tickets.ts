@@ -89,5 +89,42 @@ export const TICKET_COMMAND_SPECS: CommandSpec[] = [
     allowedFlags: [...GLOBAL_FLAGS, 'worktree'],
     notes: ['Merges with a merge commit, and only when the queue reports the head as ready.'],
     examples: ['orca tickets merge']
+  },
+  {
+    path: ['tickets', 'draft', 'submit'],
+    summary: 'Hand ticket drafts to Corka for the user to review; used by drafting agents',
+    usage:
+      'orca tickets draft submit --batch <id> (--drafts <json> | --drafts-file <path|->) [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'batch', 'drafts', 'drafts-file'],
+    notes: [
+      'The JSON is {"drafts": [{"key", "title", "body", "labels", "blockedBy", "covers"}], "decisions": [...]}; blockedBy names other draft keys or existing tickets as #<n>.',
+      'Nothing is published: the drafts wait in Corka until the user reviews and publishes them. A refusal names what to fix; submit again after fixing it.'
+    ],
+    examples: ['orca tickets draft submit --batch 0f3c… --drafts-file drafts.json']
+  },
+  {
+    path: ['tickets', 'create'],
+    summary: 'Publish a ticket at once, such as a finding outside the ticket being implemented',
+    usage:
+      'orca tickets create --title <text> (--body <text> | --body-file <path|->) [--finding-of <ticket>] [--blocked-by <#n>...] [--label <name>...] [--worktree <selector>] [--json]',
+    allowedFlags: [
+      ...GLOBAL_FLAGS,
+      'title',
+      'body',
+      'body-file',
+      'finding-of',
+      'blocked-by',
+      'label',
+      'worktree'
+    ],
+    repeatableFlags: ['blocked-by', 'label'],
+    notes: [
+      'With --finding-of, the body opens with "Found while implementing <ticket>." and the finding is recorded on that ticket.',
+      'The body gets a Blocked by section from --blocked-by; labels that do not exist in the repo are dropped.'
+    ],
+    examples: [
+      'orca tickets create --finding-of "#12" --title "Login form drops focus" --body-file finding.md',
+      'orca tickets create --title "Follow-up" --body "…" --blocked-by "#12"'
+    ]
   }
 ]

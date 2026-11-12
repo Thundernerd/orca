@@ -12,8 +12,13 @@ import {
   type WorkspaceCleanSurveyResult
 } from '../../shared/ticket-pipeline/ticket-types'
 import type { RuntimeWorktreeRecord } from '../../shared/runtime-worktree-contracts'
+import type {
+  TicketDraftBatch,
+  TicketFinding
+} from '../../shared/ticket-pipeline/ticket-draft-types'
 import type { CommandHandler } from '../dispatch'
-import { getOptionalStringFlag, getRepeatedStringFlag } from '../flags'
+import { readTextOrFileFlag } from '../command-body-input'
+import { getOptionalStringFlag, getRepeatedStringFlag, getRequiredStringFlag } from '../flags'
 import { printResult } from '../format'
 import { RuntimeClientError } from '../runtime-client'
 import { getOptionalWorktreeSelector, resolveCurrentWorktreeSelector } from '../selectors'
@@ -245,6 +250,43 @@ export const TICKET_HANDLERS: Record<string, CommandHandler> = {
       { timeoutMs: 5 * 60_000 }
     )
     printResult(result, json, formatQueue)
+  },
+  'tickets draft submit': async ({ flags, client, cwd, json }) => {
+    const batchId = getRequiredStringFlag(flags, 'batch')
+    const text = (await readTextOrFileFlag(flags, cwd, 'drafts', true)) ?? ''
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(text)
+    } catch (error) {
+      throw new RuntimeClientError(
+        'invalid_argument',
+        `The drafts are not valid JSON: ${String(error)}`
+      )
+    }
+    const payload = typeof parsed === 'object' && parsed !== null ? parsed : {}
+    const result = await client.call<TicketDraftBatch>('tickets.draftSubmit', {
+      batchId,
+      drafts: 'drafts' in payload ? payload.drafts : undefined,
+      decisions: 'decisions' in payload ? payload.decisions : []
+    })
+    printResult(
+      result,
+      json,
+      (batch) =>
+        `${batch.drafts.length} draft${batch.drafts.length === 1 ? '' : 's'} handed to Corka for review.`
+    )
+  },
+  'tickets create': async ({ flags, client, cwd, json }) => {
+    const findingOf = getOptionalStringFlag(flags, 'finding-of')
+    const result = await client.call<TicketFinding>('tickets.create', {
+      worktree: await currentWorktree(flags, cwd, client),
+      title: getRequiredStringFlag(flags, 'title'),
+      body: (await readTextOrFileFlag(flags, cwd, 'body', true)) ?? '',
+      labels: getRepeatedStringFlag(flags, 'label'),
+      blockedBy: getRepeatedStringFlag(flags, 'blocked-by'),
+      ...(findingOf ? { findingOf } : {})
+    })
+    printResult(result, json, (finding) => `#${finding.number} ${finding.title}\n${finding.url}`)
   },
   'tickets items': async ({ flags, client, json }) => {
     const repo = getOptionalStringFlag(flags, 'repo')

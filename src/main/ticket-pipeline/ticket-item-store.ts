@@ -5,6 +5,7 @@ import {
   type TicketItem,
   type TicketPipelineSettings
 } from '../../shared/ticket-pipeline/ticket-types'
+import type { TicketDraftBatch } from '../../shared/ticket-pipeline/ticket-draft-types'
 import { getProfileUserDataPath } from '../orca-profiles/profile-storage-paths'
 import { writePluginFileAtomically } from '../plugins/installation/plugin-atomic-file-write'
 
@@ -14,6 +15,7 @@ type TicketItemFile = {
   settings?: Record<string, TicketPipelineSettings>
   /** Paused merge queues by parent workspace id, with the reason the user sees. */
   pausedQueues?: Record<string, string>
+  draftBatches?: TicketDraftBatch[]
 }
 
 const FILE_NAME = 'ticket-pipeline.json'
@@ -34,6 +36,7 @@ export class TicketItemStore {
   private items: Map<string, TicketItem> | null = null
   private settings = new Map<string, TicketPipelineSettings>()
   private pausedQueues = new Map<string, string>()
+  private draftBatches = new Map<string, TicketDraftBatch>()
   private writing: Promise<void> = Promise.resolve()
 
   constructor(private readonly path: string) {}
@@ -58,6 +61,8 @@ export class TicketItemStore {
       this.settings = new Map(Object.entries(settings))
       const paused = isTicketItemFile(parsed) ? (parsed.pausedQueues ?? {}) : {}
       this.pausedQueues = new Map(Object.entries(paused))
+      const batches = isTicketItemFile(parsed) ? (parsed.draftBatches ?? []) : []
+      this.draftBatches = new Map(batches.map((batch) => [batch.id, batch]))
     }
     return this.items
   }
@@ -113,12 +118,26 @@ export class TicketItemStore {
     await this.flush()
   }
 
+  async listDraftBatches(): Promise<TicketDraftBatch[]> {
+    await this.load()
+    return [...this.draftBatches.values()]
+  }
+
+  async putDraftBatch(batch: TicketDraftBatch): Promise<TicketDraftBatch> {
+    await this.load()
+    const next = { ...batch, updatedAt: Date.now() }
+    this.draftBatches.set(batch.id, next)
+    await this.flush()
+    return next
+  }
+
   private flush(): Promise<void> {
     const snapshot: TicketItemFile = {
       version: 1,
       items: [...(this.items?.values() ?? [])],
       settings: Object.fromEntries(this.settings),
-      pausedQueues: Object.fromEntries(this.pausedQueues)
+      pausedQueues: Object.fromEntries(this.pausedQueues),
+      draftBatches: [...this.draftBatches.values()]
     }
     this.writing = this.writing
       .catch(() => undefined)

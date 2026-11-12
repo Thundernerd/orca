@@ -6,10 +6,12 @@ export const open = defineFixture({
   render: () => (
     <div className="h-72 p-4">
       <OverviewWriteTicketPopover
+        projectId="fixture-project"
         projectName="rally-point"
         busy={false}
         variant="outline"
         onSubmit={() => {}}
+        onPublished={() => {}}
       />
     </div>
   ),

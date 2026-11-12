@@ -15,7 +15,7 @@ import { cn } from '@/lib/class-names'
 import { useTranslate } from '@/i18n/use-translate'
 import { formatRelativeTime } from '@/components/activity/activity-thread-presentation'
 import type { OverviewProject } from '../../../../shared/overview/overview-model-types'
-import type { OverviewSkill } from './overview-actions'
+import type { TicketDraftBatch } from '../../../../shared/ticket-pipeline/ticket-draft-types'
 import { OverviewWorkspaceTable } from './OverviewWorkspaceTable'
 import { OverviewWriteTicketPopover } from './OverviewWriteTicketPopover'
 import { OverviewLaunchTicketsPopover } from './OverviewLaunchTicketsPopover'
@@ -26,7 +26,8 @@ import type { TicketLaunchSelection } from '../../../../shared/ticket-pipeline/t
 export type OverviewProjectCardActions = {
   busy: boolean
   open: (worktreeId: string) => void
-  runSkill: (projectId: string, skill: OverviewSkill, args?: string) => void
+  writeTicket: (projectId: string, request: string) => void
+  ticketsPublished: (projectId: string, batch: TicketDraftBatch) => void
   launchTickets: (projectId: string, tickets: TicketLaunchSelection[]) => void
   cleanUp: (projectId: string, worktreeIds: string[]) => void
   mergeQueueHead: (projectId: string) => void
@@ -254,7 +255,9 @@ export function OverviewProjectCard({
                 projectName={project.name}
                 busy={actions.busy}
                 variant="outline"
-                onSubmit={(text) => actions.runSkill(project.id, 'write-ticket', text)}
+                projectId={project.id}
+                onSubmit={(text) => actions.writeTicket(project.id, text)}
+                onPublished={(batch) => actions.ticketsPublished(project.id, batch)}
               />
             </div>
           ) : null}

@@ -67,3 +67,54 @@ export const TicketQueue = z.object(ScopeFields).refine(exactlyOneScope, scopeMe
 
 /** Merges the head of a queue that is ready, on the user's say-so. */
 export const TicketMerge = z.object({ itemId: z.string().min(1).max(200) })
+
+const DraftKey = z.string().trim().min(1).max(100)
+const TicketRef = z
+  .string()
+  .trim()
+  .regex(/^#\d+$/, 'Existing tickets are named #<number>')
+const Labels = z.array(z.string().trim().min(1).max(100)).max(20)
+
+export const TicketDraftSchema = z.object({
+  key: DraftKey,
+  title: z.string().trim().min(1).max(256),
+  body: z.string().max(60_000),
+  labels: Labels.default([]),
+  blockedBy: z
+    .array(z.union([DraftKey, TicketRef]))
+    .max(50)
+    .default([]),
+  covers: z.array(z.string().max(2000)).max(50).default([])
+})
+
+/** Starts a drafting agent in a parent workspace (or the project's main one). */
+export const TicketDraftStart = z
+  .object({ ...ScopeFields, request: z.string().trim().min(1).max(20_000) })
+  .refine(exactlyOneScope, scopeMessage)
+
+/** The drafting agent's hand-over; publishing waits for the user. */
+export const TicketDraftSubmit = z.object({
+  batchId: z.string().min(1).max(200),
+  drafts: z.array(TicketDraftSchema).min(1).max(30),
+  decisions: z.array(z.string().max(4000)).max(50).default([])
+})
+
+export const TicketDraftList = z.object({ repo: Selector.optional() })
+
+/** Publishes the (possibly edited) drafts of a batch in review. */
+export const TicketDraftPublish = z.object({
+  batchId: z.string().min(1).max(200),
+  drafts: z.array(TicketDraftSchema).min(1).max(30)
+})
+
+export const TicketDraftDiscard = z.object({ batchId: z.string().min(1).max(200) })
+
+/** A finding an implementing agent publishes at once. */
+export const TicketCreate = z.object({
+  worktree: Selector,
+  title: z.string().trim().min(1).max(256),
+  body: z.string().max(60_000),
+  labels: Labels.default([]),
+  blockedBy: z.array(TicketRef).max(20).default([]),
+  findingOf: z.string().trim().min(1).max(200).optional()
+})

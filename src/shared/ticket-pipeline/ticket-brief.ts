@@ -20,8 +20,9 @@ export function renderTicketBrief(input: TicketBriefInput): string {
   const readTicket = isIssue ? ` (\`gh issue view ${ticket.issueNumber} --comments\`)` : ''
   const docs =
     input.agentDocs.length > 0 ? input.agentDocs.join(', ') : "the repo's contributing docs"
+  // Findings publish at once: the user reviews them when choosing what to launch.
   const newTicket = isIssue
-    ? 'a GitHub issue, following the write-ticket skill\'s "Filing a finding" section: read ~/.claude/skills/write-ticket/SKILL.md and do what it says'
+    ? `a GitHub issue: write it in the ticket format (Goal, Scope, Seams under test, Acceptance criteria), citing file:line as the code stands on main and marking code that exists only on your branch; decide design choices yourself, recommending one in the Goal with the alternatives in a line each; then run \`orca tickets create --finding-of "#${ticket.issueNumber}" --title "<title>" --body-file <file>\`, adding \`--blocked-by "#${ticket.issueNumber}"\` when it builds on code from this unmerged branch`
     : 'a new docs/tickets/<next free ID>-<slug>.md committed on this branch'
   const prRule = isIssue
     ? `with 'Closes #${ticket.issueNumber}' in the body`

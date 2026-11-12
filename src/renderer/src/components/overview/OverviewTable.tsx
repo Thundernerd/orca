@@ -163,8 +163,10 @@ export function OverviewTable({
                               projectName={project.name}
                               busy={projectActions.busy}
                               variant="ghost"
-                              onSubmit={(text) =>
-                                projectActions.runSkill(project.id, 'write-ticket', text)
+                              projectId={project.id}
+                              onSubmit={(text) => projectActions.writeTicket(project.id, text)}
+                              onPublished={(batch) =>
+                                projectActions.ticketsPublished(project.id, batch)
                               }
                             />
                           </>

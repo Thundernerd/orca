@@ -8,16 +8,17 @@ import { useOverviewTicketSurveys } from './use-overview-ticket-surveys'
 import {
   cleanOverviewWorkspaces,
   launchOverviewTickets,
-  mergeOverviewQueueHead
+  mergeOverviewQueueHead,
+  publishedDraftsNotice,
+  startOverviewDraftingWithNotice
 } from './overview-ticket-pipeline'
+import type { TicketDraftBatch } from '../../../../shared/ticket-pipeline/ticket-draft-types'
 import type { TicketLaunchSelection } from '../../../../shared/ticket-pipeline/ticket-types'
 import {
   markOverviewWorkspaceRead,
   openOverviewWorkspace,
   replyToOverviewWorkspace,
-  runOverviewSkill,
-  type OverviewActionResult,
-  type OverviewSkill
+  type OverviewActionResult
 } from './overview-actions'
 import { OverviewAttentionCard, type OverviewAttentionCardActions } from './OverviewAttentionCard'
 import { OverviewProjectCard, type OverviewProjectCardActions } from './OverviewProjectCard'
@@ -145,16 +146,24 @@ export default function OverviewPage(): React.JSX.Element {
     },
     [snapshot.projects, worktreesById]
   )
-  const runSkill = useCallback(
-    (projectId: string, skill: OverviewSkill, args?: string) => {
-      const main = mainOf(projectId)
+  const writeTicket = useCallback(
+    (projectId: string, request: string) => {
       const project = snapshot.projects.find((p) => p.id === projectId)
-      if (!main || !project) {
-        return
+      if (project) {
+        void run(() => startOverviewDraftingWithNotice(projectId, project.name, request))
       }
-      void run(() => runOverviewSkill(main, project.name, skill, args))
     },
-    [mainOf, run, snapshot.projects]
+    [run, snapshot.projects]
+  )
+  const ticketsPublished = useCallback(
+    (projectId: string, batch: TicketDraftBatch) => {
+      const project = snapshot.projects.find((p) => p.id === projectId)
+      setNotice(publishedDraftsNotice(batch, project?.name ?? ''))
+      if (project?.ticketSource) {
+        surveys.requestSurvey(project.ticketSource)
+      }
+    },
+    [snapshot.projects, surveys]
   )
   const mergeQueueHead = useCallback(
     (projectId: string) => {
@@ -236,7 +245,8 @@ export default function OverviewPage(): React.JSX.Element {
   const projectActions: OverviewProjectCardActions = {
     busy,
     open,
-    runSkill,
+    writeTicket,
+    ticketsPublished,
     launchTickets,
     cleanUp,
     mergeQueueHead,
