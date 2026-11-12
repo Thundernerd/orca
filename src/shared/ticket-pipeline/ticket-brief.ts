@@ -1,8 +1,13 @@
-import type { Ticket, TicketSourceKind } from './ticket-types'
+import type { Ticket } from './ticket-types'
 
 export type TicketBriefInput = {
-  ticket: Pick<Ticket, 'id' | 'ref' | 'issueNumber' | 'title'>
-  source: TicketSourceKind
+  ticket: Pick<Ticket, 'id' | 'ref' | 'title'>
+  /** A command that prints the ticket; null when it is a file in the checkout. */
+  readCommand: string | null
+  /** How the PR names the ticket so its tracker links it. */
+  reviewRule: string
+  /** Findings become tickets published at once; otherwise they are ticket files committed here. */
+  findingsPublish: boolean
   branch: string
   /** The default branch name without its remote (`main`). */
   baseBranch: string
@@ -14,19 +19,16 @@ export type TicketBriefInput = {
 
 /** The prompt an implementing agent starts with; Corka itself tracks the PR, merge and clean-up. */
 export function renderTicketBrief(input: TicketBriefInput): string {
-  const { ticket, source, branch, baseBranch } = input
-  const isIssue = source === 'github-issues' && ticket.issueNumber !== null
-  const ticketName = isIssue ? `issue #${ticket.issueNumber}` : ticket.ref
-  const readTicket = isIssue ? ` (\`gh issue view ${ticket.issueNumber} --comments\`)` : ''
+  const { ticket, branch, baseBranch } = input
+  const ticketName = input.readCommand ? `ticket ${ticket.id}` : ticket.ref
+  const readTicket = input.readCommand ? ` (\`${input.readCommand}\`)` : ''
   const docs =
     input.agentDocs.length > 0 ? input.agentDocs.join(', ') : "the repo's contributing docs"
   // Findings publish at once: the user reviews them when choosing what to launch.
-  const newTicket = isIssue
-    ? `a GitHub issue: write it in the ticket format (Goal, Scope, Seams under test, Acceptance criteria), citing file:line as the code stands on main and marking code that exists only on your branch; decide design choices yourself, recommending one in the Goal with the alternatives in a line each; then run \`orca tickets create --finding-of "#${ticket.issueNumber}" --title "<title>" --body-file <file>\`, adding \`--blocked-by "#${ticket.issueNumber}"\` when it builds on code from this unmerged branch`
+  const newTicket = input.findingsPublish
+    ? `a ticket: write it in the ticket format (Goal, Scope, Seams under test, Acceptance criteria), citing file:line as the code stands on main and marking code that exists only on your branch; decide design choices yourself, recommending one in the Goal with the alternatives in a line each; then run \`orca tickets create --finding-of "${ticket.id}" --title "<title>" --body-file <file>\`, adding \`--blocked-by "${ticket.id}"\` when it builds on code from this unmerged branch`
     : 'a new docs/tickets/<next free ID>-<slug>.md committed on this branch'
-  const prRule = isIssue
-    ? `with 'Closes #${ticket.issueNumber}' in the body`
-    : `titled '${ticket.id}: ${ticket.title}'`
+  const prRule = input.reviewRule
   const lines = [
     `Implement ${ticketName} in this worktree, on branch ${branch}.`,
     `Read the ticket in full${readTicket}, then ${docs} and any references the ticket lists. Commit there; leave merging and other worktrees to the user.`,

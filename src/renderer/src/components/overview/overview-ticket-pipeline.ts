@@ -9,6 +9,7 @@ import type {
   TicketLaunchSelection,
   TicketPipelineSettings,
   TicketQueueView,
+  TicketSourceOption,
   TicketSurveyResult,
   WorkspaceCleanResult,
   WorkspaceCleanSurveyResult
@@ -303,7 +304,19 @@ export function publishedDraftsNotice(
     message: translate(
       'auto.components.overview.writeTicket.publishedNotice',
       'Published {{numbers}} in {{project}}.',
-      { numbers: batch.published.map((p) => `#${p.number}`).join(', '), project: projectName }
+      { numbers: batch.published.map((p) => p.id).join(', '), project: projectName }
     )
   }
+}
+
+export async function overviewTicketSourceOptions(
+  projectId: string
+): Promise<TicketSourceOption[]> {
+  const result = await callRuntimeRpc<{ options: TicketSourceOption[] }>(
+    requireProjectTarget(projectId),
+    'tickets.sourceOptions',
+    { repo: projectId },
+    { timeoutMs: SURVEY_TIMEOUT_MS }
+  )
+  return result.options
 }

@@ -20129,7 +20129,8 @@
           "hint": "Each gets its own workspace and a Claude agent that works until its PR is up.",
           "launch": "Launch {{count}}",
           "unavailable": "Tickets cannot be launched for {{project}} from here.",
-          "result": "Launched {{count}} of {{total}} tickets in {{project}}."
+          "result": "Launched {{count}} of {{total}} tickets in {{project}}.",
+          "source": "Tickets from"
         },
         "cleanUpWorkspaces": {
           "button": "Clean up",

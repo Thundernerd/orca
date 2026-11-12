@@ -1,4 +1,5 @@
 import * as z from 'zod'
+import { EXISTING_TICKET } from '../ticket-pipeline/ticket-draft-order'
 
 const Selector = z.string().trim().min(1).max(4096)
 
@@ -54,11 +55,27 @@ export const TicketClean = z
   .object({ ...ScopeFields, worktreeIds: z.array(z.string().min(1).max(4096)).min(1).max(200) })
   .refine(exactlyOneScope, scopeMessage)
 
+const Id = z.string().trim().min(1).max(200)
+
+export const TicketSourceConfigSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('auto') }),
+  z.object({ kind: z.literal('github-issues') }),
+  z.object({ kind: z.literal('linear'), workspaceId: Id, teamId: Id, teamKey: Id }),
+  z.object({ kind: z.literal('jira'), siteId: Id, projectId: Id, projectKey: Id })
+])
+
+/** The sources a project can take its tickets from. */
+export const TicketSourceOptions = z.object({ repo: Selector })
+
 /** Reads a project's ticket settings; `patch` changes them first. */
 export const TicketSettings = z.object({
   repo: Selector,
   patch: z
-    .object({ autoClean: z.boolean().optional(), autoMerge: z.boolean().optional() })
+    .object({
+      autoClean: z.boolean().optional(),
+      autoMerge: z.boolean().optional(),
+      source: TicketSourceConfigSchema.optional()
+    })
     .optional()
 })
 
@@ -72,7 +89,7 @@ const DraftKey = z.string().trim().min(1).max(100)
 const TicketRef = z
   .string()
   .trim()
-  .regex(/^#\d+$/, 'Existing tickets are named #<number>')
+  .regex(EXISTING_TICKET, 'Existing tickets are named #<number> or KEY-<number>')
 const Labels = z.array(z.string().trim().min(1).max(100)).max(20)
 
 export const TicketDraftSchema = z.object({

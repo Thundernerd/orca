@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { draftBlockerNumbers, draftIssueBody, orderDraftsForPublish } from './ticket-draft-order'
+import { draftBlockerIds, draftIssueBody, orderDraftsForPublish } from './ticket-draft-order'
 import type { TicketDraft } from './ticket-draft-types'
 
 const draft = (
@@ -18,7 +18,10 @@ const draft = (
 
 describe('orderDraftsForPublish', () => {
   it('publishes blockers before the drafts that wait on them', () => {
-    const result = orderDraftsForPublish([draft('themes', ['tokens', '#7']), draft('tokens')])
+    const result = orderDraftsForPublish([
+      draft('themes', ['tokens', '#7', 'ENG-3']),
+      draft('tokens')
+    ])
     expect(result.ok && result.order.map((d) => d.key)).toEqual(['tokens', 'themes'])
   })
 
@@ -40,7 +43,7 @@ describe('draftIssueBody', () => {
     expect(
       draftIssueBody(
         themes,
-        new Map([['tokens', 41]]),
+        new Map([['tokens', '#41']]),
         new Map([['tokens', 'Move colors to tokens']])
       )
     ).toBe('## Goal\nThemes.\n\n## Blocked by\n- #41 Move colors to tokens\n- #7\n')
@@ -49,9 +52,9 @@ describe('draftIssueBody', () => {
     )
   })
 
-  it('lists the issue numbers to link natively', () => {
-    expect(draftBlockerNumbers(draft('x', ['tokens', '#7']), new Map([['tokens', 41]]))).toEqual([
-      41, 7
-    ])
+  it('lists the tickets to link natively, published drafts by their new id', () => {
+    expect(
+      draftBlockerIds(draft('x', ['tokens', '#7', 'ENG-3']), new Map([['tokens', 'ENG-41']]))
+    ).toEqual(['ENG-41', '#7', 'ENG-3'])
   })
 })

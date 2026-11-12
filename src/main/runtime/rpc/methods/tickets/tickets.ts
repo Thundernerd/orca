@@ -12,6 +12,7 @@ import {
   TicketMerge,
   TicketQueue,
   TicketSettings,
+  TicketSourceOptions,
   TicketSurvey
 } from '../../../../../shared/rpc-contract/ticket-params'
 import { getTicketItemStore } from '../../../../ticket-pipeline/ticket-item-store'
@@ -20,6 +21,7 @@ import { surveyTickets } from '../../../../ticket-pipeline/ticket-survey'
 import { startTicketTracker } from '../../../../ticket-pipeline/ticket-tracker'
 import { cleanWorkspaces, surveyWorkspaceClean } from '../../../../ticket-pipeline/workspace-clean'
 import { getMergeQueue } from '../../../../ticket-pipeline/merge-queue'
+import { listTicketSourceOptions } from '../../../../ticket-pipeline/sources/ticket-source-options'
 import {
   createFindingTicket,
   discardTicketDrafts,
@@ -201,5 +203,13 @@ export const TICKET_METHODS = [
           ...(params.findingOf ? { findingOf: params.findingOf } : {})
         }
       )
+  }),
+  defineMethod({
+    name: 'tickets.sourceOptions',
+    permission: 'workspace',
+    params: TicketSourceOptions,
+    handler: async (params, { runtime }) => ({
+      options: await listTicketSourceOptions(await runtime.showRepo(params.repo))
+    })
   })
 ]

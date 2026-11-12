@@ -5,7 +5,7 @@ import type { Repo } from '../../shared/repo-types'
 import { AgentLaunch } from '../../shared/rpc-contract/agent-launch-params'
 import { renderTicketDraftBrief } from '../../shared/ticket-pipeline/ticket-draft-brief'
 import {
-  draftBlockerNumbers,
+  draftBlockerIds,
   draftIssueBody,
   orderDraftsForPublish
 } from '../../shared/ticket-pipeline/ticket-draft-order'
@@ -14,13 +14,12 @@ import type {
   TicketDraftBatch,
   TicketFinding
 } from '../../shared/ticket-pipeline/ticket-draft-types'
-import { createIssue } from '../github/issue-create'
-import { linkIssueBlockedBy } from '../github/issue-dependency-link'
-import { listLabels } from '../github/issue-field-options'
 import type { RpcContext } from '../runtime/rpc/core'
 import { launchAgentOnHost } from '../runtime/rpc/methods/agent-launch/agent-launch'
 import { getTicketItemStore } from './ticket-item-store'
 import { resolveTicketParentSelector, type TicketParentScope } from './ticket-parent-workspace'
+import { resolveTicketSource } from './sources/ticket-source-resolution'
+import type { TicketSource } from './sources/ticket-source'
 
 type Runtime = RpcContext['runtime']
 
@@ -126,7 +125,38 @@ export async function discardTicketDrafts(batchId: string): Promise<TicketDraftB
   return getTicketItemStore().putDraftBatch({ ...batch, status: 'discarded' })
 }
 
-/** Creates the issues blockers first, so each "Blocked by" names real numbers; resumes a partial publish. */
+/** The project's source, if its tickets can be published (ticket files are committed instead). */
+async function publishingSource(repo: Repo): Promise<PublishingSource> {
+  requirePublishableRepo(repo)
+  const { source } = await resolveTicketSource(repo)
+  const { create, linkBlocker } = source
+  if (!create || !linkBlocker) {
+    throw new Error('This project keeps tickets as files in the repo; commit them there instead.')
+  }
+  return { create, linkBlocker }
+}
+
+type PublishingSource = Required<Pick<TicketSource, 'create' | 'linkBlocker'>>
+
+async function publishTicket(
+  source: PublishingSource,
+  draft: TicketDraft,
+  publishedIds: ReadonlyMap<string, string>,
+  titles: ReadonlyMap<string, string>
+): Promise<{ id: string; url: string }> {
+  const created = await source.create({
+    title: draft.title.trim(),
+    body: draftIssueBody(draft, publishedIds, titles),
+    labels: draft.labels
+  })
+  for (const blocker of draftBlockerIds(draft, publishedIds)) {
+    // Best effort: the body's Blocked by section still carries the edge.
+    await source.linkBlocker(created.id, blocker)
+  }
+  return created
+}
+
+/** Creates the tickets blockers first, so each "Blocked by" names real ids; resumes a partial publish. */
 export async function publishTicketDrafts(
   runtime: Runtime,
   batchId: string,
@@ -141,37 +171,28 @@ export async function publishTicketDrafts(
   if (!ordered.ok) {
     throw new Error(ordered.error)
   }
-  const repo = await runtime.showRepo(`id:${batch.repoId}`)
-  requirePublishableRepo(repo)
-  const existingLabels = new Set(
-    await listLabels(repo.path, repo.issueSourcePreference).catch(() => [])
-  )
-  const numbers = new Map(batch.published.map((p) => [p.key, p.number]))
+  const source = await publishingSource(await runtime.showRepo(`id:${batch.repoId}`))
+  const ids = new Map(batch.published.map((p) => [p.key, p.id]))
   const titles = new Map(drafts.map((d) => [d.key, d.title.trim()]))
   batch = await store.putDraftBatch({ ...batch, drafts })
   for (const draft of ordered.order) {
-    if (numbers.has(draft.key)) {
+    if (ids.has(draft.key)) {
       continue
     }
-    const created = await createIssue(
-      repo.path,
-      draft.title,
-      draftIssueBody(draft, numbers, titles),
-      repo.issueSourcePreference,
-      null,
-      { labels: draft.labels.filter((label) => existingLabels.has(label)) }
-    )
-    if (!created.ok) {
-      return store.putDraftBatch({ ...batch, error: `"${draft.title}": ${created.error}` })
+    let created: { id: string; url: string }
+    try {
+      created = await publishTicket(source, draft, ids, titles)
+    } catch (error) {
+      return store.putDraftBatch({
+        ...batch,
+        error: `"${draft.title}": ${error instanceof Error ? error.message : String(error)}`
+      })
     }
-    numbers.set(draft.key, created.number)
+    ids.set(draft.key, created.id)
     batch = await store.putDraftBatch({
       ...batch,
-      published: [...batch.published, { key: draft.key, number: created.number, url: created.url }]
+      published: [...batch.published, { key: draft.key, id: created.id, url: created.url }]
     })
-    for (const blocker of draftBlockerNumbers(draft, numbers)) {
-      await linkIssueBlockedBy(repo.path, created.number, blocker, repo.issueSourcePreference)
-    }
   }
   return store.putDraftBatch({ ...batch, status: 'published', error: undefined })
 }
@@ -192,7 +213,6 @@ export async function createFindingTicket(
     await resolveTicketParentSelector(runtime, scope)
   )
   const repo = await runtime.showRepo(worktree.repoId)
-  requirePublishableRepo(repo)
   const draft: TicketDraft = {
     key: 'finding',
     title: input.title,
@@ -207,28 +227,8 @@ export async function createFindingTicket(
   if (!checked.ok) {
     throw new Error(checked.error)
   }
-  const existingLabels = new Set(
-    await listLabels(repo.path, repo.issueSourcePreference).catch(() => [])
-  )
-  const created = await createIssue(
-    repo.path,
-    draft.title,
-    draftIssueBody(draft, new Map(), new Map()),
-    repo.issueSourcePreference,
-    null,
-    { labels: draft.labels.filter((label) => existingLabels.has(label)) }
-  )
-  if (!created.ok) {
-    throw new Error(created.error)
-  }
-  for (const blocker of draftBlockerNumbers(draft, new Map())) {
-    await linkIssueBlockedBy(repo.path, created.number, blocker, repo.issueSourcePreference)
-  }
-  const finding: TicketFinding = {
-    number: created.number,
-    url: created.url,
-    title: draft.title.trim()
-  }
+  const created = await publishTicket(await publishingSource(repo), draft, new Map(), new Map())
+  const finding: TicketFinding = { id: created.id, url: created.url, title: draft.title.trim() }
   const store = getTicketItemStore()
   const origin = (await store.list()).find(
     (item) => item.repoId === repo.id && item.ticketId === input.findingOf

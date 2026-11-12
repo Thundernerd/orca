@@ -14,12 +14,20 @@ function issue(n: number, extra: Partial<Ticket> = {}): Ticket {
     ownedByUser: false,
     blockerIds: [],
     labels: [],
+    externalId: null,
     ...extra
   }
 }
 
 function workspace(extra: Partial<TicketWorkspaceSignature>): TicketWorkspaceSignature {
-  return { worktreeId: 'repo::/w', linkedIssue: null, displayName: '', branch: '', ...extra }
+  return {
+    worktreeId: 'repo::/w',
+    linkedIssue: null,
+    linkedKey: null,
+    displayName: '',
+    branch: '',
+    ...extra
+  }
 }
 
 describe('classifyTickets', () => {
@@ -65,6 +73,16 @@ describe('classifyTickets', () => {
       ['claimed', ['alice']],
       ['launched', []]
     ])
+  })
+
+  it('recognises a Linear or Jira ticket by the workspace link or its key in the branch', () => {
+    const eng: Ticket = { ...issue(0), id: 'ENG-12', slugId: 'eng-12', issueNumber: null }
+    const ops: Ticket = { ...eng, id: 'OPS-3', slugId: 'ops-3' }
+    const rows = classifyTickets([eng, ops], new Set(), [
+      workspace({ worktreeId: 'a', linkedKey: 'eng-12' }),
+      workspace({ worktreeId: 'b', branch: 'fix/ops-3-retry' })
+    ])
+    expect(rows.map((r) => r.worktreeId)).toEqual(['a', 'b'])
   })
 
   it('matches ticket files by their lower-case id', () => {

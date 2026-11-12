@@ -6,6 +6,8 @@ import {
   type TicketLaunchSelection,
   type TicketSourceKind,
   type TicketPipelineSettings,
+  type TicketSourceConfig,
+  type TicketSourceOption,
   type TicketQueueView,
   type TicketSurveyResult,
   type WorkspaceCleanResult,
@@ -16,10 +18,19 @@ import type {
   TicketDraftBatch,
   TicketFinding
 } from '../../shared/ticket-pipeline/ticket-draft-types'
+import { ticketSourceKey } from '../../shared/ticket-pipeline/ticket-source-key'
 import type { CommandHandler } from '../dispatch'
 import { readTextOrFileFlag } from '../command-body-input'
 import { getOptionalStringFlag, getRepeatedStringFlag, getRequiredStringFlag } from '../flags'
 import { printResult } from '../format'
+import {
+  formatClean,
+  formatCleanSurvey,
+  formatItems,
+  formatLaunch,
+  formatQueue,
+  formatSurvey
+} from './ticket-format'
 import { RuntimeClientError } from '../runtime-client'
 import { getOptionalWorktreeSelector, resolveCurrentWorktreeSelector } from '../selectors'
 
@@ -66,50 +77,6 @@ function readSelections(flags: Map<string, string | boolean>): TicketLaunchSelec
   })
 }
 
-function formatLaunch(result: TicketLaunchResult): string {
-  return result.outcomes
-    .map((o) =>
-      o.status === 'launched'
-        ? `launched\t${o.id}\t${o.branch}`
-        : `${o.status}\t${o.id}\t${o.reason}`
-    )
-    .join('\n')
-}
-
-function formatItems(result: { items: TicketItem[] }): string {
-  if (result.items.length === 0) {
-    return 'No launched tickets.'
-  }
-  return result.items
-    .map((item) =>
-      [item.stage, item.ticketId, item.ticketTitle, item.reviewUrl ?? item.branch].join('\t')
-    )
-    .join('\n')
-}
-
-function formatCleanSurvey(result: WorkspaceCleanSurveyResult): string {
-  if (result.rows.length === 0) {
-    return 'This workspace has no child workspaces.'
-  }
-  return [...result.rows]
-    .sort((a, b) => (a.verdict === b.verdict ? 0 : a.verdict === 'remove' ? -1 : 1))
-    .map((row) => [row.verdict, row.name, row.reason, row.worktreeId].join('\t'))
-    .join('\n')
-}
-
-function formatClean(result: WorkspaceCleanResult): string {
-  if (result.outcomes.length === 0) {
-    return 'Nothing to remove.'
-  }
-  return result.outcomes
-    .map((o) =>
-      o.status === 'removed'
-        ? `removed\t${o.worktreeId}${o.branchLeftover ? `\tbranch ${o.branchLeftover} left: not fully merged` : ''}`
-        : `kept\t${o.worktreeId}\t${o.reason}`
-    )
-    .join('\n')
-}
-
 async function currentWorktree(
   flags: Map<string, string | boolean>,
   cwd: string,
@@ -121,20 +88,25 @@ async function currentWorktree(
   )
 }
 
-function formatQueue(view: TicketQueueView): string {
-  const lines = [
-    `auto-merge: ${view.autoMerge ? 'on' : 'off'}`,
-    ...(view.pausedReason ? [`PAUSED: ${view.pausedReason}`] : [])
-  ]
-  if (view.entries.length === 0) {
-    lines.push('No ticket PRs are waiting to merge.')
+/** Matches `auto`, `github-issues`, `linear:<TEAM>` or `jira:<PROJECT>` against what the host can reach. */
+async function pickSource(
+  client: Parameters<CommandHandler>[0]['client'],
+  repo: string,
+  value: string
+): Promise<TicketSourceConfig> {
+  const { result } = await client.call<{ options: TicketSourceOption[] }>('tickets.sourceOptions', {
+    repo
+  })
+  const wanted = value.toLowerCase()
+  const match = result.options.find((o) => ticketSourceKey(o.config).toLowerCase() === wanted)
+  if (!match) {
+    const known = result.options.map((o) => ticketSourceKey(o.config)).join(', ')
+    throw new RuntimeClientError(
+      'invalid_argument',
+      `Unknown source ${value}; choose one of ${known}`
+    )
   }
-  for (const entry of view.entries) {
-    const pr = entry.reviewNumber ? `#${entry.reviewNumber}` : '-'
-    const state = entry.queue ? `${entry.queue.status}: ${entry.queue.detail}` : 'waiting its turn'
-    lines.push([entry.ticketId, pr, entry.ticketTitle, state].join('\t'))
-  }
-  return lines.join('\n')
+  return match.config
 }
 
 function onOff(flags: Map<string, string | boolean>, name: string): boolean | undefined {
@@ -143,18 +115,6 @@ function onOff(flags: Map<string, string | boolean>, name: string): boolean | un
     throw new RuntimeClientError('invalid_argument', `--${name} takes on or off`)
   }
   return value === undefined ? undefined : value === 'on'
-}
-
-function formatSurvey(result: TicketSurveyResult): string {
-  const lines = [`source: ${result.source} (${result.baseRef})`]
-  for (const row of result.rows) {
-    const waiting = row.waitingOn.length > 0 ? row.waitingOn.join(' ') : '-'
-    lines.push([row.status, row.ticket.id, row.ticket.title, waiting].join('\t'))
-  }
-  if (result.rows.length === 0) {
-    lines.push('No open tickets.')
-  }
-  return lines.join('\n')
 }
 
 export const TICKET_HANDLERS: Record<string, CommandHandler> = {
@@ -203,20 +163,25 @@ export const TICKET_HANDLERS: Record<string, CommandHandler> = {
     const shown = await client.call<{ worktree: RuntimeWorktreeRecord }>('worktree.show', {
       worktree: await currentWorktree(flags, cwd, client)
     })
+    const repo = `id:${shown.result.worktree.repoId}`
     const autoClean = onOff(flags, 'auto-clean')
     const autoMerge = onOff(flags, 'auto-merge')
+    const sourceFlag = getOptionalStringFlag(flags, 'source')
+    const source = sourceFlag === undefined ? undefined : await pickSource(client, repo, sourceFlag)
     const patch = {
       ...(autoClean !== undefined ? { autoClean } : {}),
-      ...(autoMerge !== undefined ? { autoMerge } : {})
+      ...(autoMerge !== undefined ? { autoMerge } : {}),
+      ...(source ? { source } : {})
     }
     const result = await client.call<TicketPipelineSettings>('tickets.settings', {
-      repo: `id:${shown.result.worktree.repoId}`,
+      repo,
       ...(Object.keys(patch).length > 0 ? { patch } : {})
     })
     printResult(
       result,
       json,
-      (s) => `auto-clean: ${s.autoClean ? 'on' : 'off'}\nauto-merge: ${s.autoMerge ? 'on' : 'off'}`
+      (s) =>
+        `source: ${ticketSourceKey(s.source)}\nauto-clean: ${s.autoClean ? 'on' : 'off'}\nauto-merge: ${s.autoMerge ? 'on' : 'off'}`
     )
   },
   'tickets queue': async ({ flags, client, cwd, json }) => {
@@ -286,7 +251,7 @@ export const TICKET_HANDLERS: Record<string, CommandHandler> = {
       blockedBy: getRepeatedStringFlag(flags, 'blocked-by'),
       ...(findingOf ? { findingOf } : {})
     })
-    printResult(result, json, (finding) => `#${finding.number} ${finding.title}\n${finding.url}`)
+    printResult(result, json, (finding) => `${finding.id} ${finding.title}\n${finding.url}`)
   },
   'tickets items': async ({ flags, client, json }) => {
     const repo = getOptionalStringFlag(flags, 'repo')

@@ -10,10 +10,8 @@ import type {
   TicketSourceKind,
   TicketSurveyResult
 } from '../../shared/ticket-pipeline/ticket-types'
-import { gitExecFileAsync } from '../git/runner'
-import { getBaseRefDefault } from '../git/repo-default-base-ref'
-import { surveyOpenIssueTickets } from '../github/issue-dependency-survey'
-import { listTicketFilePaths, surveyRepoFileTickets } from './sources/repo-file-ticket-source'
+import { resolveTicketSource } from './sources/ticket-source-resolution'
+import type { TicketSource } from './sources/ticket-source'
 
 export type TicketSurveyRuntime = {
   showManagedWorktree(selector: string): Promise<Pick<RuntimeWorktreeRecord, 'id' | 'repoId'>>
@@ -25,12 +23,12 @@ const WORKTREE_SCAN_LIMIT = 10_000
 
 export type TicketSurveyScope = { worktree: string } | { repo: string }
 
-/** Read-only: which of the project's open tickets can be launched now, from a parent workspace or the project. */
-export async function surveyTickets(
+/** A survey together with the source it read, so a launch claims and links through the same one. */
+export async function surveyTicketsWithSource(
   runtime: TicketSurveyRuntime,
   scope: TicketSurveyScope,
   sourceOverride?: TicketSourceKind
-): Promise<TicketSurveyResult> {
+): Promise<{ result: TicketSurveyResult; source: TicketSource; repo: Repo }> {
   const parent = 'worktree' in scope ? await runtime.showManagedWorktree(scope.worktree) : null
   const repo = await runtime.showRepo('repo' in scope ? scope.repo : (parent?.repoId ?? ''))
   if (isFolderRepo(repo)) {
@@ -39,18 +37,8 @@ export async function surveyTickets(
   if (getRepoRoutingConnectionId(repo)) {
     throw new Error('Run the ticket survey on the host that serves this project.')
   }
-
-  await gitExecFileAsync(['fetch', '-q', 'origin'], { cwd: repo.path }).catch(() => undefined)
-  const baseRef = (await getBaseRefDefault(repo.path)) ?? 'origin/main'
-  const filePaths =
-    sourceOverride === 'github-issues' ? [] : await listTicketFilePaths(repo.path, baseRef)
-  const source: TicketSourceKind =
-    sourceOverride ?? (filePaths.length > 0 ? 'repo-files' : 'github-issues')
-
-  const { tickets, doneIds } =
-    source === 'repo-files'
-      ? await surveyRepoFileTickets(repo.path, baseRef, filePaths)
-      : await surveyOpenIssueTickets(repo.path, repo.issueSourcePreference)
+  const { source, baseRef } = await resolveTicketSource(repo, sourceOverride)
+  const { tickets, doneIds } = await source.survey()
 
   const { worktrees } = await runtime.listManagedWorktrees(repo.id, WORKTREE_SCAN_LIMIT)
   const signatures = worktrees
@@ -58,14 +46,28 @@ export async function surveyTickets(
     .map((w) => ({
       worktreeId: w.id,
       linkedIssue: w.linkedIssue,
+      linkedKey: w.linkedLinearIssue ?? w.linkedWorkItem?.jiraIdentifier ?? null,
       displayName: w.displayName,
       branch: w.branch
     }))
 
   return {
+    result: {
+      source: source.kind,
+      baseRef,
+      parentWorktreeId: parent?.id ?? null,
+      rows: classifyTickets(tickets, doneIds, signatures)
+    },
     source,
-    baseRef,
-    parentWorktreeId: parent?.id ?? null,
-    rows: classifyTickets(tickets, doneIds, signatures)
+    repo
   }
+}
+
+/** Read-only: which of the project's open tickets can be launched now, from a parent workspace or the project. */
+export async function surveyTickets(
+  runtime: TicketSurveyRuntime,
+  scope: TicketSurveyScope,
+  sourceOverride?: TicketSourceKind
+): Promise<TicketSurveyResult> {
+  return (await surveyTicketsWithSource(runtime, scope, sourceOverride)).result
 }

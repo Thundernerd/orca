@@ -158,6 +158,7 @@ export async function surveyOpenIssueTickets(
       url: node.url,
       ref: String(node.number),
       issueNumber: node.number,
+      externalId: null,
       assignees: node.assignees.nodes.map((a) => a.login),
       ownedByUser: isOwnedByUser(node.body ?? ''),
       blockerIds: [...blockerIds],

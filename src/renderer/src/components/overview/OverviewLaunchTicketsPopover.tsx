@@ -18,6 +18,7 @@ import {
   type TicketSurveyRow
 } from '../../../../shared/ticket-pipeline/ticket-types'
 import { surveyOverviewProject } from './overview-ticket-pipeline'
+import { OverviewTicketSourceSelect } from './OverviewTicketSourceSelect'
 
 type Choice = { row: TicketSurveyRow; selected: boolean; type: ConventionalType }
 
@@ -116,6 +117,7 @@ export function OverviewLaunchTicketsPopover({
               }
             )}
           </p>
+          <OverviewTicketSourceSelect projectId={projectId} onChanged={() => void load()} />
           {state.kind === 'loading' ? (
             <p className="text-xs text-muted-foreground">
               {t(
@@ -144,7 +146,7 @@ export function OverviewLaunchTicketsPopover({
                     }
                     aria-label={choice.row.ticket.title}
                   />
-                  <span className="w-12 shrink-0 font-mono text-xs text-muted-foreground">
+                  <span className="w-16 shrink-0 font-mono text-xs text-muted-foreground">
                     {choice.row.ticket.id}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-xs">{choice.row.ticket.title}</span>

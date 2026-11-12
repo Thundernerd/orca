@@ -56,13 +56,18 @@ export const TICKET_COMMAND_SPECS: CommandSpec[] = [
     path: ['tickets', 'settings'],
     summary: "Show or change the project's ticket settings",
     usage:
-      'orca tickets settings [--worktree <selector>] [--auto-clean on|off] [--auto-merge on|off] [--json]',
-    allowedFlags: [...GLOBAL_FLAGS, 'worktree', 'auto-clean', 'auto-merge'],
+      'orca tickets settings [--worktree <selector>] [--source <source>] [--auto-clean on|off] [--auto-merge on|off] [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'worktree', 'source', 'auto-clean', 'auto-merge'],
     notes: [
+      'The source is auto (ticket files, else GitHub issues), github-issues, linear:<TEAM KEY> or jira:<PROJECT KEY>, from the Linear and Jira accounts connected in Settings.',
       'With --auto-clean on, Corka removes a ticket workspace once its PR merges and the clean-up survey clears it.',
       'With --auto-merge on, the merge queue merges its head as soon as it is ready instead of waiting for `orca tickets merge`.'
     ],
-    examples: ['orca tickets settings', 'orca tickets settings --auto-clean on --auto-merge on']
+    examples: [
+      'orca tickets settings',
+      'orca tickets settings --source linear:ENG',
+      'orca tickets settings --auto-clean on --auto-merge on'
+    ]
   },
   {
     path: ['tickets', 'queue'],

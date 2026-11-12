@@ -1,14 +1,23 @@
 import type { WorkspaceCleanReason } from './workspace-clean-verdict'
 import type { TicketFinding } from './ticket-draft-types'
 
-export type TicketSourceKind = 'github-issues' | 'repo-files'
+export type TicketSourceKind = 'github-issues' | 'repo-files' | 'linear' | 'jira'
+
+/** Where a project's tickets live; `auto` is ticket files when the default branch has them, else GitHub issues. */
+export type TicketSourceConfig =
+  | { kind: 'auto' }
+  | { kind: 'github-issues' }
+  | { kind: 'linear'; workspaceId: string; teamId: string; teamKey: string }
+  | { kind: 'jira'; siteId: string; projectId: string; projectKey: string }
 
 /** A ticket as its tracker reports it, before readiness is decided. */
 export type Ticket = {
-  /** Display id: `#12` for issues, `T86` for repo files. */
+  /** Display id: `#12` for GitHub issues, `T86` for ticket files, `ENG-12` for Linear or Jira. */
   id: string
-  /** Lower-case token a launched branch or workspace name carries: `gh-12`, `t86`. */
+  /** Lower-case token a launched branch or workspace name carries: `gh-12`, `t86`, `eng-12`. */
   slugId: string
+  /** The tracker's own id where it differs from the display id: Linear's issue uuid. */
+  externalId: string | null
   title: string
   url: string | null
   /** Issue number, or the ticket file's path on the default branch. */
@@ -162,12 +171,17 @@ export type TicketPipelineSettings = {
   autoClean: boolean
   /** Merge the head of the queue as soon as it is ready, instead of waiting for a click. */
   autoMerge: boolean
+  source: TicketSourceConfig
 }
 
 export const DEFAULT_TICKET_PIPELINE_SETTINGS: TicketPipelineSettings = {
   autoClean: false,
-  autoMerge: false
+  autoMerge: false,
+  source: { kind: 'auto' }
 }
+
+/** A source the user can pick for a project, labelled for a menu. */
+export type TicketSourceOption = { label: string; config: TicketSourceConfig }
 
 export type TicketQueueEntry = {
   itemId: string

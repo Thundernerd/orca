@@ -13,6 +13,7 @@ import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import { getTicketItemStore, type TicketItemStore } from './ticket-item-store'
 import { cleanWorkspaces } from './workspace-clean'
 import { getMergeQueue } from './merge-queue'
+import { resolveTicketSource } from './sources/ticket-source-resolution'
 
 export type TicketTrackerRuntime = {
   getWorktreePs(limit: number): Promise<RuntimeWorktreePsResult>
@@ -96,6 +97,8 @@ export class TicketTracker {
     private readonly autoClean?: (item: TicketItem) => Promise<void>,
     /** Moves the head of each merge queue one step; absent disables the queue. */
     private readonly advanceQueues?: () => Promise<void>,
+    /** Finishes the ticket in its tracker once its PR merged, where merging alone does not. */
+    private readonly completeTicket?: (item: TicketItem) => Promise<void>,
     private readonly store: TicketItemStore = getTicketItemStore()
   ) {}
 
@@ -164,6 +167,11 @@ export class TicketTracker {
         continue
       }
       await this.store.update(item.id, update)
+      if (update.stage === 'merged') {
+        await this.completeTicket?.(item).catch((error: unknown) =>
+          console.warn('[tickets] could not mark the ticket done', error)
+        )
+      }
       const boardStatus = update.stage !== item.stage ? boardStatusFor(update.stage) : null
       if (observed.workspaceExists && (boardStatus || update.reviewNumber !== item.reviewNumber)) {
         await this.runtime
@@ -197,7 +205,14 @@ export function startTicketTracker(runtime: OrcaRuntimeService): void {
         item.childWorktreeId
       ])
     },
-    () => getMergeQueue(runtime).advanceAll()
+    () => getMergeQueue(runtime).advanceAll(),
+    async (item) => {
+      const { source } = await resolveTicketSource(await runtime.showRepo(`id:${item.repoId}`))
+      // The project may have switched trackers since launch; never write to the wrong one.
+      if (source.kind === item.source) {
+        await source.complete(item.ticketId)
+      }
+    }
   )
   tracker.start()
 }

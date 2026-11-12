@@ -1,6 +1,7 @@
 import type { TicketDraft } from './ticket-draft-types'
 
-const EXISTING_TICKET = /^#\d+$/
+/** An existing ticket: a GitHub issue (`#12`) or a Linear or Jira key (`ENG-12`). */
+export const EXISTING_TICKET = /^(#\d+|[A-Z][A-Z0-9_]*-\d+)$/
 
 export type DraftOrderResult = { ok: true; order: TicketDraft[] } | { ok: false; error: string }
 
@@ -21,7 +22,7 @@ export function orderDraftsForPublish(drafts: readonly TicketDraft[]): DraftOrde
     if (unknown !== undefined) {
       return {
         ok: false,
-        error: `"${draft.title}" is blocked by "${unknown}", which is neither a draft nor #<n>.`
+        error: `"${draft.title}" is blocked by "${unknown}", which is neither a draft nor an existing ticket.`
       }
     }
   }
@@ -56,15 +57,15 @@ export function orderDraftsForPublish(drafts: readonly TicketDraft[]): DraftOrde
   return { ok: true, order }
 }
 
-/** The issue body: the draft's own text, then a "Blocked by" section naming real issue numbers. */
+/** The issue body: the draft's own text, then a "Blocked by" section naming published tickets. */
 export function draftIssueBody(
   draft: TicketDraft,
-  publishedNumbers: ReadonlyMap<string, number>,
+  publishedIds: ReadonlyMap<string, string>,
   titles: ReadonlyMap<string, string>
 ): string {
   const blockers = draft.blockedBy.map((ref) => {
-    const number = publishedNumbers.get(ref)
-    return number === undefined ? `- ${ref}` : `- #${number} ${titles.get(ref) ?? ''}`.trimEnd()
+    const id = publishedIds.get(ref)
+    return id === undefined ? `- ${ref}` : `- ${id} ${titles.get(ref) ?? ''}`.trimEnd()
   })
   const body = draft.body
     .trimEnd()
@@ -73,14 +74,13 @@ export function draftIssueBody(
   return `${body}\n\n## Blocked by\n${blockers.length > 0 ? blockers.join('\n') : 'None'}\n`
 }
 
-/** The issue numbers a draft waits on once its blockers are published. */
-export function draftBlockerNumbers(
+/** The tickets a draft waits on, by display id, once its blockers are published. */
+export function draftBlockerIds(
   draft: TicketDraft,
-  publishedNumbers: ReadonlyMap<string, number>
-): number[] {
+  publishedIds: ReadonlyMap<string, string>
+): string[] {
   return draft.blockedBy.flatMap((ref) => {
-    const number =
-      publishedNumbers.get(ref) ?? (EXISTING_TICKET.test(ref) ? Number(ref.slice(1)) : undefined)
-    return number === undefined ? [] : [number]
+    const id = publishedIds.get(ref) ?? (EXISTING_TICKET.test(ref) ? ref : undefined)
+    return id === undefined ? [] : [id]
   })
 }

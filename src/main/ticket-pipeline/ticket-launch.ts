@@ -14,12 +14,12 @@ import type {
   TicketSourceKind
 } from '../../shared/ticket-pipeline/ticket-types'
 import { gitExecFileAsync } from '../git/runner'
-import { updateIssue } from '../github/issue-update'
 import type { RpcContext } from '../runtime/rpc/core'
 import { launchAgentOnHost } from '../runtime/rpc/methods/agent-launch/agent-launch'
 import { getTicketItemStore } from './ticket-item-store'
 import { resolveTicketParentSelector } from './ticket-parent-workspace'
-import { surveyTickets } from './ticket-survey'
+import { surveyTicketsWithSource } from './ticket-survey'
+import type { TicketSource } from './sources/ticket-source'
 
 const AGENT_DOC_CANDIDATES = [
   'AGENTS.md',
@@ -65,23 +65,6 @@ function launchOperationId(): string {
   return `${Date.now()}-${randomUUID().replaceAll('-', '')}`
 }
 
-async function claimIssue(
-  repoPath: string,
-  issueNumber: number,
-  preference: Parameters<typeof updateIssue>[5],
-  action: 'add' | 'remove'
-): Promise<string | null> {
-  const result = await updateIssue(
-    repoPath,
-    issueNumber,
-    action === 'add' ? { addAssignees: ['@me'] } : { removeAssignees: ['@me'] },
-    null,
-    {},
-    preference
-  )
-  return result.ok ? null : result.error
-}
-
 /** Claim, create and start an agent for each confirmed ticket that is still ready; one failure never stops the rest. */
 export async function launchTickets(
   context: RpcContext,
@@ -93,7 +76,7 @@ export async function launchTickets(
   )
   const parent = await context.runtime.showManagedWorktree(parentSelector)
   const repo = await context.runtime.showRepo(parent.repoId)
-  const survey = await surveyTickets(
+  const { result: survey, source } = await surveyTicketsWithSource(
     context.runtime,
     { worktree: `id:${parent.id}` },
     request.source
@@ -121,14 +104,15 @@ export async function launchTickets(
       await launchOne(context, {
         ticket: row.ticket,
         selection,
-        source: survey.source,
+        source,
         repo,
         parent,
         baseRef: survey.baseRef,
         brief: (branch) =>
           renderTicketBrief({
             ticket: row.ticket,
-            source: survey.source,
+            ...source.briefHints(row.ticket),
+            findingsPublish: source.create !== undefined,
             branch,
             baseBranch,
             agentDocs,
@@ -145,21 +129,18 @@ async function launchOne(
   args: {
     ticket: Ticket
     selection: TicketLaunchSelection
-    source: TicketSourceKind
+    source: TicketSource
     repo: Awaited<ReturnType<RpcContext['runtime']['showRepo']>>
     parent: { id: string }
     baseRef: string
     brief: (branch: string) => string
   }
 ): Promise<TicketLaunchOutcome> {
-  const { ticket, repo, parent } = args
+  const { ticket, repo, parent, source } = args
   const branch = ticketBranchName(ticket, args.selection.type ?? conventionalTypeForTicket(ticket))
-  const issueNumber = args.source === 'github-issues' ? ticket.issueNumber : null
-  if (issueNumber !== null) {
-    const error = await claimIssue(repo.path, issueNumber, repo.issueSourcePreference, 'add')
-    if (error) {
-      return { id: ticket.id, status: 'failed', reason: `Could not claim it: ${error}` }
-    }
+  const claimError = await source.claim(ticket).catch((error: unknown) => String(error))
+  if (claimError) {
+    return { id: ticket.id, status: 'failed', reason: `Could not claim it: ${claimError}` }
   }
   let worktreeId: string
   let promptConfirmed: boolean
@@ -179,7 +160,7 @@ async function launchOne(
             name: branch.slice(branch.indexOf('/') + 1),
             branchNameOverride: branch,
             baseBranch: args.baseRef,
-            ...(issueNumber !== null ? { linkedIssue: issueNumber } : {}),
+            ...source.workspaceLink(ticket),
             displayName: `${ticket.id} ${ticket.title}`,
             displayNameKind: 'user',
             workspaceStatus: 'in-progress',
@@ -195,9 +176,7 @@ async function launchOne(
     promptConfirmed =
       result.prompt?.outcome === 'journaled' || result.prompt?.outcome === 'handed-to-terminal'
   } catch (error) {
-    if (issueNumber !== null) {
-      await claimIssue(repo.path, issueNumber, repo.issueSourcePreference, 'remove')
-    }
+    await source.release(ticket).catch(() => undefined)
     return {
       id: ticket.id,
       status: 'failed',
@@ -211,11 +190,11 @@ async function launchOne(
     repoId: repo.id,
     parentWorktreeId: parent.id,
     childWorktreeId: worktreeId,
-    source: args.source,
+    source: source.kind,
     ticketId: ticket.id,
     ticketTitle: ticket.title,
     ticketUrl: ticket.url,
-    issueNumber,
+    issueNumber: ticket.issueNumber,
     branch,
     stage: 'implementing',
     reviewNumber: null,

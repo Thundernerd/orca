@@ -7,6 +7,7 @@ import {
 import type { Ticket } from '../../../shared/ticket-pipeline/ticket-types'
 import { gitExecFileAsync } from '../../git/runner'
 import { acquire, ghExecFileAsync, release } from '../../github/gh-utils'
+import type { TicketSource } from './ticket-source'
 
 export const TICKET_FILES_DIR = 'docs/tickets/'
 
@@ -64,6 +65,7 @@ export async function surveyRepoFileTickets(
       url: null,
       ref: path,
       issueNumber: null,
+      externalId: null,
       assignees: [],
       ownedByUser: isOwnedByUser(body),
       blockerIds: parseTicketFileDeps(body),
@@ -71,4 +73,24 @@ export async function surveyRepoFileTickets(
     })
   }
   return { tickets, doneIds }
+}
+
+/** Tickets committed as files: no claim (the workspace is the marker), and a merged `<ID>:` PR finishes one. */
+export function repoFileTicketSource(
+  repoPath: string,
+  ref: string,
+  paths: readonly string[]
+): TicketSource {
+  return {
+    kind: 'repo-files',
+    survey: () => surveyRepoFileTickets(repoPath, ref, paths),
+    claim: async () => null,
+    release: async () => undefined,
+    workspaceLink: () => ({}),
+    briefHints: (ticket) => ({
+      readCommand: null,
+      reviewRule: `titled '${ticket.id}: ${ticket.title}'`
+    }),
+    complete: async () => undefined
+  }
 }

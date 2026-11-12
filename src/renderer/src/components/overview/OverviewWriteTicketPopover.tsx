@@ -60,7 +60,7 @@ export function OverviewWriteTicketPopover({
         )
       case 'published':
         return t('auto.components.overview.writeTicket.published', 'Published {{numbers}}', {
-          numbers: batch.published.map((p) => `#${p.number}`).join(', ')
+          numbers: batch.published.map((p) => p.id).join(', ')
         })
       case 'discarded':
         return t('auto.components.overview.writeTicket.discarded', 'Discarded')

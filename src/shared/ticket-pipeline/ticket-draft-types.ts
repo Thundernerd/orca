@@ -6,7 +6,7 @@ export type TicketDraft = {
   /** Markdown body without a "Blocked by" section; publishing writes that from `blockedBy`. */
   body: string
   labels: string[]
-  /** Draft keys in the same batch, or existing tickets (`#12`). */
+  /** Draft keys in the same batch, or existing tickets (`#12`, `ENG-12`). */
   blockedBy: string[]
   /** Which of the user's input items this draft covers, to show merges and splits. */
   covers: string[]
@@ -14,7 +14,8 @@ export type TicketDraft = {
 
 export type TicketDraftBatchStatus = 'drafting' | 'review' | 'published' | 'discarded'
 
-export type TicketDraftPublished = { key: string; number: number; url: string }
+/** `id` is the published ticket's display id: `#41`, `ENG-41`. */
+export type TicketDraftPublished = { key: string; id: string; url: string }
 
 export type TicketDraftBatch = {
   id: string
@@ -34,4 +35,4 @@ export type TicketDraftBatch = {
 }
 
 /** A finding an implementing agent files on its own; it publishes at once. */
-export type TicketFinding = { number: number; url: string; title: string }
+export type TicketFinding = { id: string; url: string; title: string }

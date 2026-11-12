@@ -4,6 +4,8 @@ import type { Ticket, TicketSurveyRow } from './ticket-types'
 export type TicketWorkspaceSignature = {
   worktreeId: string
   linkedIssue: number | null
+  /** A linked Linear issue or Jira key (`ENG-12`). */
+  linkedKey: string | null
   displayName: string
   branch: string
 }
@@ -23,6 +25,7 @@ function findLaunchedWorkspace(
   return workspaces.find(
     (w) =>
       (ticket.issueNumber !== null && w.linkedIssue === ticket.issueNumber) ||
+      w.linkedKey?.toUpperCase() === ticket.id.toUpperCase() ||
       pattern.test(w.displayName) ||
       pattern.test(w.branch.replace(/^refs\/heads\//, ''))
   )
