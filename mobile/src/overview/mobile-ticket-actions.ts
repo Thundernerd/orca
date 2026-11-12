@@ -19,6 +19,10 @@ import {
   type MobileWorkspaceCleanSurvey
 } from './overview-ticket-operations'
 
+// Same budgets as the desktop: a launch of many tickets runs for minutes, past the 30s default.
+const READ = { timeoutMs: 120_000 }
+const RUN = { timeoutMs: 10 * 60_000 }
+
 export type MobileTicketResult = { ok: boolean; message: string }
 
 const failed = (what: string) =>
@@ -29,17 +33,21 @@ export function mobileTicketActions(client: RpcClient, projectId: string) {
   const repo = projectId
   return {
     survey: async (): Promise<MobileTicketSurvey> => {
-      const response = await ticketSurveyRead.request(client, { repo })
+      const response = await ticketSurveyRead.request(client, { repo }, READ)
       return interpretOrThrowRefusalMessage(
         () => ticketSurveyRead.interpret(response),
         failed('read the tickets')
       )
     },
     launch: async (ids: readonly string[]): Promise<MobileTicketResult> => {
-      const response = await ticketLaunchRun.request(client, {
-        repo,
-        tickets: ids.map((id) => ({ id }))
-      })
+      const response = await ticketLaunchRun.request(
+        client,
+        {
+          repo,
+          tickets: ids.map((id) => ({ id }))
+        },
+        RUN
+      )
       const result = interpretOrThrowRefusalMessage(
         () => ticketLaunchRun.interpret(response),
         failed('launch the tickets')
@@ -60,17 +68,21 @@ export function mobileTicketActions(client: RpcClient, projectId: string) {
       }
     },
     cleanSurvey: async (): Promise<MobileWorkspaceCleanSurvey> => {
-      const response = await ticketCleanSurveyRead.request(client, { repo })
+      const response = await ticketCleanSurveyRead.request(client, { repo }, READ)
       return interpretOrThrowRefusalMessage(
         () => ticketCleanSurveyRead.interpret(response),
         failed('check the workspaces')
       )
     },
     clean: async (worktreeIds: readonly string[]): Promise<MobileTicketResult> => {
-      const response = await ticketCleanRun.request(client, {
-        repo,
-        worktreeIds: [...worktreeIds]
-      })
+      const response = await ticketCleanRun.request(
+        client,
+        {
+          repo,
+          worktreeIds: [...worktreeIds]
+        },
+        RUN
+      )
       const result = interpretOrThrowRefusalMessage(
         () => ticketCleanRun.interpret(response),
         failed('remove the workspaces')
@@ -86,21 +98,21 @@ export function mobileTicketActions(client: RpcClient, projectId: string) {
     },
     queue: async (action: 'view' | 'resume' = 'view'): Promise<MobileTicketQueue> => {
       const operation = action === 'resume' ? ticketQueueResumeRun : ticketQueueRead
-      const response = await operation.request(client, { repo })
+      const response = await operation.request(client, { repo }, action === 'resume' ? RUN : READ)
       return interpretOrThrowRefusalMessage(
         () => operation.interpret(response),
         failed('read the merge queue')
       )
     },
     merge: async (itemId: string): Promise<MobileTicketQueue> => {
-      const response = await ticketMergeRun.request(client, { itemId })
+      const response = await ticketMergeRun.request(client, { itemId }, RUN)
       return interpretOrThrowRefusalMessage(
         () => ticketMergeRun.interpret(response),
         failed('merge the PR')
       )
     },
     startDraft: async (request: string): Promise<MobileTicketResult> => {
-      const response = await ticketDraftStartRun.request(client, { repo, request })
+      const response = await ticketDraftStartRun.request(client, { repo, request }, RUN)
       interpretOrThrowRefusalMessage(
         () => ticketDraftStartRun.interpret(response),
         failed('start drafting')
@@ -114,24 +126,28 @@ export function mobileTicketActions(client: RpcClient, projectId: string) {
       }
     },
     drafts: async (): Promise<MobileTicketDraftBatch[]> => {
-      const response = await ticketDraftListRead.request(client, { repo })
+      const response = await ticketDraftListRead.request(client, { repo }, READ)
       return interpretOrThrowRefusalMessage(
         () => ticketDraftListRead.interpret(response),
         failed('read the drafts')
       ).batches
     },
     publish: async (batch: MobileTicketDraftBatch): Promise<MobileTicketDraftBatch> => {
-      const response = await ticketDraftPublishRun.request(client, {
-        batchId: batch.id,
-        drafts: batch.drafts
-      })
+      const response = await ticketDraftPublishRun.request(
+        client,
+        {
+          batchId: batch.id,
+          drafts: batch.drafts
+        },
+        RUN
+      )
       return interpretOrThrowRefusalMessage(
         () => ticketDraftPublishRun.interpret(response),
         failed('publish the drafts')
       )
     },
     discard: async (batchId: string): Promise<MobileTicketDraftBatch> => {
-      const response = await ticketDraftDiscardRun.request(client, { batchId })
+      const response = await ticketDraftDiscardRun.request(client, { batchId }, READ)
       return interpretOrThrowRefusalMessage(
         () => ticketDraftDiscardRun.interpret(response),
         failed('discard the drafts')
