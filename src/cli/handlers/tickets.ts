@@ -6,6 +6,7 @@ import {
   type TicketLaunchSelection,
   type TicketSourceKind,
   type TicketPipelineSettings,
+  type TicketQueueView,
   type TicketSurveyResult,
   type WorkspaceCleanResult,
   type WorkspaceCleanSurveyResult
@@ -115,6 +116,30 @@ async function currentWorktree(
   )
 }
 
+function formatQueue(view: TicketQueueView): string {
+  const lines = [
+    `auto-merge: ${view.autoMerge ? 'on' : 'off'}`,
+    ...(view.pausedReason ? [`PAUSED: ${view.pausedReason}`] : [])
+  ]
+  if (view.entries.length === 0) {
+    lines.push('No ticket PRs are waiting to merge.')
+  }
+  for (const entry of view.entries) {
+    const pr = entry.reviewNumber ? `#${entry.reviewNumber}` : '-'
+    const state = entry.queue ? `${entry.queue.status}: ${entry.queue.detail}` : 'waiting its turn'
+    lines.push([entry.ticketId, pr, entry.ticketTitle, state].join('\t'))
+  }
+  return lines.join('\n')
+}
+
+function onOff(flags: Map<string, string | boolean>, name: string): boolean | undefined {
+  const value = getOptionalStringFlag(flags, name)
+  if (value !== undefined && value !== 'on' && value !== 'off') {
+    throw new RuntimeClientError('invalid_argument', `--${name} takes on or off`)
+  }
+  return value === undefined ? undefined : value === 'on'
+}
+
 function formatSurvey(result: TicketSurveyResult): string {
   const lines = [`source: ${result.source} (${result.baseRef})`]
   for (const row of result.rows) {
@@ -173,15 +198,53 @@ export const TICKET_HANDLERS: Record<string, CommandHandler> = {
     const shown = await client.call<{ worktree: RuntimeWorktreeRecord }>('worktree.show', {
       worktree: await currentWorktree(flags, cwd, client)
     })
-    const autoClean = getOptionalStringFlag(flags, 'auto-clean')
-    if (autoClean !== undefined && autoClean !== 'on' && autoClean !== 'off') {
-      throw new RuntimeClientError('invalid_argument', '--auto-clean takes on or off')
+    const autoClean = onOff(flags, 'auto-clean')
+    const autoMerge = onOff(flags, 'auto-merge')
+    const patch = {
+      ...(autoClean !== undefined ? { autoClean } : {}),
+      ...(autoMerge !== undefined ? { autoMerge } : {})
     }
     const result = await client.call<TicketPipelineSettings>('tickets.settings', {
       repo: `id:${shown.result.worktree.repoId}`,
-      ...(autoClean ? { patch: { autoClean: autoClean === 'on' } } : {})
+      ...(Object.keys(patch).length > 0 ? { patch } : {})
     })
-    printResult(result, json, (s) => `auto-clean: ${s.autoClean ? 'on' : 'off'}`)
+    printResult(
+      result,
+      json,
+      (s) => `auto-clean: ${s.autoClean ? 'on' : 'off'}\nauto-merge: ${s.autoMerge ? 'on' : 'off'}`
+    )
+  },
+  'tickets queue': async ({ flags, client, cwd, json }) => {
+    const worktree = await currentWorktree(flags, cwd, client)
+    printResult(
+      await client.call<TicketQueueView>('tickets.queue', { worktree }),
+      json,
+      formatQueue
+    )
+  },
+  'tickets resume': async ({ flags, client, cwd, json }) => {
+    const worktree = await currentWorktree(flags, cwd, client)
+    const result = await client.call<TicketQueueView>('tickets.queueResume', { worktree })
+    printResult(result, json, formatQueue)
+  },
+  'tickets merge': async ({ flags, client, cwd, json }) => {
+    const worktree = await currentWorktree(flags, cwd, client)
+    const view = await client.call<TicketQueueView>('tickets.queue', { worktree })
+    const head = view.result.entries[0]
+    if (!head || head.queue?.status !== 'ready') {
+      throw new RuntimeClientError(
+        'invalid_argument',
+        head
+          ? `${head.ticketId} is not ready to merge: ${head.queue?.detail ?? 'waiting for the queue'}`
+          : 'No ticket PRs are waiting to merge.'
+      )
+    }
+    const result = await client.call<TicketQueueView>(
+      'tickets.merge',
+      { itemId: head.itemId },
+      { timeoutMs: 5 * 60_000 }
+    )
+    printResult(result, json, formatQueue)
   },
   'tickets items': async ({ flags, client, json }) => {
     const repo = getOptionalStringFlag(flags, 'repo')

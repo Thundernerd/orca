@@ -725,6 +725,8 @@ import {
   TicketCleanSurvey,
   TicketItemsList,
   TicketLaunch,
+  TicketMerge,
+  TicketQueue,
   TicketSettings,
   TicketSurvey
 } from './ticket-params'
@@ -1623,6 +1625,9 @@ export const RPC_PARAMS_BY_METHOD = {
   'tickets.cleanSurvey': TicketCleanSurvey,
   'tickets.items': TicketItemsList,
   'tickets.launch': TicketLaunch,
+  'tickets.merge': TicketMerge,
+  'tickets.queue': TicketQueue,
+  'tickets.queueResume': TicketQueue,
   'tickets.settings': TicketSettings,
   'tickets.survey': TicketSurvey,
   'ui.get': null,

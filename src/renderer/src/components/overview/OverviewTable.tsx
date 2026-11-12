@@ -3,7 +3,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/class-names'
 import { useTranslate } from '@/i18n/use-translate'
-import { OVERVIEW_SKILLS } from './overview-actions'
 import type { OverviewProjectSection } from './overview-project-sections'
 import type { OverviewProjectCardActions } from './OverviewProjectCard'
 import type { OverviewAttentionCardActions } from './OverviewAttentionCard'
@@ -12,6 +11,7 @@ import type { OverviewTriage } from './use-overview-keyboard-triage'
 import { OverviewWriteTicketPopover } from './OverviewWriteTicketPopover'
 import { OverviewLaunchTicketsPopover } from './OverviewLaunchTicketsPopover'
 import { OverviewCleanUpPopover } from './OverviewCleanUpPopover'
+import { OverviewMergeQueuePopover } from './OverviewMergeQueuePopover'
 
 /** Every workspace in one table, grouped by project; collapsing a group minimizes its card too. */
 export function OverviewTable({
@@ -150,34 +150,25 @@ export function OverviewTable({
                             onClean={(ids) => projectActions.cleanUp(project.id, ids)}
                           />
                         ) : null}
-                        {project.mainWorktreeId && !project.hidden
-                          ? OVERVIEW_SKILLS.map((skill) =>
-                              skill === 'write-ticket' ? (
-                                <OverviewWriteTicketPopover
-                                  key={skill}
-                                  projectName={project.name}
-                                  busy={projectActions.busy}
-                                  variant="ghost"
-                                  onSubmit={(text) =>
-                                    projectActions.runSkill(project.id, skill, text)
-                                  }
-                                />
-                              ) : (
-                                <Button
-                                  key={skill}
-                                  variant="ghost"
-                                  size="xs"
-                                  disabled={
-                                    projectActions.busy ||
-                                    (skill === 'merge-tickets' && project.merging)
-                                  }
-                                  onClick={() => projectActions.runSkill(project.id, skill)}
-                                >
-                                  /{skill}
-                                </Button>
-                              )
-                            )
-                          : null}
+                        {project.mainWorktreeId && !project.hidden ? (
+                          <>
+                            <OverviewMergeQueuePopover
+                              projectId={project.id}
+                              projectName={project.name}
+                              busy={projectActions.busy}
+                              variant="ghost"
+                              onMerge={() => projectActions.mergeQueueHead(project.id)}
+                            />
+                            <OverviewWriteTicketPopover
+                              projectName={project.name}
+                              busy={projectActions.busy}
+                              variant="ghost"
+                              onSubmit={(text) =>
+                                projectActions.runSkill(project.id, 'write-ticket', text)
+                              }
+                            />
+                          </>
+                        ) : null}
                         <Button
                           variant="ghost"
                           size="icon-xs"

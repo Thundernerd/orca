@@ -19,8 +19,8 @@ import type {
   OverviewWorktreeInput
 } from '../../../../shared/overview/overview-model-types'
 
-// Launching and clean-up are native (OverviewLaunchTicketsPopover, OverviewCleanUpPopover).
-export const OVERVIEW_SKILLS = ['merge-tickets', 'write-ticket'] as const
+// Launching, clean-up and merging are native (the Overview ticket popovers); writing a ticket still runs the skill.
+export const OVERVIEW_SKILLS = ['write-ticket'] as const
 export type OverviewSkill = (typeof OVERVIEW_SKILLS)[number]
 
 export type OverviewActionResult = { ok: true; message: string } | { ok: false; message: string }

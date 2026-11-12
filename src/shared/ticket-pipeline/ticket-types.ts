@@ -98,8 +98,38 @@ export type TicketItem = {
   stage: TicketItemStage
   reviewNumber: number | null
   reviewUrl: string | null
+  /** The agent's terminal from launch; fix briefs go here. */
+  agentTerminalHandle?: string
+  /** Where the merge queue has this item; absent until it reaches the head of the queue. */
+  queue?: TicketQueueState
   createdAt: number
   updatedAt: number
+}
+
+export type TicketQueueStatus =
+  | 'waiting-ci'
+  | 'updating-branch'
+  | 'rerunning'
+  | 'fixing'
+  | 'ready'
+  | 'merging'
+  | 'paused'
+
+export type TicketFixCause = 'attribution' | 'conflict' | 'ci'
+
+export type TicketQueueState = {
+  status: TicketQueueStatus
+  /** Plain-language detail: what is being waited on, fixed, or why it paused. */
+  detail: string
+  /** Fix briefs sent per cause; a second failure of the same cause pauses the queue. */
+  fixAttempts: Partial<Record<TicketFixCause, number>>
+  /** The head a fix was asked for; the queue waits for a push that replaces it. */
+  awaitingPushFrom?: string
+  awaitingPushSince?: number
+  /** What the awaited fix is for, so a fix that needs no push still unblocks the queue. */
+  awaitingCause?: TicketFixCause
+  /** The head whose failed jobs were already rerun once as a possible flake. */
+  rerunHead?: string
 }
 
 export type WorkspaceCleanRow = {
@@ -127,6 +157,29 @@ export type WorkspaceCleanResult = { outcomes: WorkspaceCleanOutcome[] }
 export type TicketPipelineSettings = {
   /** Remove a ticket's workspace once its PR merges and the clean-up survey says it is safe. */
   autoClean: boolean
+  /** Merge the head of the queue as soon as it is ready, instead of waiting for a click. */
+  autoMerge: boolean
 }
 
-export const DEFAULT_TICKET_PIPELINE_SETTINGS: TicketPipelineSettings = { autoClean: false }
+export const DEFAULT_TICKET_PIPELINE_SETTINGS: TicketPipelineSettings = {
+  autoClean: false,
+  autoMerge: false
+}
+
+export type TicketQueueEntry = {
+  itemId: string
+  ticketId: string
+  ticketTitle: string
+  reviewNumber: number | null
+  reviewUrl: string | null
+  childWorktreeId: string
+  /** Null for entries behind the head: they wait their turn. */
+  queue: TicketQueueState | null
+}
+
+export type TicketQueueView = {
+  parentWorktreeId: string
+  pausedReason: string | null
+  autoMerge: boolean
+  entries: TicketQueueEntry[]
+}

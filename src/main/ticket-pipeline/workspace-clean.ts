@@ -18,10 +18,9 @@ import { getBaseRefDefault } from '../git/repo-default-base-ref'
 import type { RpcContext } from '../runtime/rpc/core'
 import { removeWorktreeForRpc } from '../runtime/rpc/methods/workspaces/worktree-removal-rpc'
 import { getTicketItemStore } from './ticket-item-store'
+import { resolveTicketParentSelector, type TicketParentScope } from './ticket-parent-workspace'
 
 const SCAN_LIMIT = 10_000
-
-export type WorkspaceCleanScope = { worktree: string } | { repo: string }
 
 async function exists(path: string): Promise<boolean> {
   return access(path).then(
@@ -40,22 +39,6 @@ async function git(cwd: string, args: string[]): Promise<string | null> {
 
 async function isAncestor(cwd: string, commit: string, of: string): Promise<boolean> {
   return (await git(cwd, ['merge-base', '--is-ancestor', commit, of])) !== null
-}
-
-async function resolveParent(
-  runtime: RpcContext['runtime'],
-  scope: WorkspaceCleanScope
-): Promise<string> {
-  if ('worktree' in scope) {
-    return scope.worktree
-  }
-  const repo = await runtime.showRepo(scope.repo)
-  const { worktrees } = await runtime.listManagedWorktrees(repo.id, SCAN_LIMIT)
-  const main = worktrees.find((w) => w.repoId === repo.id && w.isMainWorktree)
-  if (!main) {
-    throw new Error(`${repo.displayName} has no main workspace.`)
-  }
-  return `id:${main.id}`
 }
 
 async function gatherEvidence(
@@ -115,9 +98,11 @@ async function gatherEvidence(
 /** Read-only: which children of the parent workspace hold nothing worth keeping. */
 export async function surveyWorkspaceClean(
   runtime: RpcContext['runtime'],
-  scope: WorkspaceCleanScope
+  scope: TicketParentScope
 ): Promise<WorkspaceCleanSurveyResult> {
-  const parent = await runtime.showManagedWorktree(await resolveParent(runtime, scope))
+  const parent = await runtime.showManagedWorktree(
+    await resolveTicketParentSelector(runtime, scope)
+  )
   const repo = await runtime.showRepo(parent.repoId)
   if (isFolderRepo(repo) || getRepoRoutingConnectionId(repo)) {
     throw new Error('Clean-up runs on the host that serves this git project.')
@@ -158,7 +143,7 @@ export async function surveyWorkspaceClean(
 /** Removes the confirmed children the survey still clears, never forced; a leftover branch goes only via `git branch -d`. */
 export async function cleanWorkspaces(
   context: RpcContext,
-  scope: WorkspaceCleanScope,
+  scope: TicketParentScope,
   worktreeIds: readonly string[]
 ): Promise<WorkspaceCleanResult> {
   const survey = await surveyWorkspaceClean(context.runtime, scope)

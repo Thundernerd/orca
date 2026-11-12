@@ -57,5 +57,13 @@ export const TicketClean = z
 /** Reads a project's ticket settings; `patch` changes them first. */
 export const TicketSettings = z.object({
   repo: Selector,
-  patch: z.object({ autoClean: z.boolean().optional() }).optional()
+  patch: z
+    .object({ autoClean: z.boolean().optional(), autoMerge: z.boolean().optional() })
+    .optional()
 })
+
+/** The merge queue of a parent workspace (or the project's main one). */
+export const TicketQueue = z.object(ScopeFields).refine(exactlyOneScope, scopeMessage)
+
+/** Merges the head of a queue that is ready, on the user's say-so. */
+export const TicketMerge = z.object({ itemId: z.string().min(1).max(200) })

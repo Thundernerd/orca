@@ -18,6 +18,7 @@ import { updateIssue } from '../github/issue-update'
 import type { RpcContext } from '../runtime/rpc/core'
 import { launchAgentOnHost } from '../runtime/rpc/methods/agent-launch/agent-launch'
 import { getTicketItemStore } from './ticket-item-store'
+import { resolveTicketParentSelector } from './ticket-parent-workspace'
 import { surveyTickets } from './ticket-survey'
 
 const AGENT_DOC_CANDIDATES = [
@@ -35,22 +36,6 @@ export type TicketLaunchRequest = {
   repo?: string
   source?: TicketSourceKind
   tickets: readonly TicketLaunchSelection[]
-}
-
-async function resolveParentSelector(
-  context: RpcContext,
-  request: TicketLaunchRequest
-): Promise<string> {
-  if (request.parentWorktree) {
-    return request.parentWorktree
-  }
-  const repo = await context.runtime.showRepo(request.repo ?? '')
-  const { worktrees } = await context.runtime.listManagedWorktrees(repo.id, 10_000)
-  const main = worktrees.find((w) => w.repoId === repo.id && w.isMainWorktree)
-  if (!main) {
-    throw new Error(`${repo.displayName} has no main workspace to launch tickets from.`)
-  }
-  return `id:${main.id}`
 }
 
 async function gitLines(cwd: string, args: string[]): Promise<string[]> {
@@ -102,7 +87,10 @@ export async function launchTickets(
   context: RpcContext,
   request: TicketLaunchRequest
 ): Promise<TicketLaunchResult> {
-  const parentSelector = await resolveParentSelector(context, request)
+  const parentSelector = await resolveTicketParentSelector(
+    context.runtime,
+    request.parentWorktree ? { worktree: request.parentWorktree } : { repo: request.repo ?? '' }
+  )
   const parent = await context.runtime.showManagedWorktree(parentSelector)
   const repo = await context.runtime.showRepo(parent.repoId)
   const survey = await surveyTickets(
@@ -175,6 +163,7 @@ async function launchOne(
   }
   let worktreeId: string
   let promptConfirmed: boolean
+  let agentTerminalHandle: string | undefined
   try {
     const result = await launchAgentOnHost(
       AgentLaunch.parse({
@@ -202,6 +191,7 @@ async function launchOne(
       context
     )
     worktreeId = result.worktreeId
+    agentTerminalHandle = result.outcome.kind === 'terminal' ? result.outcome.handle : undefined
     promptConfirmed =
       result.prompt?.outcome === 'journaled' || result.prompt?.outcome === 'handed-to-terminal'
   } catch (error) {
@@ -230,6 +220,7 @@ async function launchOne(
     stage: 'implementing',
     reviewNumber: null,
     reviewUrl: null,
+    ...(agentTerminalHandle ? { agentTerminalHandle } : {}),
     createdAt: now,
     updatedAt: now
   })

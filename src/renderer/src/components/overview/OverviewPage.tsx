@@ -5,7 +5,11 @@ import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
 import type { OverviewPrefs } from '../../../../shared/overview-prefs'
 import { useOverviewData } from './use-overview-data'
 import { useOverviewTicketSurveys } from './use-overview-ticket-surveys'
-import { cleanOverviewWorkspaces, launchOverviewTickets } from './overview-ticket-pipeline'
+import {
+  cleanOverviewWorkspaces,
+  launchOverviewTickets,
+  mergeOverviewQueueHead
+} from './overview-ticket-pipeline'
 import type { TicketLaunchSelection } from '../../../../shared/ticket-pipeline/ticket-types'
 import {
   markOverviewWorkspaceRead,
@@ -67,7 +71,7 @@ export default function OverviewPage(): React.JSX.Element {
   const updatePrefs = useAppStore((state) => state.updateOverviewPrefs)
   const projectGroups = useAppStore((state) => state.projectGroups)
   const surveys = useOverviewTicketSurveys()
-  const { snapshot, worktreesById, markMergePending } = useOverviewData(surveys.ticketsLoading)
+  const { snapshot, worktreesById } = useOverviewData(surveys.ticketsLoading)
   const [notice, setNotice] = useState<OverviewActionResult | null>(null)
   const [busy, setBusy] = useState(false)
   const [now, setNow] = useState(() => Date.now())
@@ -148,15 +152,18 @@ export default function OverviewPage(): React.JSX.Element {
       if (!main || !project) {
         return
       }
-      void run(async () => {
-        const result = await runOverviewSkill(main, project.name, skill, args)
-        if (result.ok && skill === 'merge-tickets') {
-          markMergePending(projectId)
-        }
-        return result
-      })
+      void run(() => runOverviewSkill(main, project.name, skill, args))
     },
-    [mainOf, markMergePending, run, snapshot.projects]
+    [mainOf, run, snapshot.projects]
+  )
+  const mergeQueueHead = useCallback(
+    (projectId: string) => {
+      const project = snapshot.projects.find((p) => p.id === projectId)
+      if (project) {
+        void run(() => mergeOverviewQueueHead(projectId, project.name))
+      }
+    },
+    [run, snapshot.projects]
   )
 
   const attentionActions: OverviewAttentionCardActions = {
@@ -187,7 +194,7 @@ export default function OverviewPage(): React.JSX.Element {
         markOverviewWorkspaceRead(worktree)
       }
     },
-    mergeTickets: (projectId) => runSkill(projectId, 'merge-tickets'),
+    mergeTickets: mergeQueueHead,
     // The sidebar's delete funnel: its confirmation, unsaved-file and host checks apply.
     removeWorkspace: (worktreeId) => {
       const worktree = worktreesById.get(worktreeId)
@@ -232,6 +239,7 @@ export default function OverviewPage(): React.JSX.Element {
     runSkill,
     launchTickets,
     cleanUp,
+    mergeQueueHead,
     refreshTickets: surveys.requestSurvey,
     togglePinned: (id) => updatePrefs((p) => toggled(p, 'pinned', id)),
     toggleMinimized: (id) => updatePrefs((p) => toggled(p, 'minimized', id)),

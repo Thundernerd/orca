@@ -20152,6 +20152,23 @@
             "reviewClosed": "PR closed without merging",
             "notMerged": "not merged and no PR"
           }
+        },
+        "mergeQueue": {
+          "button": "Merge queue",
+          "title": "Merge queue in {{project}}",
+          "loading": "Reading the queue…",
+          "pausedBanner": "Paused: {{reason}}",
+          "resume": "Resume",
+          "none": "No ticket PRs are waiting to merge.",
+          "waitingTurn": "Waiting its turn.",
+          "auto": "Merge the first PR automatically once it is ready",
+          "hint": "PRs merge one at a time in ticket order, each with green CI on an up-to-date branch.",
+          "merge": "Merge {{ticket}}",
+          "mergeNone": "Merge",
+          "paused": "The merge queue in {{project}} is paused: {{reason}}",
+          "notReady": "{{ticket}} is not ready to merge yet: {{detail}}",
+          "empty": "No ticket PRs are waiting to merge in {{project}}.",
+          "merged": "Merged {{ticket}} in {{project}}."
         }
       }
     },

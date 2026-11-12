@@ -8,6 +8,7 @@ import type {
   TicketLaunchResult,
   TicketLaunchSelection,
   TicketPipelineSettings,
+  TicketQueueView,
   TicketSurveyResult,
   WorkspaceCleanResult,
   WorkspaceCleanSurveyResult
@@ -160,5 +161,70 @@ export async function cleanOverviewWorkspaces(
           ]
         : [])
     ].join(' ')
+  }
+}
+
+export function overviewMergeQueue(
+  projectId: string,
+  action: 'view' | 'resume' = 'view'
+): Promise<TicketQueueView> {
+  return callRuntimeRpc<TicketQueueView>(
+    requireProjectTarget(projectId),
+    action === 'resume' ? 'tickets.queueResume' : 'tickets.queue',
+    { repo: projectId },
+    { timeoutMs: SURVEY_TIMEOUT_MS }
+  )
+}
+
+/** Merges the queue head if it is ready; otherwise reports what it is waiting on. */
+export async function mergeOverviewQueueHead(
+  projectId: string,
+  projectName: string
+): Promise<OverviewActionResult> {
+  const target = requireProjectTarget(projectId)
+  const view = await overviewMergeQueue(projectId)
+  const head = view.entries[0]
+  if (view.pausedReason) {
+    return {
+      ok: false,
+      message: translate(
+        'auto.components.overview.mergeQueue.paused',
+        'The merge queue in {{project}} is paused: {{reason}}',
+        { project: projectName, reason: view.pausedReason }
+      )
+    }
+  }
+  if (!head || head.queue?.status !== 'ready') {
+    return {
+      ok: false,
+      message: head
+        ? translate(
+            'auto.components.overview.mergeQueue.notReady',
+            '{{ticket}} is not ready to merge yet: {{detail}}',
+            { ticket: head.ticketId, detail: head.queue?.detail ?? '' }
+          )
+        : translate(
+            'auto.components.overview.mergeQueue.empty',
+            'No ticket PRs are waiting to merge in {{project}}.',
+            { project: projectName }
+          )
+    }
+  }
+  await callRuntimeRpc<TicketQueueView>(
+    target,
+    'tickets.merge',
+    { itemId: head.itemId },
+    { timeoutMs: SURVEY_TIMEOUT_MS }
+  )
+  return {
+    ok: true,
+    message: translate(
+      'auto.components.overview.mergeQueue.merged',
+      'Merged {{ticket}} in {{project}}.',
+      {
+        ticket: head.ticketId,
+        project: projectName
+      }
+    )
   }
 }

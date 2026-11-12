@@ -12,6 +12,7 @@ import type { TicketItem } from '../../shared/ticket-pipeline/ticket-types'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import { getTicketItemStore, type TicketItemStore } from './ticket-item-store'
 import { cleanWorkspaces } from './workspace-clean'
+import { getMergeQueue } from './merge-queue'
 
 export type TicketTrackerRuntime = {
   getWorktreePs(limit: number): Promise<RuntimeWorktreePsResult>
@@ -93,6 +94,8 @@ export class TicketTracker {
     private readonly runtime: TicketTrackerRuntime,
     /** Removes a merged item's workspace if the clean-up survey clears it; absent disables auto-clean. */
     private readonly autoClean?: (item: TicketItem) => Promise<void>,
+    /** Moves the head of each merge queue one step; absent disables the queue. */
+    private readonly advanceQueues?: () => Promise<void>,
     private readonly store: TicketItemStore = getTicketItemStore()
   ) {}
 
@@ -171,6 +174,9 @@ export class TicketTracker {
           .catch((error: unknown) => console.warn('[tickets] could not update workspace', error))
       }
     }
+    await this.advanceQueues?.().catch((error: unknown) =>
+      console.warn('[tickets] merge queue step failed', error)
+    )
     // Includes items that merged this tick; a kept workspace (an agent still busy) is retried next tick.
     for (const item of await this.awaitingAutoClean(await this.store.list())) {
       await this.autoClean?.(item).catch((error: unknown) =>
@@ -184,10 +190,14 @@ export class TicketTracker {
 let tracker: TicketTracker | null = null
 
 export function startTicketTracker(runtime: OrcaRuntimeService): void {
-  tracker ??= new TicketTracker(runtime, async (item) => {
-    await cleanWorkspaces({ runtime }, { worktree: `id:${item.parentWorktreeId}` }, [
-      item.childWorktreeId
-    ])
-  })
+  tracker ??= new TicketTracker(
+    runtime,
+    async (item) => {
+      await cleanWorkspaces({ runtime }, { worktree: `id:${item.parentWorktreeId}` }, [
+        item.childWorktreeId
+      ])
+    },
+    () => getMergeQueue(runtime).advanceAll()
+  )
   tracker.start()
 }

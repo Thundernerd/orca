@@ -15,11 +15,12 @@ import { cn } from '@/lib/class-names'
 import { useTranslate } from '@/i18n/use-translate'
 import { formatRelativeTime } from '@/components/activity/activity-thread-presentation'
 import type { OverviewProject } from '../../../../shared/overview/overview-model-types'
-import { OVERVIEW_SKILLS, type OverviewSkill } from './overview-actions'
+import type { OverviewSkill } from './overview-actions'
 import { OverviewWorkspaceTable } from './OverviewWorkspaceTable'
 import { OverviewWriteTicketPopover } from './OverviewWriteTicketPopover'
 import { OverviewLaunchTicketsPopover } from './OverviewLaunchTicketsPopover'
 import { OverviewCleanUpPopover } from './OverviewCleanUpPopover'
+import { OverviewMergeQueuePopover } from './OverviewMergeQueuePopover'
 import type { TicketLaunchSelection } from '../../../../shared/ticket-pipeline/ticket-types'
 
 export type OverviewProjectCardActions = {
@@ -28,6 +29,7 @@ export type OverviewProjectCardActions = {
   runSkill: (projectId: string, skill: OverviewSkill, args?: string) => void
   launchTickets: (projectId: string, tickets: TicketLaunchSelection[]) => void
   cleanUp: (projectId: string, worktreeIds: string[]) => void
+  mergeQueueHead: (projectId: string) => void
   refreshTickets: (ticketSource: string) => void
   togglePinned: (projectId: string) => void
   toggleMinimized: (projectId: string) => void
@@ -241,27 +243,19 @@ export function OverviewProjectCard({
                 variant="outline"
                 onClean={(ids) => actions.cleanUp(project.id, ids)}
               />
-              {OVERVIEW_SKILLS.map((skill) =>
-                skill === 'write-ticket' ? (
-                  <OverviewWriteTicketPopover
-                    key={skill}
-                    projectName={project.name}
-                    busy={actions.busy}
-                    variant="outline"
-                    onSubmit={(text) => actions.runSkill(project.id, skill, text)}
-                  />
-                ) : (
-                  <Button
-                    key={skill}
-                    variant="outline"
-                    size="xs"
-                    disabled={actions.busy || (skill === 'merge-tickets' && project.merging)}
-                    onClick={() => actions.runSkill(project.id, skill)}
-                  >
-                    /{skill}
-                  </Button>
-                )
-              )}
+              <OverviewMergeQueuePopover
+                projectId={project.id}
+                projectName={project.name}
+                busy={actions.busy}
+                variant="outline"
+                onMerge={() => actions.mergeQueueHead(project.id)}
+              />
+              <OverviewWriteTicketPopover
+                projectName={project.name}
+                busy={actions.busy}
+                variant="outline"
+                onSubmit={(text) => actions.runSkill(project.id, 'write-ticket', text)}
+              />
             </div>
           ) : null}
 

@@ -12,6 +12,8 @@ type TicketItemFile = {
   version: 1
   items: TicketItem[]
   settings?: Record<string, TicketPipelineSettings>
+  /** Paused merge queues by parent workspace id, with the reason the user sees. */
+  pausedQueues?: Record<string, string>
 }
 
 const FILE_NAME = 'ticket-pipeline.json'
@@ -31,6 +33,7 @@ function isTicketItemFile(value: unknown): value is TicketItemFile {
 export class TicketItemStore {
   private items: Map<string, TicketItem> | null = null
   private settings = new Map<string, TicketPipelineSettings>()
+  private pausedQueues = new Map<string, string>()
   private writing: Promise<void> = Promise.resolve()
 
   constructor(private readonly path: string) {}
@@ -53,6 +56,8 @@ export class TicketItemStore {
       this.items = loaded
       const settings = isTicketItemFile(parsed) ? (parsed.settings ?? {}) : {}
       this.settings = new Map(Object.entries(settings))
+      const paused = isTicketItemFile(parsed) ? (parsed.pausedQueues ?? {}) : {}
+      this.pausedQueues = new Map(Object.entries(paused))
     }
     return this.items
   }
@@ -93,11 +98,27 @@ export class TicketItemStore {
     return next
   }
 
+  async getQueuePause(parentWorktreeId: string): Promise<string | null> {
+    await this.load()
+    return this.pausedQueues.get(parentWorktreeId) ?? null
+  }
+
+  async setQueuePause(parentWorktreeId: string, reason: string | null): Promise<void> {
+    await this.load()
+    if (reason === null) {
+      this.pausedQueues.delete(parentWorktreeId)
+    } else {
+      this.pausedQueues.set(parentWorktreeId, reason)
+    }
+    await this.flush()
+  }
+
   private flush(): Promise<void> {
     const snapshot: TicketItemFile = {
       version: 1,
       items: [...(this.items?.values() ?? [])],
-      settings: Object.fromEntries(this.settings)
+      settings: Object.fromEntries(this.settings),
+      pausedQueues: Object.fromEntries(this.pausedQueues)
     }
     this.writing = this.writing
       .catch(() => undefined)

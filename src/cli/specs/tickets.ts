@@ -55,11 +55,39 @@ export const TICKET_COMMAND_SPECS: CommandSpec[] = [
   {
     path: ['tickets', 'settings'],
     summary: "Show or change the project's ticket settings",
-    usage: 'orca tickets settings [--worktree <selector>] [--auto-clean on|off] [--json]',
-    allowedFlags: [...GLOBAL_FLAGS, 'worktree', 'auto-clean'],
+    usage:
+      'orca tickets settings [--worktree <selector>] [--auto-clean on|off] [--auto-merge on|off] [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'worktree', 'auto-clean', 'auto-merge'],
     notes: [
-      'With --auto-clean on, Corka removes a ticket workspace once its PR merges and the clean-up survey clears it.'
+      'With --auto-clean on, Corka removes a ticket workspace once its PR merges and the clean-up survey clears it.',
+      'With --auto-merge on, the merge queue merges its head as soon as it is ready instead of waiting for `orca tickets merge`.'
     ],
-    examples: ['orca tickets settings', 'orca tickets settings --auto-clean on']
+    examples: ['orca tickets settings', 'orca tickets settings --auto-clean on --auto-merge on']
+  },
+  {
+    path: ['tickets', 'queue'],
+    summary: "Show the workspace's merge queue",
+    usage: 'orca tickets queue [--worktree <selector>] [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'worktree'],
+    notes: [
+      'Ticket PRs merge one at a time in ticket order. The head is brought up to date, waits for green CI, and gets fix briefs sent to its agent for attribution, conflicts or failing checks.',
+      'The queue pauses after a second failed fix for the same cause, with no live agent, after 3 hours without a push, or when GitHub blocks the merge; `orca tickets resume` clears the pause.'
+    ],
+    examples: ['orca tickets queue', 'orca tickets queue --json']
+  },
+  {
+    path: ['tickets', 'resume'],
+    summary: 'Resume a paused merge queue, giving its head fresh fix attempts',
+    usage: 'orca tickets resume [--worktree <selector>] [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'worktree'],
+    examples: ['orca tickets resume']
+  },
+  {
+    path: ['tickets', 'merge'],
+    summary: 'Merge the head of the merge queue once it is ready',
+    usage: 'orca tickets merge [--worktree <selector>] [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'worktree'],
+    notes: ['Merges with a merge commit, and only when the queue reports the head as ready.'],
+    examples: ['orca tickets merge']
   }
 ]
