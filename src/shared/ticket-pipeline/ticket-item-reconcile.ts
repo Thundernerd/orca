@@ -1,4 +1,4 @@
-import type { PRState } from '../github/pull-request-types'
+import type { PRState } from '../github/pull-requests/pull-request-types'
 import type { TicketItem, TicketItemStage } from './ticket-types'
 
 /** What the tracker observed about an item's workspace and review this tick. */

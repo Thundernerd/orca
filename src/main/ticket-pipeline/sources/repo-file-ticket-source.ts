@@ -5,8 +5,9 @@ import {
   TICKET_FILE_NAME
 } from '../../../shared/ticket-pipeline/ticket-body-markers'
 import type { Ticket } from '../../../shared/ticket-pipeline/ticket-types'
-import { gitExecFileAsync } from '../../git/runner'
-import { acquire, ghExecFileAsync, release } from '../../github/gh-utils'
+import { gitExecFileAsync } from '../../git/command-runner/git-exec-file'
+import { ghExecFileAsync } from '../../git/command-runner/hosted-cli/gh-exec-file'
+import { acquire, release } from '../../github/execution/github-operation-slots'
 import type { TicketSource } from './ticket-source'
 
 export const TICKET_FILES_DIR = 'docs/tickets/'

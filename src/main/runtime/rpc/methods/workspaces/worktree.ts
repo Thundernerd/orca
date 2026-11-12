@@ -13,7 +13,7 @@ import { defineMethod } from '../../core'
 import { buildManagedWorktreeCreateArgs, worktreeCreateRepoSelector } from './worktree-create-args'
 import { resolvePairedCallerHostId } from '../pairing/paired-caller-host-id'
 import { resolveRuntimeNavigationTarget } from '../../../../../shared/runtime-navigation'
-import { resolveRpcWorkspaceCreatorProvenance } from '../../workspace-creator-context'
+import { resolveRpcWorkspaceCreatorProvenance } from '../../callers/workspace-creator-context'
 import {
   WorktreeCreate,
   WorktreePrefetchCreateBase
@@ -34,6 +34,7 @@ import {
 import { WORKTREE_CATALOG_METHODS } from './worktree-catalog-methods'
 import { WORKTREE_PROVISIONED_ROOT_METHOD } from './worktree-provisioned-root-method'
 import { WORKTREE_SLEEP_METHOD } from './worktree-sleep-method'
+import { WORKSPACE_CLEANUP_SCAN_METHOD } from './workspace-cleanup-scan-method'
 import { WORKTREE_SET_METHOD } from './worktree-set-method'
 import { removeWorktreeForRpc } from './worktree-removal-rpc'
 import { runApprovedCreatedWorktreeSetup } from '../../../workspaces/creation/created-worktree-approved-setup'
@@ -94,6 +95,7 @@ export const WORKTREE_METHODS = [
     })
   }),
   WORKTREE_SLEEP_METHOD,
+  WORKSPACE_CLEANUP_SCAN_METHOD,
   defineMethod({
     name: 'worktree.activate',
     permission: 'workspace',

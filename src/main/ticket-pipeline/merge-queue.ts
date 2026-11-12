@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import type { PRCheckDetail } from '../../shared/github/check-types'
-import type { PRInfo } from '../../shared/github/pull-request-types'
+import type { PRCheckDetail } from '../../shared/github/checks/check-types'
+import type { PRInfo } from '../../shared/github/pull-requests/pull-request-types'
 import { renderMergeQueueFixBrief } from '../../shared/ticket-pipeline/merge-queue-fix-brief'
 import {
   decideMergeQueueStep,
@@ -15,7 +15,7 @@ import {
   isPRBehindBase,
   prRepoFromUrl,
   updatePRBranch
-} from '../github/pr-merge-queue-github'
+} from '../github/pull-requests/pr-merge-queue-github'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import { getTicketItemStore, type TicketItemStore } from './ticket-item-store'
 import { queueOrder } from './merge-queue-order'

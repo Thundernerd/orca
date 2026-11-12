@@ -13,8 +13,8 @@ import type {
   WorkspaceCleanRow,
   WorkspaceCleanSurveyResult
 } from '../../shared/ticket-pipeline/ticket-types'
-import { gitExecFileAsync } from '../git/runner'
-import { getBaseRefDefault } from '../git/repo-default-base-ref'
+import { gitExecFileAsync } from '../git/command-runner/git-exec-file'
+import { getDefaultBaseRefAsync } from '../git/refs/resolution/repo-default-base-ref'
 import type { RpcContext } from '../runtime/rpc/core'
 import { removeWorktreeForRpc } from '../runtime/rpc/methods/workspaces/worktree-removal-rpc'
 import { getTicketItemStore } from './ticket-item-store'
@@ -108,7 +108,7 @@ export async function surveyWorkspaceClean(
     throw new Error('Clean-up runs on the host that serves this git project.')
   }
   await git(parent.path, ['fetch', '-q', '--prune', 'origin'])
-  const baseRef = (await getBaseRefDefault(parent.path)) ?? 'origin/main'
+  const baseRef = (await getDefaultBaseRefAsync(parent.path)) ?? 'origin/main'
   const [listed, ps] = await Promise.all([
     runtime.listManagedWorktrees(repo.id, SCAN_LIMIT),
     runtime.getWorktreePs(SCAN_LIMIT)

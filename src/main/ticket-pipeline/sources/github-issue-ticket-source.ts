@@ -1,9 +1,9 @@
 import type { Repo } from '../../../shared/repo-types'
-import { createIssue } from '../../github/issue-create'
-import { linkIssueBlockedBy } from '../../github/issue-dependency-link'
-import { surveyOpenIssueTickets } from '../../github/issue-dependency-survey'
-import { updateIssue } from '../../github/issue-update'
-import { listLabels } from '../../github/issue-field-options'
+import { createIssue } from '../../github/issues/issue-create'
+import { linkIssueBlockedBy } from '../../github/issues/issue-dependency-link'
+import { surveyOpenIssueTickets } from '../../github/issues/issue-dependency-survey'
+import { updateIssue } from '../../github/issues/issue-update'
+import { listLabels } from '../../github/issues/issue-field-options'
 import type { TicketSource } from './ticket-source'
 
 function issueNumber(id: string): number | null {

@@ -1,4 +1,4 @@
-import type { PRState } from '../github/pull-request-types'
+import type { PRState } from '../github/pull-requests/pull-request-types'
 
 /** Terminal output this recent counts as an agent at work. */
 export const CLEAN_QUIET_MS = 30_000

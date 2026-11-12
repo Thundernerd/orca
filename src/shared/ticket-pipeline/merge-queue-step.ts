@@ -1,4 +1,4 @@
-import type { PRCheckDetail } from '../github/check-types'
+import type { PRCheckDetail } from '../github/checks/check-types'
 import type { TicketFixCause, TicketQueueState } from './ticket-types'
 
 /** A push the agent owes has not come for this long: the queue stops and asks the user. */

@@ -1,5 +1,5 @@
-import type { PRState } from '../../shared/github/pull-request-types'
-import type { PRRefreshOutcome } from '../../shared/github/pull-request-refresh-types'
+import type { PRState } from '../../shared/github/pull-requests/pull-request-types'
+import type { PRRefreshOutcome } from '../../shared/github/pull-requests/refresh/pull-request-refresh-types'
 import type {
   RuntimeWorktreeListResult,
   RuntimeWorktreePsResult

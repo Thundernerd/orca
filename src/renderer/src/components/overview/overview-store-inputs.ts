@@ -10,7 +10,7 @@ import {
 import { folderWorkspaceKey } from '../../../../shared/workspace-scope'
 import { getFolderWorkspaceHostId } from '../../../../shared/folder-workspaces/folder-workspace-host-id'
 import type { AgentStatusEntry } from '../../../../shared/agent-status/contracts/agent-status-types'
-import type { PRInfo } from '../../../../shared/github/pull-request-types'
+import type { PRInfo } from '../../../../shared/github/pull-requests/pull-request-types'
 import type {
   OverviewAgentInput,
   OverviewChecks,

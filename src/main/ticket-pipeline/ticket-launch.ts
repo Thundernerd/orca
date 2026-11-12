@@ -13,7 +13,7 @@ import type {
   TicketLaunchSelection,
   TicketSourceKind
 } from '../../shared/ticket-pipeline/ticket-types'
-import { gitExecFileAsync } from '../git/runner'
+import { gitExecFileAsync } from '../git/command-runner/git-exec-file'
 import type { RpcContext } from '../runtime/rpc/core'
 import { launchAgentOnHost } from '../runtime/rpc/methods/agent-launch/agent-launch'
 import { getTicketItemStore } from './ticket-item-store'

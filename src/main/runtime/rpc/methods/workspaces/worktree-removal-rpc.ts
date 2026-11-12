@@ -5,7 +5,7 @@ import { splitWorktreeId } from '../../../../../shared/worktree/id'
 import type { WorktreeRemove } from '../../../../../shared/rpc-contract/worktree-params'
 import type { RpcContext } from '../../core'
 import { resolvePairedCallerHostId } from '../pairing/paired-caller-host-id'
-import { waitsForWorktreeRemoval } from '../../worktree-removal-marker-projection'
+import { waitsForWorktreeRemoval } from '../../workspace-client-views/worktree-removal-marker-projection'
 import { queueWorkspaceDelete } from '../../../workspaces/lifecycle/workspace-lifecycle-commands'
 
 /** The `worktree.rm` removal, shared with clean-up so every removal takes the same queue and host checks. */

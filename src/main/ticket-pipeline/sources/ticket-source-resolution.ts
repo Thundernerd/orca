@@ -1,7 +1,7 @@
 import type { Repo } from '../../../shared/repo-types'
 import type { TicketSourceKind } from '../../../shared/ticket-pipeline/ticket-types'
-import { gitExecFileAsync } from '../../git/runner'
-import { getBaseRefDefault } from '../../git/repo-default-base-ref'
+import { gitExecFileAsync } from '../../git/command-runner/git-exec-file'
+import { getDefaultBaseRefAsync } from '../../git/refs/resolution/repo-default-base-ref'
 import { getTicketItemStore } from '../ticket-item-store'
 import { githubIssueTicketSource } from './github-issue-ticket-source'
 import { jiraTicketSource } from './jira-ticket-source'
@@ -18,7 +18,7 @@ export async function resolveTicketSource(
   override?: TicketSourceKind
 ): Promise<{ source: TicketSource; baseRef: string }> {
   await gitExecFileAsync(['fetch', '-q', 'origin'], { cwd: repo.path }).catch(() => undefined)
-  const baseRef = (await getBaseRefDefault(repo.path)) ?? 'origin/main'
+  const baseRef = (await getDefaultBaseRefAsync(repo.path)) ?? 'origin/main'
   const { source: config } = await getTicketItemStore().getSettings(repo.id)
   const kind = override ?? config.kind
   if (kind === 'linear' || kind === 'jira') {
