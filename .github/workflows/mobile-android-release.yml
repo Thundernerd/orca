@@ -19,6 +19,8 @@ on:
 
 jobs:
   android-build:
+    # Corka: the fork publishes its APK from corka-android-release.yml on the same tags.
+    if: github.repository == 'stablyai/orca'
     runs-on: ubuntu-latest
 
     # Grant contents:write for gh release create; build success alone does not authorize publication.

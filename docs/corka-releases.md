@@ -25,7 +25,7 @@ A Corka version is the upstream version with a build counter folded into the pat
 Pushing a tag on `mine` starts the build. The workflow refuses a tag that doesn't match the upstream version.
 
 - `v*` runs `.github/workflows/corka-desktop-release.yml`. It builds the macOS arm64 dmg/zip and the Linux x64 AppImage/deb, then publishes the release.
-- `mobile-android-v*` runs `.github/workflows/corka-android-release.yml`. It builds the signed APK and publishes a prerelease. Upstream's `mobile-android-release.yml` must stay disabled on the fork, because it listens to the same tags.
+- `mobile-android-v*` runs `.github/workflows/corka-android-release.yml`. It builds the signed APK and publishes a prerelease. Upstream's `mobile-android-release.yml` listens to the same tags, so `mine` limits its build job to `stablyai/orca`. Keep that `if:` when an upstream merge conflicts there.
 
 ## Updates
 

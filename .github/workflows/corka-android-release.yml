@@ -2,8 +2,8 @@ name: Corka Android Release
 
 # Corka's phone app: tag `mobile-android-v<major>.<minor>.<app.json patch × 100 + build>` on `mine`,
 # e.g. app.json 0.0.64 + build 1 → mobile-android-v0.0.6401. The phone's update check reads these
-# releases (mobile/src/app-update/corka-release-repo.ts). Disable upstream's mobile-android-release.yml
-# on the fork: it listens to the same tags.
+# releases (mobile/src/app-update/corka-release-repo.ts). Upstream's mobile-android-release.yml
+# listens to the same tags; on `mine` its build job only runs on stablyai/orca.
 on:
   push:
     tags:
