@@ -204,8 +204,13 @@ stop_log_stream() {
   fi
 }
 
+# The bundle names its executable (Orca upstream, Corka in the fork build); Orca if unreadable.
+app_executable() {
+  /usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP_DIR/Contents/Info.plist" 2>/dev/null || echo Orca
+}
+
 latest_orca_pid_for_app() {
-  pgrep -nf "$APP_DIR/Contents/MacOS/Orca" || true
+  pgrep -nf "$APP_DIR/Contents/MacOS/$(app_executable)" || true
 }
 
 sample_process_once() {
@@ -325,7 +330,7 @@ run_direct_exec_probe() {
     ORCA_STARTUP_DIAGNOSTICS=trace \
     ORCA_STARTUP_DIAGNOSTICS_TRACE_LIMIT=30000 \
     ORCA_STARTUP_DIAGNOSTICS_FILE="$bootstrap_file" \
-    "$APP_DIR/Contents/MacOS/Orca" >"$stdout_file" 2>"$stderr_file" &
+    "$APP_DIR/Contents/MacOS/$(app_executable)" >"$stdout_file" 2>"$stderr_file" &
   local runner_pid="$!"
   wait_for_probe "$runner_pid" "$label"
   echo "ended_utc=$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >>"$OUT_DIR/$label.meta"

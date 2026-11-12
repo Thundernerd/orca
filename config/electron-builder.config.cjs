@@ -591,8 +591,6 @@ module.exports = {
     include: resolve(__dirname, 'nsis', 'orca-installer-hooks.nsh')
   },
   mac: {
-    // Corka: the CLI wrapper (resources/darwin/bin/orca) runs Contents/MacOS/Orca.
-    executableName: 'Orca',
     // Alternate rank preserves Finder’s default; one entry per extension because app-builder globs the value as a string.
     fileAssociations: [
       ...MARKDOWN_FILE_EXTENSIONS.map((ext) => ({
