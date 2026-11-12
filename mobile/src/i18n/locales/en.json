@@ -5022,7 +5022,9 @@
         "failing": "#{{number}} failing",
         "pending": "#{{number}} pending",
         "green": "#{{number}} green"
-      }
+      },
+      "sortAttention": "Needs you first",
+      "sortName": "Name"
     }
   }
 }

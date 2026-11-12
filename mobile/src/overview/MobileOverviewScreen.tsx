@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams } from 'expo-router'
@@ -22,8 +22,13 @@ import { useMobileTranslation } from '../i18n/use-mobile-translation'
 import { getMobileUiLocale } from '../i18n/mobile-i18n'
 import { getExecutionHostLabel } from '../../../src/shared/execution-host'
 import { buildOverviewSnapshot } from '../../../src/shared/overview/overview-model'
-import type { OverviewWorktreeInput } from '../../../src/shared/overview/overview-model-types'
+import type {
+  OverviewSort,
+  OverviewWorktreeInput
+} from '../../../src/shared/overview/overview-model-types'
+import { MobileSegmentedControl } from '../components/MobileSegmentedControl'
 import { overviewInputsFromRows } from './overview-ps-inputs'
+import { loadOverviewSort, saveOverviewSort } from './overview-sort-preference'
 import {
   canMarkReadFromPhone,
   useMobileOverviewActions,
@@ -60,6 +65,24 @@ export function MobileOverviewScreen() {
   const [prompt, setPrompt] = useState<TextPrompt | null>(null)
   const [notice, setNotice] = useState<MobileOverviewResult | null>(null)
   const [busy, setBusy] = useState(false)
+  const [sort, setSort] = useState<OverviewSort>('attention')
+
+  useEffect(() => {
+    let cancelled = false
+    void loadOverviewSort().then((saved) => {
+      if (!cancelled) {
+        setSort(saved)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const changeSort = (next: OverviewSort): void => {
+    setSort(next)
+    void saveOverviewSort(next).catch(() => {})
+  }
 
   const { snapshot, byKey } = useMemo(() => {
     const inputs = overviewInputsFromRows(catalog.data?.worktrees ?? [], (hostId) =>
@@ -74,11 +97,11 @@ export function MobileOverviewScreen() {
         pendingMerges: NONE,
         hidden: NONE,
         pinned: NONE,
-        sort: 'attention',
+        sort,
         locale: getMobileUiLocale()
       })
     }
-  }, [catalog.data])
+  }, [catalog.data, sort])
 
   const run = async (action: () => Promise<MobileOverviewResult>): Promise<boolean> => {
     setBusy(true)
@@ -206,6 +229,18 @@ export function MobileOverviewScreen() {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t('overview.mobile.projects', 'Projects')}</Text>
+          <MobileSegmentedControl
+            segments={[
+              {
+                value: 'attention',
+                label: t('overview.mobile.sortAttention', 'Needs you first')
+              },
+              { value: 'name', label: t('overview.mobile.sortName', 'Name') }
+            ]}
+            selected={sort}
+            onSelect={changeSort}
+            testIDPrefix="overview-sort-"
+          />
         </View>
         {snapshot.projects.map((project) => (
           <MobileOverviewProjectCard
