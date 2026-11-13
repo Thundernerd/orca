@@ -201,6 +201,20 @@ const rpmElectronRuntimeDependencies = [
   '(libuuid or libuuid1)',
   'alsa-lib'
 ]
+// Arch names for the same Electron loader requirements.
+const pacmanElectronRuntimeDependencies = [
+  'gtk3',
+  'libnotify',
+  'nss',
+  'libxss',
+  'libxtst',
+  'xdg-utils',
+  'at-spi2-core',
+  'util-linux-libs',
+  'libsecret',
+  'alsa-lib',
+  'mesa'
+]
 
 // Mirror OS document extensions: CJS packager cannot import TS; keep startup/os-opened-documents.ts and NSIS hooks aligned.
 const MARKDOWN_FILE_EXTENSIONS = ['md', 'markdown', 'mdx']
@@ -715,7 +729,7 @@ module.exports = {
       featureWallResources
     ],
     // Keep local artifacts aligned with the release pipeline.
-    target: ['AppImage', 'deb', 'rpm'],
+    target: ['AppImage', 'deb', 'rpm', 'pacman'],
     maintainer: 'stablyai',
     category: 'Utility'
   },
@@ -759,6 +773,22 @@ module.exports = {
     afterInstall: 'resources/linux/packaging/after-install.sh',
     afterRemove: 'resources/linux/packaging/after-remove.sh',
     // Why: only an AppImage's files can vanish under a running daemon (see appimage-node-runtime.cjs).
+    fpm: appImageNodeRuntimeFpmArgs
+  },
+  pacman: {
+    packageName: 'orca-ide',
+    artifactName: 'orca-ide-${version}-${arch}.${ext}',
+    // Why: see deb depends, with Arch package names.
+    depends: [
+      ...pacmanElectronRuntimeDependencies,
+      'python',
+      'python-gobject',
+      'xdotool',
+      'xclip',
+      'xorg-server-xvfb'
+    ],
+    afterInstall: 'resources/linux/packaging/after-install.sh',
+    afterRemove: 'resources/linux/packaging/after-remove.sh',
     fpm: appImageNodeRuntimeFpmArgs
   },
   beforeBuild: electronBuilderNativeRebuild,

@@ -36,7 +36,7 @@ export type DelayedUpdate = {
 export type UpdateSource = 'local' | DedicatedRepoChannel
 
 /** Root-package Linux install formats whose update installs need privilege escalation. */
-export type LinuxRootPackageType = 'deb' | 'rpm'
+export type LinuxRootPackageType = 'deb' | 'rpm' | 'pacman'
 
 export type LinuxPackageInstallFailureReason =
   | 'authentication-agent-unavailable'

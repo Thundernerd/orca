@@ -256,8 +256,8 @@ jobs:
 
       - uses: ./.github/actions/install-mobile-dependencies
 
-      - name: Install Linux computer-use provider dependencies
-        run: sudo apt-get update && sudo apt-get install -y python3-gi gir1.2-atspi-2.0 at-spi2-core xclip xdotool
+      - name: Install Linux computer-use and pacman packaging dependencies
+        run: sudo apt-get update && sudo apt-get install -y python3-gi gir1.2-atspi-2.0 at-spi2-core xclip xdotool libarchive-tools
 
       - name: Stamp the Corka version
         run: npm pkg set version="${{ needs.prepare.outputs.version }}"
@@ -270,7 +270,7 @@ jobs:
           set -euo pipefail
           node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=electron
           pnpm exec electron-builder --config config/electron-builder.config.cjs \
-            --linux AppImage deb --x64 --publish always \
+            --linux AppImage deb pacman --x64 --publish always \
             -c.publish.releaseType=draft
 
   publish:

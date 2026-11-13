@@ -23,6 +23,16 @@ const RPM_PACKAGE_MANAGERS: { name: string; args: string[] }[] = [
   { name: 'rpm', args: ['-Uvh'] }
 ]
 
+const PACMAN_PACKAGE_MANAGERS: { name: string; args: string[] }[] = [
+  { name: 'pacman', args: ['-U', '--'] }
+]
+
+const PACKAGE_MANAGERS: Record<LinuxRootPackageType, { name: string; args: string[] }[]> = {
+  deb: DEB_PACKAGE_MANAGERS,
+  rpm: RPM_PACKAGE_MANAGERS,
+  pacman: PACMAN_PACKAGE_MANAGERS
+}
+
 export type LinuxPackageInstallCommandResult =
   | { ok: true; command: string }
   | { ok: false; reason: 'no-sudo' | 'no-package-manager' | 'invalid-package-path' }
@@ -40,9 +50,9 @@ export function resolveTrustedExecutable(name: string): string | null {
   return null
 }
 
-/** Repackaged installs can inherit a deb/rpm marker without a matching package manager. */
+/** Repackaged installs can inherit a deb/rpm/pacman marker without a matching package manager. */
 export function hasTrustedPackageManagerFor(packageType: LinuxRootPackageType): boolean {
-  const candidates = packageType === 'deb' ? DEB_PACKAGE_MANAGERS : RPM_PACKAGE_MANAGERS
+  const candidates = PACKAGE_MANAGERS[packageType]
   return candidates.some((candidate) => resolveTrustedExecutable(candidate.name) !== null)
 }
 
@@ -59,7 +69,7 @@ export function buildLinuxPackageInstallCommand(
   if (!sudoPath) {
     return { ok: false, reason: 'no-sudo' }
   }
-  const candidates = packageType === 'deb' ? DEB_PACKAGE_MANAGERS : RPM_PACKAGE_MANAGERS
+  const candidates = PACKAGE_MANAGERS[packageType]
   for (const candidate of candidates) {
     const managerPath = resolveTrustedExecutable(candidate.name)
     if (!managerPath) {

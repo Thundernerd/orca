@@ -92,6 +92,7 @@ export function installedElectronCandidates(
     joinPath(homePath, '.local', 'bin', 'orca-ide'),
     '/usr/local/bin/orca-ide',
     '/usr/bin/orca-ide',
+    '/opt/Corka/orca-ide',
     '/opt/Orca/orca-ide'
   ]
 }

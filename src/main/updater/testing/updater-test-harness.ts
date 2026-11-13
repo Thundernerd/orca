@@ -4,7 +4,7 @@ import type { Mock } from 'vitest'
 import { clearTrackedRealTimers, trackRealTimers } from './updater-test-timer-tracking'
 
 type UpdaterSpy = Mock<(...args: unknown[]) => unknown>
-type LinuxPackageType = 'deb' | 'rpm' | 'non-root' | 'unusable'
+type LinuxPackageType = 'deb' | 'rpm' | 'pacman' | 'non-root' | 'unusable'
 
 type AutoUpdaterMock = {
   autoDownload: boolean
@@ -47,7 +47,7 @@ type UpdaterModuleFactories = {
   ptyKillAll: () => { killAllPty: UpdaterSpy }
   linuxUpdatePackageType: () => {
     getLinuxPackageType: Mock<() => LinuxPackageType>
-    getLinuxRootPackageType: Mock<() => 'deb' | 'rpm' | null>
+    getLinuxRootPackageType: Mock<() => 'deb' | 'rpm' | 'pacman' | null>
     isExternallyManagedLinuxInstall: Mock<() => boolean>
   }
   updaterLifecycleDiagnostics: () => { recordUpdaterLifecycle: UpdaterSpy }
@@ -74,7 +74,7 @@ export type UpdaterMocks = {
   killAllPtyMock: UpdaterSpy
   powerMonitorOnMock: UpdaterSpy
   getLinuxPackageTypeMock: Mock<() => LinuxPackageType>
-  getLinuxRootPackageTypeMock: Mock<() => 'deb' | 'rpm' | null>
+  getLinuxRootPackageTypeMock: Mock<() => 'deb' | 'rpm' | 'pacman' | null>
   isExternallyManagedLinuxInstallMock: Mock<() => boolean>
   recordUpdaterLifecycleMock: UpdaterSpy
   fetchChangelogMock: UpdaterSpy
@@ -194,7 +194,7 @@ export function createUpdaterMocks(): UpdaterMocks {
   }
   const killAllPtyMock = vi.fn()
   const powerMonitorOnMock = vi.fn()
-  const getLinuxRootPackageTypeMock = vi.fn<() => 'deb' | 'rpm' | null>(() => null)
+  const getLinuxRootPackageTypeMock = vi.fn<() => 'deb' | 'rpm' | 'pacman' | null>(() => null)
   const getLinuxPackageTypeMock = vi.fn<() => LinuxPackageType>(() => {
     return getLinuxRootPackageTypeMock() ?? 'non-root'
   })

@@ -2,9 +2,9 @@
 # Remove only our install-owned symlink; preserve any unrelated /usr/bin/orca-ide.
 set -e
 
-# RPM passes an instance count; dpkg passes the package lifecycle action.
+# RPM passes an instance count; dpkg the lifecycle action; pacman runs this only on removal, passing the old version.
 case "${1-}" in
-  0 | remove | purge) ;;
+  0 | remove | purge | *.*) ;;
   *) exit 0 ;;
 esac
 
@@ -13,7 +13,7 @@ link="/usr/bin/orca-ide"
 if [ -L "$link" ]; then
   target="$(readlink "$link" || true)"
   case "$target" in
-    /opt/Orca/*|/opt/orca-ide/*|/opt/orca/*)
+    /opt/Corka/*|/opt/Orca/*|/opt/orca-ide/*|/opt/orca/*)
       rm -f "$link"
       ;;
   esac

@@ -83,13 +83,13 @@ function readPackageTypeMarker(): LinuxPackageType {
     return 'unusable'
   }
   const value = raw.trim()
-  if (value === 'deb' || value === 'rpm') {
+  if (value === 'deb' || value === 'rpm' || value === 'pacman') {
     return value
   }
   if (value === 'AppImage') {
     return 'non-root'
   }
-  warnMarkerUnusable('marker is not AppImage, deb, or rpm')
+  warnMarkerUnusable('marker is not AppImage, deb, rpm, or pacman')
   return 'unusable'
 }
 
@@ -103,7 +103,9 @@ export function getLinuxPackageType(): LinuxPackageType {
 
 export function getLinuxRootPackageType(): LinuxRootPackageType | null {
   const packageType = getLinuxPackageType()
-  return packageType === 'deb' || packageType === 'rpm' ? packageType : null
+  return packageType === 'deb' || packageType === 'rpm' || packageType === 'pacman'
+    ? packageType
+    : null
 }
 
 /** Repackagers can inherit deb/rpm markers; require the same manager discovery used for installation. */
