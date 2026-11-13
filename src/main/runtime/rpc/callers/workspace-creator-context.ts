@@ -4,7 +4,12 @@ import type { RpcContext } from '../core'
 export function resolveRpcWorkspaceCreatorProvenance(
   context: Pick<
     RpcContext,
-    'pairedDeviceId' | 'pairedDeviceParentId' | 'clientId' | 'clientKind' | 'connectionId'
+    | 'pairedDeviceId'
+    | 'pairedDeviceParentId'
+    | 'clientId'
+    | 'clientKind'
+    | 'connectionId'
+    | 'caller'
   >
 ): WorkspaceCreatorProvenance {
   if (context.pairedDeviceId) {
@@ -15,6 +20,10 @@ export function resolveRpcWorkspaceCreatorProvenance(
     return context.pairedDeviceParentId
       ? { kind: 'paired-device', deviceId: context.pairedDeviceParentId }
       : { kind: 'host' }
+  }
+  // Desktop windows and the local CLI declare client fields but act as the host itself.
+  if (context.caller?.kind === 'desktop' || context.caller?.kind === 'local-cli') {
+    return { kind: 'host' }
   }
   if (context.clientId || context.clientKind || context.connectionId) {
     throw new Error('authenticated_device_identity_missing')
