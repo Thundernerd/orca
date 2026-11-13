@@ -20202,7 +20202,6 @@
           "auto": "Remove a ticket workspace automatically once its PR merges",
           "hint": "Removal deletes the folder and closes its terminals. It cannot be undone.",
           "remove": "Remove {{count}}",
-          "unavailable": "This project cannot be cleaned up from here.",
           "result": "Removed {{count}} of {{total}} workspaces in {{project}}.",
           "leftoverBranches": "Kept unmerged branches: {{branches}}.",
           "reason": {
@@ -20249,6 +20248,9 @@
           "decisions": "Decisions Claude made on its own",
           "discard": "Discard drafts",
           "publish": "Publish {{count}} tickets"
+        },
+        "ticketActions": {
+          "unavailable": "Tickets for this project cannot be managed from here."
         }
       }
     },

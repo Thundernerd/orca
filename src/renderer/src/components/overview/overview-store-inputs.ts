@@ -5,6 +5,7 @@ import {
   getExecutionHostLabel,
   getRepoExecutionHostId,
   LOCAL_EXECUTION_HOST_ID,
+  normalizeExecutionHostId,
   type ExecutionHostId
 } from '../../../../shared/execution-host'
 import { folderWorkspaceKey } from '../../../../shared/workspace-scope'
@@ -94,6 +95,18 @@ export type OverviewHostLabels = ReadonlyMap<ExecutionHostId, string>
 /** A remote copy of a project is its own project: the same repo id can live on two hosts. */
 function hostScoped(hostId: ExecutionHostId, id: string): string {
   return hostId === LOCAL_EXECUTION_HOST_ID ? id : `${hostId}|${id}`
+}
+
+/** Inverse of {@link hostScoped}; null when the host part is not a valid host id. */
+export function parseOverviewProjectId(
+  projectId: string
+): { hostId: ExecutionHostId; repoId: string } | null {
+  const split = projectId.lastIndexOf('|')
+  if (split === -1) {
+    return { hostId: LOCAL_EXECUTION_HOST_ID, repoId: projectId }
+  }
+  const hostId = normalizeExecutionHostId(projectId.slice(0, split))
+  return hostId ? { hostId, repoId: projectId.slice(split + 1) } : null
 }
 
 export function buildOverviewStoreInputs(

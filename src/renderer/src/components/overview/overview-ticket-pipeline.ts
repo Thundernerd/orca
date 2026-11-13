@@ -1,9 +1,5 @@
-import { useAppStore } from '@/store/index'
 import { translate } from '@/i18n/i18n'
 import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
-import { runtimeTargetForRepoOwner } from '@/lib/workspace/ownership/repo-runtime-owner'
-import { isFolderRepo } from '../../../../shared/repo-kind'
-import type { RuntimeClientTarget } from '../../../../shared/runtime-client-target'
 import type {
   TicketLaunchResult,
   TicketLaunchSelection,
@@ -19,6 +15,7 @@ import type {
   TicketDraftBatch
 } from '../../../../shared/ticket-pipeline/ticket-draft-types'
 import type { OverviewActionResult } from './overview-actions'
+import { projectRoute, requireProjectRoute } from './overview-project-route'
 import { keptWorkspaceNotes } from './workspace-clean-outcome-text'
 
 const SURVEY_TIMEOUT_MS = 120_000
@@ -30,26 +27,16 @@ export type OverviewSurveyOutcome =
   | { status: 'failed'; error: string }
   | { status: 'unavailable' }
 
-/** The host that owns a git project, or null for folders and unreachable hosts. */
-function projectTarget(projectId: string): RuntimeClientTarget | null {
-  const state = useAppStore.getState()
-  const repo = state.repos.find((candidate) => candidate.id === projectId)
-  if (!repo || isFolderRepo(repo)) {
-    return null
-  }
-  return runtimeTargetForRepoOwner(state, projectId)
-}
-
 export async function surveyOverviewProject(projectId: string): Promise<OverviewSurveyOutcome> {
-  const target = projectTarget(projectId)
-  if (!target) {
+  const route = projectRoute(projectId)
+  if (!route) {
     return { status: 'unavailable' }
   }
   try {
     const result = await callRuntimeRpc<TicketSurveyResult>(
-      target,
+      route.target,
       'tickets.survey',
-      { repo: projectId },
+      { repo: route.repo },
       { timeoutMs: SURVEY_TIMEOUT_MS }
     )
     return { status: 'ok', result }
@@ -64,8 +51,8 @@ export async function launchOverviewTickets(
   projectName: string,
   tickets: readonly TicketLaunchSelection[]
 ): Promise<OverviewActionResult> {
-  const target = projectTarget(projectId)
-  if (!target) {
+  const route = projectRoute(projectId)
+  if (!route) {
     return {
       ok: false,
       message: translate(
@@ -76,9 +63,9 @@ export async function launchOverviewTickets(
     }
   }
   const result = await callRuntimeRpc<TicketLaunchResult>(
-    target,
+    route.target,
     'tickets.launch',
-    { repo: projectId, tickets },
+    { repo: route.repo, tickets },
     { timeoutMs: LAUNCH_TIMEOUT_MS }
   )
   const launched = result.outcomes.filter((o) => o.status === 'launched')
@@ -98,40 +85,25 @@ export async function launchOverviewTickets(
   }
 }
 
-function requireProjectTarget(projectId: string): RuntimeClientTarget {
-  const target = projectTarget(projectId)
-  if (!target) {
-    throw new Error(
-      translate(
-        'auto.components.overview.cleanUpWorkspaces.unavailable',
-        'This project cannot be cleaned up from here.'
-      )
-    )
-  }
-  return target
-}
-
-export function surveyOverviewClean(projectId: string): Promise<WorkspaceCleanSurveyResult> {
+export async function surveyOverviewClean(projectId: string): Promise<WorkspaceCleanSurveyResult> {
+  const route = requireProjectRoute(projectId)
   return callRuntimeRpc<WorkspaceCleanSurveyResult>(
-    requireProjectTarget(projectId),
+    route.target,
     'tickets.cleanSurvey',
-    { repo: projectId },
+    { repo: route.repo },
     { timeoutMs: SURVEY_TIMEOUT_MS }
   )
 }
 
-export function overviewTicketSettings(
+export async function overviewTicketSettings(
   projectId: string,
   patch?: Partial<TicketPipelineSettings>
 ): Promise<TicketPipelineSettings> {
-  return callRuntimeRpc<TicketPipelineSettings>(
-    requireProjectTarget(projectId),
-    'tickets.settings',
-    {
-      repo: projectId,
-      ...(patch ? { patch } : {})
-    }
-  )
+  const route = requireProjectRoute(projectId)
+  return callRuntimeRpc<TicketPipelineSettings>(route.target, 'tickets.settings', {
+    repo: route.repo,
+    ...(patch ? { patch } : {})
+  })
 }
 
 /** Removes the confirmed workspaces the host still clears, and summarises what happened. */
@@ -140,10 +112,11 @@ export async function cleanOverviewWorkspaces(
   projectName: string,
   worktreeIds: readonly string[]
 ): Promise<OverviewActionResult> {
+  const route = requireProjectRoute(projectId)
   const result = await callRuntimeRpc<WorkspaceCleanResult>(
-    requireProjectTarget(projectId),
+    route.target,
     'tickets.clean',
-    { repo: projectId, worktreeIds },
+    { repo: route.repo, worktreeIds },
     { timeoutMs: LAUNCH_TIMEOUT_MS }
   )
   const removed = result.outcomes.filter((o) => o.status === 'removed')
@@ -171,14 +144,15 @@ export async function cleanOverviewWorkspaces(
   }
 }
 
-export function overviewMergeQueue(
+export async function overviewMergeQueue(
   projectId: string,
   action: 'view' | 'resume' = 'view'
 ): Promise<TicketQueueView> {
+  const route = requireProjectRoute(projectId)
   return callRuntimeRpc<TicketQueueView>(
-    requireProjectTarget(projectId),
+    route.target,
     action === 'resume' ? 'tickets.queueResume' : 'tickets.queue',
-    { repo: projectId },
+    { repo: route.repo },
     { timeoutMs: SURVEY_TIMEOUT_MS }
   )
 }
@@ -188,7 +162,7 @@ export async function mergeOverviewQueueHead(
   projectId: string,
   projectName: string
 ): Promise<OverviewActionResult> {
-  const target = requireProjectTarget(projectId)
+  const { target } = requireProjectRoute(projectId)
   const view = await overviewMergeQueue(projectId)
   const head = view.entries[0]
   if (view.pausedReason) {
@@ -236,46 +210,50 @@ export async function mergeOverviewQueueHead(
   }
 }
 
-export function startOverviewDrafting(
+export async function startOverviewDrafting(
   projectId: string,
   request: string
 ): Promise<TicketDraftBatch> {
+  const route = requireProjectRoute(projectId)
   return callRuntimeRpc<TicketDraftBatch>(
-    requireProjectTarget(projectId),
+    route.target,
     'tickets.draftStart',
-    { repo: projectId, request },
+    { repo: route.repo, request },
     { timeoutMs: LAUNCH_TIMEOUT_MS }
   )
 }
 
 export async function overviewDraftBatches(projectId: string): Promise<TicketDraftBatch[]> {
+  const route = requireProjectRoute(projectId)
   const result = await callRuntimeRpc<{ batches: TicketDraftBatch[] }>(
-    requireProjectTarget(projectId),
+    route.target,
     'tickets.draftList',
-    { repo: projectId },
+    { repo: route.repo },
     { timeoutMs: SURVEY_TIMEOUT_MS }
   )
   return result.batches
 }
 
-export function publishOverviewDrafts(
+export async function publishOverviewDrafts(
   projectId: string,
   batchId: string,
   drafts: TicketDraft[]
 ): Promise<TicketDraftBatch> {
+  const route = requireProjectRoute(projectId)
   return callRuntimeRpc<TicketDraftBatch>(
-    requireProjectTarget(projectId),
+    route.target,
     'tickets.draftPublish',
     { batchId, drafts },
     { timeoutMs: LAUNCH_TIMEOUT_MS }
   )
 }
 
-export function discardOverviewDrafts(
+export async function discardOverviewDrafts(
   projectId: string,
   batchId: string
 ): Promise<TicketDraftBatch> {
-  return callRuntimeRpc<TicketDraftBatch>(requireProjectTarget(projectId), 'tickets.draftDiscard', {
+  const route = requireProjectRoute(projectId)
+  return callRuntimeRpc<TicketDraftBatch>(route.target, 'tickets.draftDiscard', {
     batchId
   })
 }
@@ -314,10 +292,11 @@ export function publishedDraftsNotice(
 export async function overviewTicketSourceOptions(
   projectId: string
 ): Promise<TicketSourceOption[]> {
+  const route = requireProjectRoute(projectId)
   const result = await callRuntimeRpc<{ options: TicketSourceOption[] }>(
-    requireProjectTarget(projectId),
+    route.target,
     'tickets.sourceOptions',
-    { repo: projectId },
+    { repo: route.repo },
     { timeoutMs: SURVEY_TIMEOUT_MS }
   )
   return result.options
