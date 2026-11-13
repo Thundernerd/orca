@@ -97,7 +97,9 @@ export class MergeQueue {
   }
 
   private async setQueue(item: TicketItem, queue: TicketQueueState): Promise<void> {
-    await this.store.update(item.id, { queue })
+    const statusSince =
+      item.queue?.status === queue.status ? (item.queue.statusSince ?? Date.now()) : Date.now()
+    await this.store.update(item.id, { queue: { ...queue, statusSince } })
   }
 
   private async pause(item: TicketItem, detail: string): Promise<void> {

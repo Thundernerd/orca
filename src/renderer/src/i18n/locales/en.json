@@ -20256,6 +20256,25 @@
           "pinned": "Pinned",
           "regular": "Projects",
           "hidden": "Hidden"
+        },
+        "pipelineStatus": {
+          "paused": "Paused: {{reason}}",
+          "queueEmpty": "Nothing waiting to merge.",
+          "head": "{{ticket}} (PR #{{number}})",
+          "notChecked": "Not checked yet.",
+          "behind": "{{count}} behind it",
+          "removed": "removed {{ticket}} {{when}}",
+          "keeping": "keeping {{ticket}}: {{reason}}",
+          "keepingMore": "{{count}} more kept",
+          "pending": "{{count}} to check",
+          "cleanOff": "Off",
+          "cleanIdle": "Nothing to remove.",
+          "checked": "Checked {{when}}",
+          "checking": "Checking for the first time…",
+          "idle": "Not checking: nothing left to follow.",
+          "queueAuto": "Merge queue (auto)",
+          "queue": "Merge queue",
+          "clean": "Auto-clean"
         }
       }
     },

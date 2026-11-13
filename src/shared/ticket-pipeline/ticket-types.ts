@@ -112,6 +112,8 @@ export type TicketItem = {
   agentTerminalHandle?: string
   /** The agent's chat session from launch, when it opened as a chat; fix briefs go here. */
   agentSessionId?: string
+  /** Why auto-clean last kept this merged ticket's workspace; it tries again on the next check. */
+  autoCleanHeld?: { reason: string; at: number }
   /** Where the merge queue has this item; absent until it reaches the head of the queue. */
   queue?: TicketQueueState
   /** Tickets its agent filed for problems outside this ticket's scope. */
@@ -133,6 +135,8 @@ export type TicketFixCause = 'attribution' | 'conflict' | 'ci'
 
 export type TicketQueueState = {
   status: TicketQueueStatus
+  /** When it entered this status; absent on state written before this was recorded. */
+  statusSince?: number
   /** Plain-language detail: what is being waited on, fixed, or why it paused. */
   detail: string
   /** Fix briefs sent per cause; a second failure of the same cause pauses the queue. */
@@ -203,4 +207,34 @@ export type TicketQueueView = {
   pausedReason: string | null
   autoMerge: boolean
   entries: TicketQueueEntry[]
+}
+
+/** What the merge queue and auto-clean are doing for one parent workspace, cheap enough to poll. */
+export type TicketPipelineStatus = {
+  /** When the host last checked the queue and clean-up; null if not since it started. */
+  checkedAt: number | null
+  /** False once nothing is left to follow; the next launch or settings change starts it again. */
+  watching: boolean
+  autoMerge: boolean
+  autoClean: boolean
+  queue: {
+    head: {
+      ticketId: string
+      reviewNumber: number | null
+      /** Null until the queue first looks at it. */
+      status: TicketQueueStatus | null
+      detail: string | null
+      since: number | null
+    } | null
+    /** PRs behind the head. */
+    waiting: number
+    pausedReason: string | null
+  }
+  clean: {
+    lastRemoved: { ticketId: string; at: number } | null
+    /** Merged tickets whose workspace auto-clean kept, with a survey reason or an error message. */
+    held: { ticketId: string; reason: string; at: number }[]
+    /** Merged tickets auto-clean has not tried yet. */
+    pending: number
+  }
 }

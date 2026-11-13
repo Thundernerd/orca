@@ -31,6 +31,8 @@ export const overviewStyles = themedStyleSheet(() => ({
   title: { color: colors.textPrimary, fontSize: typography.bodySize, fontWeight: '600' },
   text: { color: colors.textPrimary, fontSize: typography.bodySize, lineHeight: 20 },
   meta: { color: colors.textSecondary, fontSize: typography.metaSize, lineHeight: 17 },
+  metaLabel: { color: colors.textPrimary },
+  danger: { color: colors.statusRed },
   chip: {
     borderRadius: radii.pill,
     borderWidth: 1,

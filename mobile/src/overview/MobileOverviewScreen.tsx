@@ -282,6 +282,7 @@ export function MobileOverviewScreen() {
               <MobileOverviewProjectCard
                 key={project.id}
                 project={project}
+                client={live}
                 now={now}
                 busy={busy}
                 expanded={expanded.has(project.id)}

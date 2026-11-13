@@ -52,6 +52,31 @@ const queueSchema = z.looseObject({
   )
 })
 
+const statusSchema = z.looseObject({
+  checkedAt: z.number().nullable(),
+  watching: z.boolean(),
+  autoMerge: z.boolean(),
+  autoClean: z.boolean(),
+  queue: z.looseObject({
+    head: z
+      .looseObject({
+        ticketId: z.string(),
+        reviewNumber: z.number().nullable(),
+        status: z.string().nullable(),
+        detail: z.string().nullable(),
+        since: z.number().nullable()
+      })
+      .nullable(),
+    waiting: z.number(),
+    pausedReason: z.string().nullable()
+  }),
+  clean: z.looseObject({
+    lastRemoved: z.looseObject({ ticketId: z.string(), at: z.number() }).nullable(),
+    held: z.array(z.looseObject({ ticketId: z.string(), reason: z.string(), at: z.number() })),
+    pending: z.number()
+  })
+})
+
 // Drafts are sent back to publish exactly as received, so every field survives the round trip.
 const draftSchema = z.looseObject({
   key: z.string(),
@@ -78,6 +103,7 @@ export type MobileTicketSurvey = z.infer<typeof surveySchema>
 export type MobileWorkspaceCleanSurvey = z.infer<typeof cleanSurveySchema>
 export type MobileTicketQueue = z.infer<typeof queueSchema>
 export type MobileTicketDraftBatch = z.infer<typeof batchSchema>
+export type MobileTicketPipelineStatus = z.infer<typeof statusSchema>
 
 function ticketOperation<Method extends RpcMethodName, T extends z.ZodType>(
   method: Method,
@@ -99,6 +125,7 @@ export const ticketLaunchRun = ticketOperation('tickets.launch', launchSchema)
 export const ticketCleanSurveyRead = ticketOperation('tickets.cleanSurvey', cleanSurveySchema)
 export const ticketCleanRun = ticketOperation('tickets.clean', cleanSchema)
 export const ticketQueueRead = ticketOperation('tickets.queue', queueSchema)
+export const ticketStatusRead = ticketOperation('tickets.status', statusSchema)
 export const ticketQueueResumeRun = ticketOperation('tickets.queueResume', queueSchema)
 export const ticketMergeRun = ticketOperation('tickets.merge', queueSchema)
 export const ticketDraftStartRun = ticketOperation('tickets.draftStart', batchSchema)

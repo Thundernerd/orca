@@ -4,6 +4,7 @@ import type {
   TicketLaunchResult,
   TicketLaunchSelection,
   TicketPipelineSettings,
+  TicketPipelineStatus,
   TicketQueueView,
   TicketSourceOption,
   TicketSurveyResult,
@@ -104,6 +105,12 @@ export async function overviewTicketSettings(
     repo: route.repo,
     ...(patch ? { patch } : {})
   })
+}
+
+/** What the merge queue and auto-clean are doing; local reads on the host, so cheap to poll. */
+export async function overviewTicketStatus(projectId: string): Promise<TicketPipelineStatus> {
+  const route = requireProjectRoute(projectId)
+  return callRuntimeRpc<TicketPipelineStatus>(route.target, 'tickets.status', { repo: route.repo })
 }
 
 /** Removes the confirmed workspaces the host still clears, and summarises what happened. */

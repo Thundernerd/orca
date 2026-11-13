@@ -12,6 +12,7 @@ import {
   TicketMerge,
   TicketQueue,
   TicketSettings,
+  TicketStatus,
   TicketSourceOptions,
   TicketSurvey
 } from '../../../../../shared/rpc-contract/ticket-params'
@@ -20,6 +21,7 @@ import { adoptUntrackedTicketWorkspaces } from '../../../../ticket-pipeline/tick
 import { launchTickets } from '../../../../ticket-pipeline/ticket-launch'
 import { surveyTickets } from '../../../../ticket-pipeline/ticket-survey'
 import { startTicketTracker } from '../../../../ticket-pipeline/ticket-tracker'
+import { ticketPipelineStatus } from '../../../../ticket-pipeline/ticket-pipeline-status'
 import { cleanWorkspaces, surveyWorkspaceClean } from '../../../../ticket-pipeline/workspace-clean'
 import { getMergeQueue } from '../../../../ticket-pipeline/merge-queue'
 import { listTicketSourceOptions } from '../../../../ticket-pipeline/sources/ticket-source-options'
@@ -131,6 +133,17 @@ export const TICKET_METHODS = [
         startTicketTracker(runtime)
       }
       return ticketQueueView(parent.id, parent.repoId)
+    }
+  }),
+  defineMethod({
+    name: 'tickets.status',
+    permission: 'workspace',
+    params: TicketStatus,
+    handler: async (params, { runtime }) => {
+      const parent = await runtime.showManagedWorktree(
+        await resolveTicketParentSelector(runtime, ticketParentScope(params))
+      )
+      return ticketPipelineStatus(parent.id, parent.repoId)
     }
   }),
   defineMethod({

@@ -21,6 +21,7 @@ import { OverviewWriteTicketPopover } from './OverviewWriteTicketPopover'
 import { OverviewLaunchTicketsPopover } from './OverviewLaunchTicketsPopover'
 import { OverviewCleanUpPopover } from './OverviewCleanUpPopover'
 import { OverviewMergeQueuePopover } from './OverviewMergeQueuePopover'
+import { OverviewTicketPipelineStatus } from './OverviewTicketPipelineStatus'
 import type { TicketLaunchSelection } from '../../../../shared/ticket-pipeline/ticket-types'
 
 export type OverviewProjectCardActions = {
@@ -224,6 +225,8 @@ export function OverviewProjectCard({
               </Button>
             </div>
           ) : null}
+
+          {canRunSkills ? <OverviewTicketPipelineStatus projectId={project.id} now={now} /> : null}
 
           {canRunSkills ? (
             <div className="flex flex-wrap gap-1">

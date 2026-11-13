@@ -92,6 +92,7 @@ async function findReview(
 export class TicketTracker {
   private timer: ReturnType<typeof setTimeout> | null = null
   private running: Promise<void> | null = null
+  private checkedAt: number | null = null
 
   constructor(
     private readonly runtime: TicketTrackerRuntime,
@@ -118,6 +119,11 @@ export class TicketTracker {
     return waiting
   }
 
+  /** When the last pass finished, and whether another is scheduled or running. */
+  status(): { checkedAt: number | null; watching: boolean } {
+    return { checkedAt: this.checkedAt, watching: this.timer !== null || this.running !== null }
+  }
+
   /** Idempotent: ticks now and keeps ticking while any item is active. */
   start(): void {
     if (this.timer || this.running) {
@@ -136,6 +142,7 @@ export class TicketTracker {
         })
         .then((keepGoing) => {
           this.running = null
+          this.checkedAt = Date.now()
           if (keepGoing) {
             this.schedule(TICK_MS)
           }
@@ -199,13 +206,25 @@ export class TicketTracker {
 
 let tracker: TicketTracker | null = null
 
+export function ticketTrackerStatus(): { checkedAt: number | null; watching: boolean } {
+  return tracker?.status() ?? { checkedAt: null, watching: false }
+}
+
 export function startTicketTracker(runtime: OrcaRuntimeService): void {
   tracker ??= new TicketTracker(
     runtime,
     async (item) => {
-      await cleanWorkspaces({ runtime }, { worktree: `id:${item.parentWorktreeId}` }, [
+      const held = await cleanWorkspaces({ runtime }, { worktree: `id:${item.parentWorktreeId}` }, [
         item.childWorktreeId
-      ])
+      ]).then(
+        ({ outcomes }) => outcomes.find((o) => o.status === 'kept')?.reason ?? null,
+        (error: unknown) => (error instanceof Error ? error.message : String(error))
+      )
+      if (held) {
+        await getTicketItemStore().update(item.id, {
+          autoCleanHeld: { reason: held, at: Date.now() }
+        })
+      }
     },
     () => getMergeQueue(runtime).advanceAll(),
     async (item) => {

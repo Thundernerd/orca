@@ -82,6 +82,9 @@ export const TicketSettings = z.object({
 /** The merge queue of a parent workspace (or the project's main one). */
 export const TicketQueue = z.object(ScopeFields).refine(exactlyOneScope, scopeMessage)
 
+/** What the merge queue and auto-clean are doing; reads local state only. */
+export const TicketStatus = z.object(ScopeFields).refine(exactlyOneScope, scopeMessage)
+
 /** Merges the head of a queue that is ready, on the user's say-so. */
 export const TicketMerge = z.object({ itemId: z.string().min(1).max(200) })
 

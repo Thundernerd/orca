@@ -10,7 +10,9 @@ import { useMobileColorScheme } from '../theme/use-mobile-color-scheme'
 import { useMobileTranslation } from '../i18n/use-mobile-translation'
 import type { Translate } from '../i18n/mobile-i18n'
 import { formatTimeAgo } from '../worktree/agent-row-display'
+import type { RpcClient } from '../transport/rpc/rpc-client-contract'
 import type { MobileTicketSheetMode } from './MobileTicketSheet'
+import { MobileTicketPipelineStatus } from './MobileTicketPipelineStatus'
 import { overviewStyles as styles } from './mobile-overview-styles'
 
 function Stat({ label, tone }: { label: string; tone?: 'urgent' | 'ready' }) {
@@ -84,6 +86,7 @@ function WorkspaceRow({
 
 export function MobileOverviewProjectCard({
   project,
+  client,
   now,
   expanded,
   busy,
@@ -95,6 +98,8 @@ export function MobileOverviewProjectCard({
   onToggleHidden
 }: {
   project: OverviewProject
+  /** The connected desktop, for the merge queue status; null while offline. */
+  client: RpcClient | null
   now: number
   expanded: boolean
   busy: boolean
@@ -199,6 +204,9 @@ export function MobileOverviewProjectCard({
           }
         />
       </View>
+      {project.mainWorktreeId && !project.hidden ? (
+        <MobileTicketPipelineStatus client={client} projectId={project.id} now={now} />
+      ) : null}
       {expanded ? (
         <>
           {project.mainWorktreeId ? (

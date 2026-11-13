@@ -50,7 +50,7 @@ export async function resumeTicketQueue(
   const head = queueOrder(await store.list(), parentWorktreeId)[0]
   if (head?.queue) {
     await store.update(head.id, {
-      queue: { status: 'waiting-ci', detail: 'Resumed.', fixAttempts: {} }
+      queue: { status: 'waiting-ci', detail: 'Resumed.', fixAttempts: {}, statusSince: Date.now() }
     })
   }
 }
