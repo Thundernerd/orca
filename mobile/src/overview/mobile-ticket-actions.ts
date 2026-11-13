@@ -74,7 +74,10 @@ export function mobileTicketActions(client: RpcClient, projectId: string) {
         failed('check the workspaces')
       )
     },
-    clean: async (worktreeIds: readonly string[]): Promise<MobileTicketResult> => {
+    clean: async (
+      worktreeIds: readonly string[],
+      names: ReadonlyMap<string, string> = new Map()
+    ): Promise<MobileTicketResult> => {
       const response = await ticketCleanRun.request(
         client,
         {
@@ -88,12 +91,20 @@ export function mobileTicketActions(client: RpcClient, projectId: string) {
         failed('remove the workspaces')
       )
       const removed = result.outcomes.filter((o) => o.status === 'removed').length
+      const kept = result.outcomes.flatMap((o) =>
+        o.status === 'kept'
+          ? [`${names.get(o.worktreeId) ?? o.worktreeId}: ${o.reason ?? o.status}.`]
+          : []
+      )
       return {
-        ok: removed === result.outcomes.length,
-        message: translate('overview.mobile.tickets.removed', 'Removed {{count}} of {{total}}', {
-          count: removed,
-          total: result.outcomes.length
-        })
+        ok: kept.length === 0,
+        message: [
+          translate('overview.mobile.tickets.removed', 'Removed {{count}} of {{total}}', {
+            count: removed,
+            total: result.outcomes.length
+          }),
+          ...kept
+        ].join(' ')
       }
     },
     queue: async (action: 'view' | 'resume' = 'view'): Promise<MobileTicketQueue> => {

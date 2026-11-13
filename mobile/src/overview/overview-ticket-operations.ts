@@ -33,7 +33,9 @@ const cleanSurveySchema = z.looseObject({
 })
 
 const cleanSchema = z.looseObject({
-  outcomes: z.array(z.looseObject({ worktreeId: z.string(), status: z.string() }))
+  outcomes: z.array(
+    z.looseObject({ worktreeId: z.string(), status: z.string(), reason: z.string().optional() })
+  )
 })
 
 const queueSchema = z.looseObject({

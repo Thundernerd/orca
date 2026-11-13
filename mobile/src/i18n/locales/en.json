@@ -5082,6 +5082,15 @@
         "publishStopped": "Publishing stopped",
         "discard": "Discard",
         "discarded": "Drafts discarded"
+      },
+      "pin": "Pin {{project}}",
+      "unpin": "Unpin {{project}}",
+      "hide": "Hide {{project}}",
+      "show": "Show {{project}}",
+      "tiers": {
+        "pinned": "Pinned",
+        "regular": "Other projects",
+        "hidden": "Hidden"
       }
     }
   }

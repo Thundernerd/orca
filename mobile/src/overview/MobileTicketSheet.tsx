@@ -244,7 +244,8 @@ export function MobileTicketSheet({
               disabled={selected.size === 0}
               onPress={() => {
                 const ids = [...selected]
-                finish(() => actions!.clean(ids))
+                const names = new Map(loaded.survey.rows.map((row) => [row.worktreeId, row.name]))
+                finish(() => actions!.clean(ids, names))
               }}
             />
           </>

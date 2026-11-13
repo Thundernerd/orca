@@ -29,3 +29,25 @@ export async function loadNeedsYouFolded(): Promise<boolean> {
 export async function saveNeedsYouFolded(folded: boolean): Promise<void> {
   await AsyncStorage.setItem(NEEDS_YOU_FOLDED_KEY, folded ? '1' : '0')
 }
+
+/** Pinned and hidden projects live on the phone; the desktop keeps its own. */
+export type OverviewProjectList = 'pinned' | 'hidden'
+
+const projectListKey = (list: OverviewProjectList): string =>
+  list === 'pinned' ? 'orca:overviewPinned' : 'orca:overviewHidden'
+
+export async function loadOverviewProjectList(list: OverviewProjectList): Promise<string[]> {
+  try {
+    const parsed: unknown = JSON.parse((await AsyncStorage.getItem(projectListKey(list))) ?? '[]')
+    return Array.isArray(parsed) ? parsed.filter((id) => typeof id === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+export async function saveOverviewProjectList(
+  list: OverviewProjectList,
+  ids: readonly string[]
+): Promise<void> {
+  await AsyncStorage.setItem(projectListKey(list), JSON.stringify(ids))
+}

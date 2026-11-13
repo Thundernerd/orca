@@ -1,4 +1,4 @@
-import type { OverviewProject } from '../../../../shared/overview/overview-model-types'
+import type { OverviewProject } from './overview-model-types'
 
 export type OverviewProjectTierKey = 'pinned' | 'regular' | 'hidden'
 

@@ -21,6 +21,7 @@ import { useMobileTranslation } from '../i18n/use-mobile-translation'
 import { getMobileUiLocale } from '../i18n/mobile-i18n'
 import { getExecutionHostLabel } from '../../../src/shared/execution-host'
 import { buildOverviewSnapshot } from '../../../src/shared/overview/overview-model'
+import { tierOverviewProjects } from '../../../src/shared/overview/overview-project-tiers'
 import type {
   OverviewSort,
   OverviewWorktreeInput
@@ -43,6 +44,7 @@ import { MobileTicketSheet, type MobileTicketSheetMode } from './MobileTicketShe
 import { MobileOverviewAttentionCard } from './MobileOverviewAttentionCard'
 import { MobileOverviewProjectCard } from './MobileOverviewProjectCard'
 import { overviewStyles as styles } from './mobile-overview-styles'
+import { useOverviewProjectLists } from './use-overview-project-lists'
 
 const NONE: ReadonlySet<string> = new Set()
 
@@ -76,6 +78,7 @@ export function MobileOverviewScreen() {
   const [busy, setBusy] = useState(false)
   const [sort, setSort] = useState<OverviewSort>('attention')
   const [needsYouFolded, setNeedsYouFolded] = useState(false)
+  const projectLists = useOverviewProjectLists()
 
   useEffect(() => {
     let cancelled = false
@@ -111,13 +114,13 @@ export function MobileOverviewScreen() {
         ...inputs,
         tickets: {},
         ticketsLoading: NONE,
-        hidden: NONE,
-        pinned: NONE,
+        hidden: projectLists.hidden,
+        pinned: projectLists.pinned,
         sort,
         locale: getMobileUiLocale()
       })
     }
-  }, [catalog.data, sort])
+  }, [catalog.data, sort, projectLists.hidden, projectLists.pinned])
 
   const run = async (action: () => Promise<MobileOverviewResult>): Promise<boolean> => {
     setBusy(true)
@@ -138,6 +141,12 @@ export function MobileOverviewScreen() {
     () => (live && sheet ? mobileTicketActions(live, sheet.projectId) : null),
     [live, sheet]
   )
+  const tiers = tierOverviewProjects(snapshot.projects)
+  const tierLabels = {
+    pinned: t('overview.mobile.tiers.pinned', 'Pinned'),
+    regular: t('overview.mobile.tiers.regular', 'Other projects'),
+    hidden: t('overview.mobile.tiers.hidden', 'Hidden')
+  }
   const unread = snapshot.attention
     .filter((item) => item.unread)
     .flatMap((item) => byKey.get(item.worktreeId) ?? [])
@@ -264,35 +273,48 @@ export function MobileOverviewScreen() {
             testIDPrefix="overview-sort-"
           />
         </View>
-        {snapshot.projects.map((project) => (
-          <MobileOverviewProjectCard
-            key={project.id}
-            project={project}
-            now={now}
-            busy={busy}
-            expanded={expanded.has(project.id)}
-            onToggle={() =>
-              setExpanded((current) => {
-                const next = new Set(current)
-                if (!next.delete(project.id)) {
-                  next.add(project.id)
+        {tiers.map((tier) => (
+          <View key={tier.key} style={styles.tier}>
+            {tiers.some((other) => other.key !== 'regular') ? (
+              <Text style={styles.tierTitle}>{tierLabels[tier.key]}</Text>
+            ) : null}
+            {tier.projects.map((project) => (
+              <MobileOverviewProjectCard
+                key={project.id}
+                project={project}
+                now={now}
+                busy={busy}
+                expanded={expanded.has(project.id)}
+                onToggle={() =>
+                  setExpanded((current) => {
+                    const next = new Set(current)
+                    if (!next.delete(project.id)) {
+                      next.add(project.id)
+                    }
+                    return next
+                  })
                 }
-                return next
-              })
-            }
-            onOpenWorkspace={(key) => {
-              const worktree = byKey.get(key)
-              if (worktree) {
-                actions.open(worktree)
-              }
-            }}
-            onOpenTickets={(mode) =>
-              setSheet({ mode, projectId: project.id, projectName: project.name })
-            }
-            onWriteTicket={() =>
-              setPrompt({ kind: 'write-ticket', projectId: project.id, projectName: project.name })
-            }
-          />
+                onOpenWorkspace={(key) => {
+                  const worktree = byKey.get(key)
+                  if (worktree) {
+                    actions.open(worktree)
+                  }
+                }}
+                onOpenTickets={(mode) =>
+                  setSheet({ mode, projectId: project.id, projectName: project.name })
+                }
+                onWriteTicket={() =>
+                  setPrompt({
+                    kind: 'write-ticket',
+                    projectId: project.id,
+                    projectName: project.name
+                  })
+                }
+                onTogglePinned={() => projectLists.toggle('pinned', project.id)}
+                onToggleHidden={() => projectLists.toggle('hidden', project.id)}
+              />
+            ))}
+          </View>
         ))}
       </ScrollView>
 

@@ -1,6 +1,6 @@
 import { useTranslate } from '@/i18n/use-translate'
 import type { OverviewProjectSection } from './overview-project-sections'
-import type { OverviewProjectTierKey } from './overview-project-tiers'
+import type { OverviewProjectTierKey } from '../../../../shared/overview/overview-project-tiers'
 
 export type OverviewSectionedTier = {
   key: OverviewProjectTierKey

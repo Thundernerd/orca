@@ -1,5 +1,5 @@
 import { Pressable, Text, View } from 'react-native'
-import { ChevronDown, ChevronRight } from 'lucide-react-native'
+import { ChevronDown, ChevronRight, Eye, EyeOff, Pin, PinOff } from 'lucide-react-native'
 import type {
   OverviewProject,
   OverviewWorkspaceRow
@@ -90,7 +90,9 @@ export function MobileOverviewProjectCard({
   onToggle,
   onOpenWorkspace,
   onOpenTickets,
-  onWriteTicket
+  onWriteTicket,
+  onTogglePinned,
+  onToggleHidden
 }: {
   project: OverviewProject
   now: number
@@ -100,24 +102,60 @@ export function MobileOverviewProjectCard({
   onOpenWorkspace: (worktreeId: string) => void
   onOpenTickets: (mode: MobileTicketSheetMode) => void
   onWriteTicket: () => void
+  onTogglePinned: () => void
+  onToggleHidden: () => void
 }) {
   useMobileColorScheme()
   const t = useMobileTranslation()
   const Chevron = expanded ? ChevronDown : ChevronRight
   return (
-    <View style={styles.card}>
-      <Pressable
-        onPress={onToggle}
-        accessibilityRole="button"
-        accessibilityState={{ expanded }}
-        style={({ pressed }) => [styles.row, pressed && styles.pressed]}
-      >
-        <Chevron size={16} color={colors.textSecondary} />
-        <Text style={[styles.title, styles.grow]} numberOfLines={1}>
-          {project.name}
-        </Text>
-        {project.host ? <Stat label={project.host} /> : null}
-      </Pressable>
+    <View style={[styles.card, project.hidden && styles.cardHidden]}>
+      <View style={styles.row}>
+        <Pressable
+          onPress={onToggle}
+          accessibilityRole="button"
+          accessibilityState={{ expanded }}
+          style={({ pressed }) => [styles.row, styles.grow, pressed && styles.pressed]}
+        >
+          <Chevron size={16} color={colors.textSecondary} />
+          <Text style={[styles.title, styles.grow]} numberOfLines={1}>
+            {project.name}
+          </Text>
+          {project.host ? <Stat label={project.host} /> : null}
+        </Pressable>
+        <Pressable
+          onPress={onTogglePinned}
+          accessibilityRole="button"
+          accessibilityLabel={
+            project.pinned
+              ? t('overview.mobile.unpin', 'Unpin {{project}}', { project: project.name })
+              : t('overview.mobile.pin', 'Pin {{project}}', { project: project.name })
+          }
+          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+        >
+          {project.pinned ? (
+            <PinOff size={16} color={colors.textSecondary} />
+          ) : (
+            <Pin size={16} color={colors.textSecondary} />
+          )}
+        </Pressable>
+        <Pressable
+          onPress={onToggleHidden}
+          accessibilityRole="button"
+          accessibilityLabel={
+            project.hidden
+              ? t('overview.mobile.show', 'Show {{project}}', { project: project.name })
+              : t('overview.mobile.hide', 'Hide {{project}}', { project: project.name })
+          }
+          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+        >
+          {project.hidden ? (
+            <Eye size={16} color={colors.textSecondary} />
+          ) : (
+            <EyeOff size={16} color={colors.textSecondary} />
+          )}
+        </Pressable>
+      </View>
       <View style={styles.wrap}>
         {project.attentionCount > 0 ? (
           <Stat

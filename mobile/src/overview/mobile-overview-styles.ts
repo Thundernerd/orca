@@ -11,6 +11,8 @@ export const overviewStyles = themedStyleSheet(() => ({
     marginTop: spacing.sm
   },
   sectionTitle: { color: colors.textSecondary, fontSize: 13, fontWeight: '500' },
+  tier: { gap: spacing.md },
+  tierTitle: { color: colors.textSecondary, fontSize: typography.metaSize, fontWeight: '600' },
   card: {
     borderWidth: 1,
     borderColor: colors.borderSubtle,
@@ -19,6 +21,7 @@ export const overviewStyles = themedStyleSheet(() => ({
     padding: spacing.md,
     gap: spacing.sm
   },
+  cardHidden: { opacity: 0.6 },
   cardUrgent: { borderColor: colors.statusRed },
   cardReady: { borderColor: colors.statusGreen },
   cardFlagged: { borderColor: colors.statusAmber },
@@ -56,6 +59,7 @@ export const overviewStyles = themedStyleSheet(() => ({
     gap: spacing.xs
   },
   buttonText: { color: colors.textPrimary, fontSize: typography.metaSize, fontWeight: '500' },
+  iconButton: { minWidth: 36, minHeight: 36, alignItems: 'center', justifyContent: 'center' },
   linkButton: { minHeight: 36, justifyContent: 'center' },
   linkText: { color: colors.textSecondary, fontSize: typography.metaSize, fontWeight: '500' },
   notice: {
