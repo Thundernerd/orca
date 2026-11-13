@@ -4,7 +4,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Switch } from '@/components/ui/switch'
 import { useTranslate } from '@/i18n/use-translate'
 import type { TicketQueueView } from '../../../../shared/ticket-pipeline/ticket-types'
-import { overviewMergeQueue, overviewTicketSettings } from './overview-ticket-pipeline'
+import { overviewMergeQueue } from './overview-ticket-pipeline'
+import { useOverviewTicketSettings } from './use-overview-ticket-settings'
 
 type LoadState =
   | { kind: 'loading' }
@@ -28,6 +29,7 @@ export function OverviewMergeQueuePopover({
   const t = useTranslate()
   const [open, setOpen] = useState(false)
   const [state, setState] = useState<LoadState>({ kind: 'loading' })
+  const { settings, update: updateSettings } = useOverviewTicketSettings(projectId, open)
 
   const load = async (action: 'view' | 'resume' = 'view'): Promise<void> => {
     if (action === 'view') {
@@ -38,13 +40,6 @@ export function OverviewMergeQueuePopover({
     } catch (error) {
       setState({ kind: 'error', message: error instanceof Error ? error.message : String(error) })
     }
-  }
-
-  const setAutoMerge = (autoMerge: boolean): void => {
-    setState((current) =>
-      current.kind === 'loaded' ? { kind: 'loaded', view: { ...current.view, autoMerge } } : current
-    )
-    void overviewTicketSettings(projectId, { autoMerge }).catch(() => void load())
   }
 
   const view = state.kind === 'loaded' ? state.view : null
@@ -76,6 +71,15 @@ export function OverviewMergeQueuePopover({
               project: projectName
             })}
           </p>
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={settings?.autoMerge ?? false}
+              disabled={!settings}
+              onCheckedChange={(autoMerge) => updateSettings({ autoMerge })}
+              aria-label={autoMergeLabel}
+            />
+            <span className="text-xs text-muted-foreground">{autoMergeLabel}</span>
+          </div>
           {state.kind === 'loading' ? (
             <p className="text-xs text-muted-foreground">
               {t('auto.components.overview.mergeQueue.loading', 'Reading the queue…')}
@@ -133,16 +137,6 @@ export function OverviewMergeQueuePopover({
                 </li>
               ))}
             </ol>
-          ) : null}
-          {view ? (
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={view.autoMerge}
-                onCheckedChange={setAutoMerge}
-                aria-label={autoMergeLabel}
-              />
-              <span className="text-xs text-muted-foreground">{autoMergeLabel}</span>
-            </div>
           ) : null}
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs text-muted-foreground">

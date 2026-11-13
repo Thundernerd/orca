@@ -6,13 +6,14 @@ import { Switch } from '@/components/ui/switch'
 import { useTranslate } from '@/i18n/use-translate'
 import type { WorkspaceCleanReason } from '../../../../shared/ticket-pipeline/workspace-clean-verdict'
 import type { WorkspaceCleanRow } from '../../../../shared/ticket-pipeline/ticket-types'
-import { overviewTicketSettings, surveyOverviewClean } from './overview-ticket-pipeline'
+import { surveyOverviewClean } from './overview-ticket-pipeline'
+import { useOverviewTicketSettings } from './use-overview-ticket-settings'
 import { workspaceCleanReasonLabel } from './workspace-clean-outcome-text'
 
 type LoadState =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'loaded'; rows: WorkspaceCleanRow[]; selected: ReadonlySet<string>; autoClean: boolean }
+  | { kind: 'loaded'; rows: WorkspaceCleanRow[]; selected: ReadonlySet<string> }
 
 function useReasonLabel(): (reason: WorkspaceCleanReason) => string {
   const t = useTranslate()
@@ -37,20 +38,17 @@ export function OverviewCleanUpPopover({
   const reasonLabel = useReasonLabel()
   const [open, setOpen] = useState(false)
   const [state, setState] = useState<LoadState>({ kind: 'loading' })
+  const { settings, update: updateSettings } = useOverviewTicketSettings(projectId, open)
 
   const load = async (): Promise<void> => {
     setState({ kind: 'loading' })
     try {
-      const [survey, settings] = await Promise.all([
-        surveyOverviewClean(projectId),
-        overviewTicketSettings(projectId)
-      ])
+      const survey = await surveyOverviewClean(projectId)
       const removable = survey.rows.filter((row) => row.verdict === 'remove')
       setState({
         kind: 'loaded',
         rows: [...removable, ...survey.rows.filter((row) => row.verdict === 'keep')],
-        selected: new Set(removable.map((row) => row.worktreeId)),
-        autoClean: settings.autoClean
+        selected: new Set(removable.map((row) => row.worktreeId))
       })
     } catch (error) {
       setState({ kind: 'error', message: error instanceof Error ? error.message : String(error) })
@@ -70,15 +68,6 @@ export function OverviewCleanUpPopover({
       }
       return { ...current, selected }
     })
-  }
-
-  const setAutoClean = (autoClean: boolean): void => {
-    setState((current) => (current.kind === 'loaded' ? { ...current, autoClean } : current))
-    void overviewTicketSettings(projectId, { autoClean }).catch(() =>
-      setState((current) =>
-        current.kind === 'loaded' ? { ...current, autoClean: !autoClean } : current
-      )
-    )
   }
 
   const selected = state.kind === 'loaded' ? [...state.selected] : []
@@ -113,6 +102,15 @@ export function OverviewCleanUpPopover({
               }
             )}
           </p>
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={settings?.autoClean ?? false}
+              disabled={!settings}
+              onCheckedChange={(autoClean) => updateSettings({ autoClean })}
+              aria-label={autoCleanLabel}
+            />
+            <span className="text-xs text-muted-foreground">{autoCleanLabel}</span>
+          </div>
           {state.kind === 'loading' ? (
             <p className="text-xs text-muted-foreground">
               {t(
@@ -153,16 +151,6 @@ export function OverviewCleanUpPopover({
               ))}
             </ul>
           )}
-          {state.kind === 'loaded' ? (
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={state.autoClean}
-                onCheckedChange={setAutoClean}
-                aria-label={autoCleanLabel}
-              />
-              <span className="text-xs text-muted-foreground">{autoCleanLabel}</span>
-            </div>
-          ) : null}
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs text-muted-foreground">
               {t(
