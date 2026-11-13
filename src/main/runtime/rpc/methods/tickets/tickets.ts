@@ -16,6 +16,7 @@ import {
   TicketSurvey
 } from '../../../../../shared/rpc-contract/ticket-params'
 import { getTicketItemStore } from '../../../../ticket-pipeline/ticket-item-store'
+import { adoptUntrackedTicketWorkspaces } from '../../../../ticket-pipeline/ticket-adoption'
 import { launchTickets } from '../../../../ticket-pipeline/ticket-launch'
 import { surveyTickets } from '../../../../ticket-pipeline/ticket-survey'
 import { startTicketTracker } from '../../../../ticket-pipeline/ticket-tracker'
@@ -40,6 +41,17 @@ import {
   ticketParentScope
 } from '../../../../ticket-pipeline/ticket-parent-workspace'
 import { defineMethod } from '../../core'
+
+/** Adoption reads the tracker and GitHub; a failure must not hide the queue itself. */
+async function adoptForQueue(
+  runtime: Parameters<typeof adoptUntrackedTicketWorkspaces>[0],
+  parent: { id: string; repoId: string }
+): Promise<number> {
+  return adoptUntrackedTicketWorkspaces(runtime, parent).catch((error: unknown) => {
+    console.warn('[tickets] could not adopt untracked ticket workspaces', error)
+    return 0
+  })
+}
 
 export const TICKET_METHODS = [
   defineMethod({
@@ -115,6 +127,9 @@ export const TICKET_METHODS = [
       const parent = await runtime.showManagedWorktree(
         await resolveTicketParentSelector(runtime, ticketParentScope(params))
       )
+      if (await adoptForQueue(runtime, parent)) {
+        startTicketTracker(runtime)
+      }
       return ticketQueueView(parent.id, parent.repoId)
     }
   }),
@@ -126,6 +141,7 @@ export const TICKET_METHODS = [
       const parent = await runtime.showManagedWorktree(
         await resolveTicketParentSelector(runtime, ticketParentScope(params))
       )
+      await adoptForQueue(runtime, parent)
       await resumeTicketQueue(parent.id)
       startTicketTracker(runtime)
       return ticketQueueView(parent.id, parent.repoId)
