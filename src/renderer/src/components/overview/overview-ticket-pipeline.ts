@@ -19,6 +19,7 @@ import type {
   TicketDraftBatch
 } from '../../../../shared/ticket-pipeline/ticket-draft-types'
 import type { OverviewActionResult } from './overview-actions'
+import { keptWorkspaceNotes } from './workspace-clean-outcome-text'
 
 const SURVEY_TIMEOUT_MS = 120_000
 // Each ticket creates a workspace and starts an agent before the next one begins.
@@ -146,10 +147,10 @@ export async function cleanOverviewWorkspaces(
     { timeoutMs: LAUNCH_TIMEOUT_MS }
   )
   const removed = result.outcomes.filter((o) => o.status === 'removed')
-  const kept = result.outcomes.length - removed.length
+  const kept = keptWorkspaceNotes(result.outcomes)
   const leftovers = removed.flatMap((o) => (o.branchLeftover ? [o.branchLeftover] : []))
   return {
-    ok: kept === 0,
+    ok: kept.length === 0,
     message: [
       translate(
         'auto.components.overview.cleanUpWorkspaces.result',
@@ -164,7 +165,8 @@ export async function cleanOverviewWorkspaces(
               { branches: leftovers.join(', ') }
             )
           ]
-        : [])
+        : []),
+      ...kept
     ].join(' ')
   }
 }

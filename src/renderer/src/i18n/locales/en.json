@@ -20217,7 +20217,8 @@
             "reviewMergedExtra": "PR merged, but it has commits the PR never had",
             "reviewOpen": "PR still open",
             "reviewClosed": "PR closed without merging",
-            "notMerged": "not merged and no PR"
+            "notMerged": "not merged and no PR",
+            "notAChild": "no longer a child workspace"
           }
         },
         "mergeQueue": {
