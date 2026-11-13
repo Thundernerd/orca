@@ -64,9 +64,9 @@ export function workspaceCleanReasonLabel(
 
 /** A kept outcome carries a survey reason, 'not-a-child', or a removal error message. */
 function keptReasonLabel(reason: string): string {
-  const labels = reasonLabels(translate)
-  if (Object.hasOwn(labels, reason)) {
-    return labels[reason as WorkspaceCleanReason]
+  const known = Object.entries(reasonLabels(translate)).find(([key]) => key === reason)
+  if (known) {
+    return known[1]
   }
   if (reason === 'not-a-child') {
     return translate(
