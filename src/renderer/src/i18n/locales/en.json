@@ -20274,7 +20274,11 @@
           "idle": "Not checking: nothing left to follow.",
           "queueAuto": "Merge queue (auto)",
           "queue": "Merge queue",
-          "clean": "Auto-clean"
+          "clean": "Auto-clean",
+          "summaryPaused": "Queue paused",
+          "summaryHead": "Queue: {{ticket}} · {{detail}}",
+          "summaryEmpty": "Queue empty",
+          "summaryKept": "{{count}} kept by auto-clean"
         }
       }
     },

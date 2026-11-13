@@ -12,7 +12,7 @@ import { OverviewWriteTicketPopover } from './OverviewWriteTicketPopover'
 import { OverviewLaunchTicketsPopover } from './OverviewLaunchTicketsPopover'
 import { OverviewCleanUpPopover } from './OverviewCleanUpPopover'
 import { OverviewMergeQueuePopover } from './OverviewMergeQueuePopover'
-import { OverviewTicketPipelineStatus } from './OverviewTicketPipelineStatus'
+import { OverviewTicketPipelineSummary } from './OverviewTicketPipelineStatus'
 
 /** Workspaces grouped by project; fixed column shares keep stacked tier tables aligned. Collapsing a group minimizes its card too. */
 export function OverviewTable({
@@ -130,6 +130,9 @@ export function OverviewTable({
                           <RefreshCw className={cn(project.ticketsLoading && 'animate-spin')} />
                         </Button>
                       ) : null}
+                      {project.mainWorktreeId && !project.hidden ? (
+                        <OverviewTicketPipelineSummary projectId={project.id} now={now} />
+                      ) : null}
                       <span className="ml-auto flex flex-wrap items-center gap-1">
                         {project.mainWorktreeId && !project.hidden ? (
                           <OverviewLaunchTicketsPopover
@@ -204,13 +207,6 @@ export function OverviewTable({
                         </Button>
                       </span>
                     </div>
-                    {project.mainWorktreeId && !project.hidden ? (
-                      <OverviewTicketPipelineStatus
-                        projectId={project.id}
-                        now={now}
-                        className="pt-1 pb-0.5 pl-4"
-                      />
-                    ) : null}
                   </td>
                 </tr>
                 {open

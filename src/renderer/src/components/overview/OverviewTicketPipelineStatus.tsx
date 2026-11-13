@@ -1,3 +1,5 @@
+import { Button } from '@/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/class-names'
 import { useTranslate } from '@/i18n/use-translate'
 import { formatRelativeTime } from '@/components/activity/activity-thread-presentation'
@@ -104,23 +106,18 @@ function useCleanText(): (status: TicketPipelineStatus, now: number) => string {
   }
 }
 
-/** What the merge queue and auto-clean are doing right now, so a quiet card is not a mystery. */
-export function OverviewTicketPipelineStatus({
-  projectId,
+function StatusDetails({
+  status,
   now,
   className
 }: {
-  projectId: string
+  status: TicketPipelineStatus
   now: number
   className?: string
-}): React.JSX.Element | null {
+}): React.JSX.Element {
   const t = useTranslate()
-  const status = useOverviewTicketStatus(projectId)
   const queueText = useQueueText()
   const cleanText = useCleanText()
-  if (!status || !hasTicketPipelineStatus(status)) {
-    return null
-  }
   const checked = status.watching
     ? status.checkedAt
       ? t('auto.components.overview.pipelineStatus.checked', 'Checked {{when}}', {
@@ -151,5 +148,85 @@ export function OverviewTicketPipelineStatus({
       <span />
       <span>{checked}</span>
     </div>
+  )
+}
+
+/** What the merge queue and auto-clean are doing right now, so a quiet card is not a mystery. */
+export function OverviewTicketPipelineStatus({
+  projectId,
+  now
+}: {
+  projectId: string
+  now: number
+}): React.JSX.Element | null {
+  const status = useOverviewTicketStatus(projectId)
+  return status && hasTicketPipelineStatus(status) ? (
+    <StatusDetails status={status} now={now} />
+  ) : null
+}
+
+/** One line for a table header row; the full status opens on click. */
+export function OverviewTicketPipelineSummary({
+  projectId,
+  now
+}: {
+  projectId: string
+  now: number
+}): React.JSX.Element | null {
+  const t = useTranslate()
+  const status = useOverviewTicketStatus(projectId)
+  if (!status || !hasTicketPipelineStatus(status)) {
+    return null
+  }
+  const { queue, clean } = status
+  const summary = [
+    queue.pausedReason
+      ? t('auto.components.overview.pipelineStatus.summaryPaused', 'Queue paused')
+      : queue.head
+        ? t(
+            'auto.components.overview.pipelineStatus.summaryHead',
+            'Queue: {{ticket}} · {{detail}}',
+            {
+              ticket: queue.head.ticketId,
+              detail:
+                queue.head.detail ??
+                t('auto.components.overview.pipelineStatus.notChecked', 'Not checked yet.')
+            }
+          )
+        : t('auto.components.overview.pipelineStatus.summaryEmpty', 'Queue empty'),
+    ...(queue.waiting > 0
+      ? [
+          t('auto.components.overview.pipelineStatus.behind', '{{count}} behind it', {
+            count: queue.waiting
+          })
+        ]
+      : []),
+    ...(clean.held.length > 0
+      ? [
+          t('auto.components.overview.pipelineStatus.summaryKept', '{{count}} kept by auto-clean', {
+            count: clean.held.length
+          })
+        ]
+      : [])
+  ].join(' · ')
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="xs"
+          className={cn(
+            'max-w-[28rem] min-w-0 font-normal text-muted-foreground',
+            queue.pausedReason && 'text-destructive'
+          )}
+          title={summary}
+        >
+          <span className="truncate">{summary}</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[32rem] p-3">
+        <StatusDetails status={status} now={now} />
+      </PopoverContent>
+    </Popover>
   )
 }
