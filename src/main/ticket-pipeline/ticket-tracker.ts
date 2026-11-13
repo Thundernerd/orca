@@ -66,7 +66,9 @@ async function findReview(
   item: TicketItem,
   cached: { number: number; state: string; url?: string } | null | undefined
 ): Promise<TicketItemObservation['review']> {
-  if (cached?.url && isPRState(cached.state)) {
+  // A PR the queue just merged can stay cached as open, which would hold the queue on it.
+  const queueMerged = item.queue?.status === 'merging'
+  if (cached?.url && isPRState(cached.state) && !queueMerged) {
     return { number: cached.number, url: cached.url, state: cached.state }
   }
   // The branch lookup shares the PR refresh budget; it only runs until the PR is linked and cached.
