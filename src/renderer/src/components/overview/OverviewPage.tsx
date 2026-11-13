@@ -28,6 +28,8 @@ import { OverviewTable } from './OverviewTable'
 import { OverviewViewMenu } from './OverviewViewMenu'
 import { useOverviewKeyboardTriage } from './use-overview-keyboard-triage'
 import { sectionOverviewProjects } from './overview-project-sections'
+import { tierOverviewProjects } from './overview-project-tiers'
+import { OverviewProjectTierList } from './OverviewProjectTierList'
 import { runWorktreeDelete } from '@/components/sidebar/workspace-actions/deletion/delete-worktree-flow'
 import { LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
 
@@ -260,12 +262,11 @@ export default function OverviewPage(): React.JSX.Element {
   const layout = prefs.layout ?? 'cards'
   const sort = prefs.sort ?? 'attention'
   const groupBy = prefs.groupBy ?? 'none'
-  const sections = sectionOverviewProjects(
-    snapshot.projects,
-    projectGroups,
-    groupBy,
-    t('auto.components.overview.ungrouped', 'Ungrouped')
-  )
+  const ungroupedLabel = t('auto.components.overview.ungrouped', 'Ungrouped')
+  const tiers = tierOverviewProjects(snapshot.projects).map((tier) => ({
+    key: tier.key,
+    sections: sectionOverviewProjects(tier.projects, projectGroups, groupBy, ungroupedLabel)
+  }))
   // Hidden projects are already out of Needs you, so they keep their unread flags.
   const unreadItems = snapshot.attention.filter((item) => item.unread)
   const refreshAll = (): void => {
@@ -313,15 +314,22 @@ export default function OverviewPage(): React.JSX.Element {
       ) : layout === 'table' ? (
         <div className="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4 @3xl:px-5">
           <OverviewStatsStrip snapshot={snapshot} />
-          <OverviewTable
-            sections={sections}
-            minimized={prefs.minimized}
-            ticketsUnavailable={(source) => surveys.unavailable.has(source)}
-            now={now}
-            projectActions={projectActions}
-            attentionActions={attentionActions}
-            triage={triage}
-          />
+          <div className="scrollbar-sleek flex min-h-0 flex-1 flex-col gap-6 overflow-auto">
+            <OverviewProjectTierList
+              tiers={tiers}
+              renderTier={(sections) => (
+                <OverviewTable
+                  sections={sections}
+                  minimized={prefs.minimized}
+                  ticketsUnavailable={(source) => surveys.unavailable.has(source)}
+                  now={now}
+                  projectActions={projectActions}
+                  attentionActions={attentionActions}
+                  triage={triage}
+                />
+              )}
+            />
+          </div>
         </div>
       ) : (
         // One scrolling column when narrow (Needs you first); two independent columns when wide.
@@ -330,31 +338,40 @@ export default function OverviewPage(): React.JSX.Element {
             aria-label={t('auto.components.overview.projects', 'Projects')}
             className="scrollbar-sleek @container order-2 min-h-0 @3xl:order-1 @3xl:overflow-y-auto"
           >
-            <div className="flex flex-col gap-4">
-              {sections.map((section) => (
-                <div key={section.key} className="flex flex-col gap-2">
-                  {section.label ? (
-                    <h2 className="text-xs font-semibold text-muted-foreground">{section.label}</h2>
-                  ) : null}
-                  <div className="grid grid-cols-1 gap-3 @2xl:grid-cols-2 @6xl:grid-cols-3">
-                    {section.projects.map((project) => (
-                      <OverviewProjectCard
-                        key={project.id}
-                        project={project}
-                        minimized={prefs.minimized.includes(project.id)}
-                        tableOpen={prefs.openTables.includes(project.id)}
-                        ticketsUnavailable={
-                          project.ticketSource !== null &&
-                          surveys.unavailable.has(project.ticketSource)
-                        }
-                        now={now}
-                        actions={projectActions}
-                        onRemoveWorkspace={attentionActions.removeWorkspace}
-                      />
+            <div className="flex flex-col gap-6">
+              <OverviewProjectTierList
+                tiers={tiers}
+                renderTier={(sections) => (
+                  <div className="flex flex-col gap-4">
+                    {sections.map((section) => (
+                      <div key={section.key} className="flex flex-col gap-2">
+                        {section.label ? (
+                          <h2 className="text-xs font-semibold text-muted-foreground">
+                            {section.label}
+                          </h2>
+                        ) : null}
+                        <div className="grid grid-cols-1 gap-3 @2xl:grid-cols-2 @6xl:grid-cols-3">
+                          {section.projects.map((project) => (
+                            <OverviewProjectCard
+                              key={project.id}
+                              project={project}
+                              minimized={prefs.minimized.includes(project.id)}
+                              tableOpen={prefs.openTables.includes(project.id)}
+                              ticketsUnavailable={
+                                project.ticketSource !== null &&
+                                surveys.unavailable.has(project.ticketSource)
+                              }
+                              now={now}
+                              actions={projectActions}
+                              onRemoveWorkspace={attentionActions.removeWorkspace}
+                            />
+                          ))}
+                        </div>
+                      </div>
                     ))}
                   </div>
-                </div>
-              ))}
+                )}
+              />
             </div>
           </section>
           <aside

@@ -13,7 +13,7 @@ import { OverviewLaunchTicketsPopover } from './OverviewLaunchTicketsPopover'
 import { OverviewCleanUpPopover } from './OverviewCleanUpPopover'
 import { OverviewMergeQueuePopover } from './OverviewMergeQueuePopover'
 
-/** Every workspace in one table, grouped by project; collapsing a group minimizes its card too. */
+/** Workspaces grouped by project; fixed column shares keep stacked tier tables aligned. Collapsing a group minimizes its card too. */
 export function OverviewTable({
   sections,
   minimized,
@@ -33,23 +33,23 @@ export function OverviewTable({
 }): React.JSX.Element {
   const t = useTranslate()
   return (
-    <div className="scrollbar-sleek min-h-0 flex-1 overflow-auto rounded-lg border border-border">
+    <div className="rounded-lg border border-border">
       <table className="w-full text-xs">
         <thead className="sticky top-0 z-10 bg-background text-left text-muted-foreground">
           <tr>
-            <th className="px-3 py-2 font-medium">
+            <th className="w-[22%] px-3 py-2 font-medium">
               {t('auto.components.overview.table.workspace', 'Workspace')}
             </th>
-            <th className="px-2 py-2 font-medium">
+            <th className="w-[30%] px-2 py-2 font-medium">
               {t('auto.components.overview.table.needs', 'Needs')}
             </th>
-            <th className="px-2 py-2 font-medium">
+            <th className="w-[9%] px-2 py-2 font-medium">
               {t('auto.components.overview.table.agent', 'Agent')}
             </th>
-            <th className="px-2 py-2 font-medium">
+            <th className="w-[14%] px-2 py-2 font-medium">
               {t('auto.components.overview.table.prChecks', 'PR / CI')}
             </th>
-            <th className="hidden px-2 py-2 font-medium @3xl:table-cell">
+            <th className="hidden w-[9%] px-2 py-2 font-medium @3xl:table-cell">
               {t('auto.components.overview.table.lastActive', 'Last active')}
             </th>
             <th className="px-3 py-2">

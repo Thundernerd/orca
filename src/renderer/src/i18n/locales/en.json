@@ -20251,6 +20251,11 @@
         },
         "ticketActions": {
           "unavailable": "Tickets for this project cannot be managed from here."
+        },
+        "tiers": {
+          "pinned": "Pinned",
+          "regular": "Projects",
+          "hidden": "Hidden"
         }
       }
     },
