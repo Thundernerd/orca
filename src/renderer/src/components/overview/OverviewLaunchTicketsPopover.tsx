@@ -90,6 +90,15 @@ export function OverviewLaunchTicketsPopover({
   }
 
   const selected = state.kind === 'loaded' ? state.choices.filter((c) => c.selected) : []
+  const total = state.kind === 'loaded' ? state.choices.length : 0
+
+  const selectAll = (on: boolean): void => {
+    setState((current) =>
+      current.kind === 'loaded'
+        ? { ...current, choices: current.choices.map((c) => ({ ...c, selected: on })) }
+        : current
+    )
+  }
 
   return (
     <Popover
@@ -136,46 +145,74 @@ export function OverviewLaunchTicketsPopover({
               )}
             </p>
           ) : (
-            <ul className="scrollbar-sleek flex max-h-72 flex-col gap-1 overflow-y-auto">
-              {state.choices.map((choice) => (
-                <li key={choice.row.ticket.id} className="flex items-center gap-2">
-                  <Checkbox
-                    checked={choice.selected}
-                    onCheckedChange={(checked) =>
-                      update(choice.row.ticket.id, { selected: checked === true })
-                    }
-                    aria-label={choice.row.ticket.title}
-                  />
-                  <span className="w-16 shrink-0 font-mono text-xs text-muted-foreground">
-                    {choice.row.ticket.id}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-xs">{choice.row.ticket.title}</span>
-                  <Select
-                    value={choice.type}
-                    onValueChange={(value) => {
-                      if (isConventionalType(value)) {
-                        update(choice.row.ticket.id, { type: value })
+            <>
+              <label className="flex items-center gap-2 border-b border-border pb-1 text-xs text-muted-foreground">
+                <Checkbox
+                  checked={
+                    selected.length === total
+                      ? true
+                      : selected.length === 0
+                        ? false
+                        : 'indeterminate'
+                  }
+                  onCheckedChange={() => selectAll(selected.length < total)}
+                  aria-label={t(
+                    'auto.components.overview.launchTickets.selectAll',
+                    'Select all tickets'
+                  )}
+                />
+                {t(
+                  'auto.components.overview.launchTickets.selectedCount',
+                  '{{count}} of {{total}} selected',
+                  {
+                    count: selected.length,
+                    total
+                  }
+                )}
+              </label>
+              <ul className="scrollbar-sleek flex max-h-72 flex-col gap-1 overflow-y-auto">
+                {state.choices.map((choice) => (
+                  <li key={choice.row.ticket.id} className="flex items-center gap-2">
+                    <Checkbox
+                      checked={choice.selected}
+                      onCheckedChange={(checked) =>
+                        update(choice.row.ticket.id, { selected: checked === true })
                       }
-                    }}
-                  >
-                    <SelectTrigger
-                      size="sm"
-                      className="w-24"
-                      aria-label={t('auto.components.overview.launchTickets.type', 'Commit type')}
+                      aria-label={choice.row.ticket.title}
+                    />
+                    <span className="w-16 shrink-0 font-mono text-xs text-muted-foreground">
+                      {choice.row.ticket.id}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-xs">
+                      {choice.row.ticket.title}
+                    </span>
+                    <Select
+                      value={choice.type}
+                      onValueChange={(value) => {
+                        if (isConventionalType(value)) {
+                          update(choice.row.ticket.id, { type: value })
+                        }
+                      }}
                     >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CONVENTIONAL_TYPES.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </li>
-              ))}
-            </ul>
+                      <SelectTrigger
+                        size="sm"
+                        className="w-24"
+                        aria-label={t('auto.components.overview.launchTickets.type', 'Commit type')}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CONVENTIONAL_TYPES.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs text-muted-foreground">

@@ -5081,7 +5081,10 @@
         "published": "Published {{ids}}",
         "publishStopped": "Publishing stopped",
         "discard": "Discard",
-        "discarded": "Drafts discarded"
+        "discarded": "Drafts discarded",
+        "deselectAll": "Deselect all",
+        "selectAll": "Select all",
+        "selectedCount": "{{count}} of {{total}} selected"
       },
       "pin": "Pin {{project}}",
       "unpin": "Unpin {{project}}",

@@ -70,6 +70,38 @@ function Toggle({
   )
 }
 
+/** Selects every row that can go, or none once all are selected. */
+function SelectAllToggle({
+  ids,
+  selected,
+  onChange
+}: {
+  ids: readonly string[]
+  selected: ReadonlySet<string>
+  onChange: (next: ReadonlySet<string>) => void
+}) {
+  const t = useMobileTranslation()
+  if (ids.length < 2) {
+    return null
+  }
+  const all = selected.size === ids.length
+  return (
+    <Toggle
+      checked={all}
+      label={
+        all
+          ? t('overview.mobile.tickets.deselectAll', 'Deselect all')
+          : t('overview.mobile.tickets.selectAll', 'Select all')
+      }
+      meta={t('overview.mobile.tickets.selectedCount', '{{count}} of {{total}} selected', {
+        count: selected.size,
+        total: ids.length
+      })}
+      onPress={() => onChange(new Set(all ? [] : ids))}
+    />
+  )
+}
+
 function ActionButton({
   label,
   disabled,
@@ -152,6 +184,13 @@ export function MobileTicketSheet({
       return next
     })
 
+  const selectableIds =
+    loaded?.mode === 'launch'
+      ? loaded.survey.rows.filter((r) => r.status === 'ready').map((r) => r.ticket.id)
+      : loaded?.mode === 'clean'
+        ? loaded.survey.rows.filter((r) => r.verdict === 'remove').map((r) => r.worktreeId)
+        : []
+
   const finish = (run: () => Promise<MobileTicketResult>) => {
     onClose()
     onResult(run)
@@ -183,6 +222,7 @@ export function MobileTicketSheet({
 
         {loaded?.mode === 'launch' ? (
           <>
+            <SelectAllToggle ids={selectableIds} selected={selected} onChange={setSelected} />
             {loaded.survey.rows.map((row) => (
               <Toggle
                 key={row.ticket.id}
@@ -219,6 +259,7 @@ export function MobileTicketSheet({
 
         {loaded?.mode === 'clean' ? (
           <>
+            <SelectAllToggle ids={selectableIds} selected={selected} onChange={setSelected} />
             {loaded.survey.rows.map((row) => (
               <Toggle
                 key={row.worktreeId}

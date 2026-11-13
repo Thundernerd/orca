@@ -71,6 +71,16 @@ export function OverviewCleanUpPopover({
   }
 
   const selected = state.kind === 'loaded' ? [...state.selected] : []
+  const removable =
+    state.kind === 'loaded'
+      ? state.rows.filter((row) => row.verdict === 'remove').map((row) => row.worktreeId)
+      : []
+
+  const selectAll = (on: boolean): void => {
+    setState((current) =>
+      current.kind === 'loaded' ? { ...current, selected: new Set(on ? removable : []) } : current
+    )
+  }
   const autoCleanLabel = t(
     'auto.components.overview.cleanUpWorkspaces.auto',
     'Remove a ticket workspace automatically once its PR merges'
@@ -128,28 +138,53 @@ export function OverviewCleanUpPopover({
               )}
             </p>
           ) : (
-            <ul className="scrollbar-sleek flex max-h-72 flex-col gap-1 overflow-y-auto">
-              {state.rows.map((row) => (
-                <li key={row.worktreeId} className="flex items-center gap-2">
+            <>
+              {removable.length > 1 ? (
+                <label className="flex items-center gap-2 border-b border-border pb-1 text-xs text-muted-foreground">
                   <Checkbox
-                    checked={state.selected.has(row.worktreeId)}
-                    disabled={row.verdict === 'keep'}
-                    onCheckedChange={(checked) => toggle(row.worktreeId, checked === true)}
-                    aria-label={row.name}
-                  />
-                  <span className="min-w-0 flex-1 truncate text-xs">{row.name}</span>
-                  <span
-                    className={
-                      row.verdict === 'remove'
-                        ? 'shrink-0 text-xs text-muted-foreground'
-                        : 'shrink-0 text-xs text-muted-foreground/70'
+                    checked={
+                      selected.length === removable.length
+                        ? true
+                        : selected.length === 0
+                          ? false
+                          : 'indeterminate'
                     }
-                  >
-                    {reasonLabel(row.reason)}
-                  </span>
-                </li>
-              ))}
-            </ul>
+                    onCheckedChange={() => selectAll(selected.length < removable.length)}
+                    aria-label={t(
+                      'auto.components.overview.cleanUpWorkspaces.selectAll',
+                      'Select all removable workspaces'
+                    )}
+                  />
+                  {t(
+                    'auto.components.overview.cleanUpWorkspaces.selectedCount',
+                    '{{count}} of {{total}} selected',
+                    { count: selected.length, total: removable.length }
+                  )}
+                </label>
+              ) : null}
+              <ul className="scrollbar-sleek flex max-h-72 flex-col gap-1 overflow-y-auto">
+                {state.rows.map((row) => (
+                  <li key={row.worktreeId} className="flex items-center gap-2">
+                    <Checkbox
+                      checked={state.selected.has(row.worktreeId)}
+                      disabled={row.verdict === 'keep'}
+                      onCheckedChange={(checked) => toggle(row.worktreeId, checked === true)}
+                      aria-label={row.name}
+                    />
+                    <span className="min-w-0 flex-1 truncate text-xs">{row.name}</span>
+                    <span
+                      className={
+                        row.verdict === 'remove'
+                          ? 'shrink-0 text-xs text-muted-foreground'
+                          : 'shrink-0 text-xs text-muted-foreground/70'
+                      }
+                    >
+                      {reasonLabel(row.reason)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs text-muted-foreground">

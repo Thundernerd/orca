@@ -20192,7 +20192,9 @@
           "launch": "Launch {{count}}",
           "unavailable": "Tickets cannot be launched for {{project}} from here.",
           "result": "Launched {{count}} of {{total}} tickets in {{project}}.",
-          "source": "Tickets from"
+          "source": "Tickets from",
+          "selectAll": "Select all tickets",
+          "selectedCount": "{{count}} of {{total}} selected"
         },
         "cleanUpWorkspaces": {
           "button": "Clean up",
@@ -20218,7 +20220,9 @@
             "reviewClosed": "PR closed without merging",
             "notMerged": "not merged and no PR",
             "notAChild": "no longer a child workspace"
-          }
+          },
+          "selectAll": "Select all removable workspaces",
+          "selectedCount": "{{count}} of {{total}} selected"
         },
         "mergeQueue": {
           "button": "Merge queue",
