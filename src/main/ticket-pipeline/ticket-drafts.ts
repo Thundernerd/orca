@@ -66,7 +66,6 @@ export async function startTicketDrafting(
       AgentLaunch.parse({
         agent: 'claude',
         operationId: `${now}-${randomUUID().replaceAll('-', '')}`,
-        surface: 'terminal',
         presentation: 'background',
         prompt: {
           text: renderTicketDraftBrief({ batchId: batch.id, request }),

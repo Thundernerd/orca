@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import type { PRCheckDetail } from '../../shared/github/checks/check-types'
 import type { PRInfo } from '../../shared/github/pull-requests/pull-request-types'
 import { renderMergeQueueFixBrief } from '../../shared/ticket-pipeline/merge-queue-fix-brief'
@@ -19,6 +18,11 @@ import {
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import { getTicketItemStore, type TicketItemStore } from './ticket-item-store'
 import { queueOrder } from './merge-queue-order'
+import {
+  findTicketAgent,
+  sendTicketAgentFixBrief,
+  type TicketAgentReach
+} from './ticket-agent-reach'
 
 const MAX_ERROR_STREAK = 3
 
@@ -29,18 +33,6 @@ function withoutAwaitedFix(state: TicketQueueState): TicketQueueState {
     awaitingPushSince: undefined,
     awaitingCause: undefined
   }
-}
-
-async function findAgentTerminal(
-  runtime: OrcaRuntimeService,
-  item: TicketItem
-): Promise<string | null> {
-  const listed = await runtime
-    .listTerminals(`id:${item.childWorktreeId}`, undefined, { includeVisualLayouts: false })
-    .catch(() => null)
-  const terminals = listed?.terminals ?? []
-  const launched = terminals.find((t) => t.handle === item.agentTerminalHandle)
-  return (launched ?? terminals.find((t) => t.agentIdentity))?.handle ?? null
 }
 
 async function readPR(runtime: OrcaRuntimeService, item: TicketItem): Promise<PRInfo | null> {
@@ -134,13 +126,13 @@ export class MergeQueue {
     }
     const repo = await this.runtime.showRepo(`id:${item.repoId}`)
     const baseBranch = pr.baseRefName ?? 'main'
-    const [checks, texts, behindBase, terminal] = await Promise.all([
+    const [checks, texts, behindBase, agent] = await Promise.all([
       this.runtime.getRepoPRChecks(`id:${item.repoId}`, pr.number, pr.headSha, prRepo, {
         noCache: true
       }),
       getPRTexts(repo.path, prRepo, pr.number),
       isPRBehindBase(repo.path, prRepo, baseBranch, pr.headSha),
-      findAgentTerminal(this.runtime, item)
+      findTicketAgent(this.runtime, item)
     ])
     const observed: MergeQueueObservation = {
       headSha: pr.headSha,
@@ -150,7 +142,7 @@ export class MergeQueue {
       checks,
       attributionHits: findAttribution(texts),
       mergeBlocker: null,
-      agentReachable: terminal !== null,
+      agentReachable: agent !== null,
       now: Date.now()
     }
     let action = decideMergeQueueStep(item.queue, observed)
@@ -164,7 +156,7 @@ export class MergeQueue {
       prRepo,
       repoPath: repo.path,
       baseBranch,
-      terminal,
+      agent,
       checks,
       observed
     })
@@ -178,7 +170,7 @@ export class MergeQueue {
       prRepo: NonNullable<ReturnType<typeof prRepoFromUrl>>
       repoPath: string
       baseBranch: string
-      terminal: string | null
+      agent: TicketAgentReach | null
       checks: readonly PRCheckDetail[]
       observed: MergeQueueObservation
     }
@@ -234,15 +226,10 @@ export class MergeQueue {
             .map((c) => ({ name: c.name, url: c.url })),
           attributionLines: observed.attributionHits
         })
-        const sent = context.terminal
-          ? await this.runtime.sendTerminalAgentPrompt(context.terminal, brief, {
-              inputKind: 'orchestration',
-              acceptQueued: true,
-              observationTimeoutMs: 0,
-              requestId: randomUUID()
-            })
-          : null
-        if (!sent?.accepted) {
+        const sent = context.agent
+          ? await sendTicketAgentFixBrief(this.runtime, item, context.agent, brief)
+          : false
+        if (!sent) {
           await this.pause(item, `The agent did not take the fix brief. ${action.detail}`)
           return
         }

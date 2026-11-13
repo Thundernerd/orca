@@ -110,6 +110,8 @@ export type TicketItem = {
   reviewUrl: string | null
   /** The agent's terminal from launch; fix briefs go here. */
   agentTerminalHandle?: string
+  /** The agent's chat session from launch, when it opened as a chat; fix briefs go here. */
+  agentSessionId?: string
   /** Where the merge queue has this item; absent until it reaches the head of the queue. */
   queue?: TicketQueueState
   /** Tickets its agent filed for problems outside this ticket's scope. */

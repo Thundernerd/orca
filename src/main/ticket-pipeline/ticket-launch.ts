@@ -145,12 +145,12 @@ async function launchOne(
   let worktreeId: string
   let promptConfirmed: boolean
   let agentTerminalHandle: string | undefined
+  let agentSessionId: string | undefined
   try {
     const result = await launchAgentOnHost(
       AgentLaunch.parse({
         agent: 'claude',
         operationId: launchOperationId(),
-        surface: 'terminal',
         presentation: 'background',
         prompt: { text: args.brief(branch), delivery: 'submit' },
         target: {
@@ -173,6 +173,7 @@ async function launchOne(
     )
     worktreeId = result.worktreeId
     agentTerminalHandle = result.outcome.kind === 'terminal' ? result.outcome.handle : undefined
+    agentSessionId = result.outcome.kind === 'structured' ? result.outcome.sessionId : undefined
     promptConfirmed =
       result.prompt?.outcome === 'journaled' || result.prompt?.outcome === 'handed-to-terminal'
   } catch (error) {
@@ -200,6 +201,7 @@ async function launchOne(
     reviewNumber: null,
     reviewUrl: null,
     ...(agentTerminalHandle ? { agentTerminalHandle } : {}),
+    ...(agentSessionId ? { agentSessionId } : {}),
     createdAt: now,
     updatedAt: now
   })
