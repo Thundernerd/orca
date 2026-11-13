@@ -124,7 +124,7 @@ export function OverviewHeader({
               : 'border-destructive/30 bg-destructive/10 text-destructive'
           )}
         >
-          <span>{notice.message}</span>
+          <span className="py-1">{notice.message}</span>
           <Button
             variant="ghost"
             size="icon-xs"
