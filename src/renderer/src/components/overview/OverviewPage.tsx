@@ -24,6 +24,7 @@ import { OverviewAttentionCard, type OverviewAttentionCardActions } from './Over
 import { OverviewProjectCard, type OverviewProjectCardActions } from './OverviewProjectCard'
 import { OverviewHeader } from './OverviewHeader'
 import { OverviewStatsStrip } from './OverviewStatsStrip'
+import { refreshOverviewTicketStatus } from './use-overview-ticket-status'
 import { OverviewTable } from './OverviewTable'
 import { OverviewViewMenu } from './OverviewViewMenu'
 import { useOverviewKeyboardTriage } from './use-overview-keyboard-triage'
@@ -152,7 +153,9 @@ export default function OverviewPage(): React.JSX.Element {
     (projectId: string, request: string) => {
       const project = snapshot.projects.find((p) => p.id === projectId)
       if (project) {
-        void run(() => startOverviewDraftingWithNotice(projectId, project.name, request))
+        void run(() => startOverviewDraftingWithNotice(projectId, project.name, request)).then(() =>
+          refreshOverviewTicketStatus(projectId)
+        )
       }
     },
     [run, snapshot.projects]
@@ -161,6 +164,7 @@ export default function OverviewPage(): React.JSX.Element {
     (projectId: string, batch: TicketDraftBatch) => {
       const project = snapshot.projects.find((p) => p.id === projectId)
       setNotice(publishedDraftsNotice(batch, project?.name ?? ''))
+      refreshOverviewTicketStatus(projectId)
       if (project?.ticketSource) {
         surveys.requestSurvey(project.ticketSource)
       }

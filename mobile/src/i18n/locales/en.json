@@ -5109,7 +5109,9 @@
         "checking": "Checking for the first time…",
         "queueAuto": "Merge queue (auto)",
         "queue": "Merge queue",
-        "clean": "Auto-clean"
+        "clean": "Auto-clean",
+        "draftsReview": "{{count}} drafts to review",
+        "drafting": "Drafting tickets…"
       }
     }
   }

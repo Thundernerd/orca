@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Text, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
 import { hasTicketPipelineStatus } from '../../../src/shared/ticket-pipeline/ticket-pipeline-status-presence'
 import { useAppActive } from '../hooks/use-now'
 import { useMobileTranslation } from '../i18n/use-mobile-translation'
@@ -110,19 +110,48 @@ function checkedText(status: Status, now: number, t: Translate): string {
 export function MobileTicketPipelineStatus({
   client,
   projectId,
-  now
+  now,
+  onReviewDrafts
 }: {
   client: RpcClient | null
   projectId: string
   now: number
+  onReviewDrafts: () => void
 }) {
   const t = useMobileTranslation()
   const status = useTicketStatus(client, projectId)
-  if (!status || !hasTicketPipelineStatus(status)) {
+  if (!status) {
     return null
   }
+  const review = status.drafts?.review ?? []
+  const draftCount = review.reduce((sum, batch) => sum + batch.count, 0)
+  const draftsRow =
+    review.length > 0 ? (
+      <Pressable
+        onPress={onReviewDrafts}
+        accessibilityRole="button"
+        style={({ pressed }) => [
+          styles.chip,
+          styles.chipFlagged,
+          styles.selfStart,
+          pressed && styles.pressed
+        ]}
+      >
+        <Text style={[styles.chipText, styles.chipFlaggedText]}>
+          {t('overview.mobile.status.draftsReview', '{{count}} drafts to review', {
+            count: draftCount
+          })}
+        </Text>
+      </Pressable>
+    ) : status.drafts && status.drafts.drafting > 0 ? (
+      <Text style={styles.meta}>{t('overview.mobile.status.drafting', 'Drafting tickets…')}</Text>
+    ) : null
+  if (!hasTicketPipelineStatus(status)) {
+    return draftsRow
+  }
   return (
-    <View>
+    <View style={styles.statusBlock}>
+      {draftsRow}
       <Text style={[styles.meta, status.queue.pausedReason ? styles.danger : null]}>
         <Text style={styles.metaLabel}>
           {status.autoMerge

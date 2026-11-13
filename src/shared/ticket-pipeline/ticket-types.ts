@@ -237,4 +237,11 @@ export type TicketPipelineStatus = {
     /** Merged tickets auto-clean has not tried yet. */
     pending: number
   }
+  /** Ticket drafting from Write ticket; absent from a host older than this field. */
+  drafts?: {
+    /** Batches whose agent is still drafting. */
+    drafting: number
+    /** Batches the agent handed back, oldest first, waiting for the user's review. */
+    review: { batchId: string; count: number }[]
+  }
 }

@@ -6,6 +6,7 @@ import { useTranslate } from '@/i18n/use-translate'
 import type { TicketDraftBatch } from '../../../../shared/ticket-pipeline/ticket-draft-types'
 import { overviewDraftBatches } from './overview-ticket-pipeline'
 import { OverviewTicketDraftReviewDialog } from './OverviewTicketDraftReviewDialog'
+import { refreshOverviewTicketStatus } from './use-overview-ticket-status'
 
 const RECENT_BATCHES = 5
 
@@ -159,7 +160,10 @@ export function OverviewWriteTicketPopover({
           projectId={projectId}
           projectName={projectName}
           batch={reviewing}
-          onClose={() => setReviewing(null)}
+          onClose={() => {
+            setReviewing(null)
+            refreshOverviewTicketStatus(projectId)
+          }}
           onPublished={(batch) => {
             setReviewing(null)
             onPublished(batch)

@@ -74,7 +74,14 @@ const statusSchema = z.looseObject({
     lastRemoved: z.looseObject({ ticketId: z.string(), at: z.number() }).nullable(),
     held: z.array(z.looseObject({ ticketId: z.string(), reason: z.string(), at: z.number() })),
     pending: z.number()
-  })
+  }),
+  // Absent from a desktop older than draft status.
+  drafts: z
+    .looseObject({
+      drafting: z.number(),
+      review: z.array(z.looseObject({ batchId: z.string(), count: z.number() }))
+    })
+    .optional()
 })
 
 // Drafts are sent back to publish exactly as received, so every field survives the round trip.

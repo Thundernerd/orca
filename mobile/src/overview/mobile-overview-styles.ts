@@ -46,6 +46,8 @@ export const overviewStyles = themedStyleSheet(() => ({
   chipReadyText: { color: colors.statusGreen },
   chipFlagged: { borderColor: colors.statusAmber },
   chipFlaggedText: { color: colors.statusAmber },
+  selfStart: { alignSelf: 'flex-start' },
+  statusBlock: { gap: spacing.xs },
   chipNeutral: { borderColor: colors.borderSubtle },
   chipNeutralText: { color: colors.textSecondary },
   button: {

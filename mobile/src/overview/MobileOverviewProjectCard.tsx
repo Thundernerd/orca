@@ -205,7 +205,12 @@ export function MobileOverviewProjectCard({
         />
       </View>
       {project.mainWorktreeId && !project.hidden ? (
-        <MobileTicketPipelineStatus client={client} projectId={project.id} now={now} />
+        <MobileTicketPipelineStatus
+          client={client}
+          projectId={project.id}
+          now={now}
+          onReviewDrafts={() => onOpenTickets('drafts')}
+        />
       ) : null}
       {expanded ? (
         <>

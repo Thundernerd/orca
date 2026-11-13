@@ -3,17 +3,24 @@ import { queueOrder } from './merge-queue-order'
 import { getTicketItemStore, type TicketItemStore } from './ticket-item-store'
 import { ticketTrackerStatus } from './ticket-tracker'
 
+// A drafting agent that never reported back is abandoned, not still drafting.
+const DRAFTING_STALE_MS = 24 * 60 * 60 * 1000
+
 /** Local state only, so the Overview can poll it: no GitHub or git reads. */
 export async function ticketPipelineStatus(
   parentWorktreeId: string,
   repoId: string,
   store: TicketItemStore = getTicketItemStore()
 ): Promise<TicketPipelineStatus> {
-  const [items, settings, pausedReason] = await Promise.all([
+  const [items, settings, pausedReason, batches] = await Promise.all([
     store.list(),
     store.getSettings(repoId),
-    store.getQueuePause(parentWorktreeId)
+    store.getQueuePause(parentWorktreeId),
+    store.listDraftBatches()
   ])
+  const ownBatches = batches
+    .filter((b) => b.parentWorktreeId === parentWorktreeId)
+    .sort((a, b) => a.createdAt - b.createdAt)
   const ordered = queueOrder(items, parentWorktreeId)
   const head = ordered[0]
   const children = items.filter((i) => i.parentWorktreeId === parentWorktreeId)
@@ -50,6 +57,14 @@ export async function ticketPipelineStatus(
         : null,
       held,
       pending: merged.length - held.length
+    },
+    drafts: {
+      drafting: ownBatches.filter(
+        (b) => b.status === 'drafting' && Date.now() - b.createdAt < DRAFTING_STALE_MS
+      ).length,
+      review: ownBatches
+        .filter((b) => b.status === 'review')
+        .map((b) => ({ batchId: b.id, count: b.drafts.length }))
     }
   }
 }

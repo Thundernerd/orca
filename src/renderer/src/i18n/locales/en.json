@@ -20279,6 +20279,10 @@
           "summaryHead": "Queue: {{ticket}} · {{detail}}",
           "summaryEmpty": "Queue empty",
           "summaryKept": "{{count}} kept by auto-clean"
+        },
+        "drafts": {
+          "review": "{{count}} drafts to review",
+          "drafting": "Drafting tickets…"
         }
       }
     },

@@ -22,6 +22,7 @@ import { OverviewLaunchTicketsPopover } from './OverviewLaunchTicketsPopover'
 import { OverviewCleanUpPopover } from './OverviewCleanUpPopover'
 import { OverviewMergeQueuePopover } from './OverviewMergeQueuePopover'
 import { OverviewTicketPipelineStatus } from './OverviewTicketPipelineStatus'
+import { OverviewTicketDraftsBadge } from './OverviewTicketDraftsBadge'
 import type { TicketLaunchSelection } from '../../../../shared/ticket-pipeline/ticket-types'
 
 export type OverviewProjectCardActions = {
@@ -139,6 +140,13 @@ export function OverviewProjectCard({
                 count: project.cleanupCount
               })}
             </Stat>
+          ) : null}
+          {project.mainWorktreeId && !project.hidden ? (
+            <OverviewTicketDraftsBadge
+              projectId={project.id}
+              projectName={project.name}
+              onPublished={(batch) => actions.ticketsPublished(project.id, batch)}
+            />
           ) : null}
         </div>
         <div className="flex shrink-0 items-center">
