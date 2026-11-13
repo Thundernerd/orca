@@ -12,6 +12,7 @@ import { OverviewWriteTicketPopover } from './OverviewWriteTicketPopover'
 import { OverviewLaunchTicketsPopover } from './OverviewLaunchTicketsPopover'
 import { OverviewCleanUpPopover } from './OverviewCleanUpPopover'
 import { OverviewMergeQueuePopover } from './OverviewMergeQueuePopover'
+import { OverviewTicketPipelineStatus } from './OverviewTicketPipelineStatus'
 
 /** Workspaces grouped by project; fixed column shares keep stacked tier tables aligned. Collapsing a group minimizes its card too. */
 export function OverviewTable({
@@ -203,6 +204,13 @@ export function OverviewTable({
                         </Button>
                       </span>
                     </div>
+                    {project.mainWorktreeId && !project.hidden ? (
+                      <OverviewTicketPipelineStatus
+                        projectId={project.id}
+                        now={now}
+                        className="pt-1 pb-0.5 pl-4"
+                      />
+                    ) : null}
                   </td>
                 </tr>
                 {open

@@ -107,10 +107,12 @@ function useCleanText(): (status: TicketPipelineStatus, now: number) => string {
 /** What the merge queue and auto-clean are doing right now, so a quiet card is not a mystery. */
 export function OverviewTicketPipelineStatus({
   projectId,
-  now
+  now,
+  className
 }: {
   projectId: string
   now: number
+  className?: string
 }): React.JSX.Element | null {
   const t = useTranslate()
   const status = useOverviewTicketStatus(projectId)
@@ -127,7 +129,12 @@ export function OverviewTicketPipelineStatus({
       : t('auto.components.overview.pipelineStatus.checking', 'Checking for the first time…')
     : t('auto.components.overview.pipelineStatus.idle', 'Not checking: nothing left to follow.')
   return (
-    <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+    <div
+      className={cn(
+        'grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-0.5 text-xs text-muted-foreground',
+        className
+      )}
+    >
       <StatusRow
         label={
           status.autoMerge
