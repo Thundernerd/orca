@@ -35,7 +35,6 @@ export function renderTicketBrief(input: TicketBriefInput): string {
   const extendTicket = input.findingsPublish
     ? 'comment on it in its tracker with what you found, and your design if it differs'
     : 'add what you found, and your design if it differs, to that ticket file in a commit here (if the file is only on another branch, put it in your report instead)'
-  const parkingLabel = input.findingsPublish ? ' (`--label <name>`)' : ''
   const prRule = input.reviewRule
   const lines = [
     `Implement ${ticketName} in this worktree, on branch ${branch}.`,
@@ -47,12 +46,12 @@ export function renderTicketBrief(input: TicketBriefInput): string {
     `  - Already done: run \`git fetch origin\` and check origin/${baseBranch} itself, since other agents merge while you work. If it has it, file nothing.`,
     `  - Already ticketed: search the open tickets by concept, not by your wording, including ones opened after this branch started: ${searchTickets}. If one covers it, open nothing new: ${extendTicket}.`,
     '  - Related to this ticket and small: fix it here, as its own commit on this branch.',
-    `  - Bigger, or unrelated: open a new ticket that names this one: ${newTicket}. If ${docs} set a roadmap or build order and the finding does not serve its current step, park it: give it the parking label they name${parkingLabel} and a line saying what it waits for.`,
+    `  - Bigger, or unrelated: open a new ticket that names this one: ${newTicket}.`,
     '  - Unsure which: ask the user, running `orca worktree set --worktree active --unread --json` first so they see the question.',
     '- Write commit messages in Conventional Commits style; commits and the PR body carry no Claude attribution or Co-Authored-By lines.',
     `- When every fix is committed, push the branch (\`git push -u origin ${branch}\`) and open a PR to ${baseBranch}, writing its body with /pr, ${prRule}. Corka notices the PR and moves this workspace to review.`,
     "- If you are blocked (a missing dependency, a spec you cannot resolve), run: orca worktree set --worktree active --unread --comment 'blocked: <why>' --json and stop.",
-    `- Once the PR is up, report: the PR URL; every finding and its outcome (done already, with where on origin/${baseBranch}; extended, with a link; fixed, with the commit; filed, with a link; or parked, with a link); if you built the project, the absolute paths of the build output and the concrete steps the user should test by hand; if the PR's CI uploads a build artifact, a link to that run and the \`gh run download\` command for it (wait for the run with \`gh run watch\` and report a failure).`
+    `- Once the PR is up, report: the PR URL; every finding and its outcome (done already, with where on origin/${baseBranch}; extended, with a link; fixed, with the commit; or filed, with a link); if you built the project, the absolute paths of the build output and the concrete steps the user should test by hand; if the PR's CI uploads a build artifact, a link to that run and the \`gh run download\` command for it (wait for the run with \`gh run watch\` and report a failure).`
   ]
   if (input.untrackedContext.length > 0) {
     lines.push(

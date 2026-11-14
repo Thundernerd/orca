@@ -45,31 +45,22 @@ describe.each([true, false])('renderTicketBrief with findingsPublish %s', (findi
     expect(findingsSection(text)[1]).toContain('orca tickets survey --json')
   })
 
-  it('parks an off-roadmap finding by the label the agent docs name', () => {
-    const filed = findingsSection(text)[3]
-    expect(filed).toContain('AGENTS.md')
-    expect(filed).toContain('parking label')
-  })
-
   it('reports every finding with its outcome', () => {
     const report = text.split('\n').find((line) => line.startsWith('- Once the PR is up, report:'))
-    for (const outcome of ['done already', 'extended', 'fixed', 'filed', 'parked']) {
+    for (const outcome of ['done already', 'extended', 'fixed', 'filed']) {
       expect(report).toContain(outcome)
     }
   })
 })
 
 describe('renderTicketBrief ticket sources', () => {
-  it('labels and comments in the tracker when findings publish', () => {
-    const [, ticketed, , filed] = findingsSection(brief(true))
-    expect(ticketed).toContain('comment on it in its tracker')
-    expect(filed).toContain('--label')
+  it('comments in the tracker when findings publish', () => {
+    expect(findingsSection(brief(true))[1]).toContain('comment on it in its tracker')
   })
 
   it('searches other branches and notes the ticket file when findings are files', () => {
-    const [, ticketed, , filed] = findingsSection(brief(false))
+    const [, ticketed] = findingsSection(brief(false))
     expect(ticketed).toContain('docs/tickets')
     expect(ticketed).toContain('git branch -r')
-    expect(filed).not.toContain('--label')
   })
 })
