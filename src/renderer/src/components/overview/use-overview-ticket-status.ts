@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { TicketPipelineStatus } from '../../../../shared/ticket-pipeline/ticket-types'
+import { installWindowVisibilityInterval } from '@/lib/window-activity/window-visibility-interval'
 import { overviewTicketStatus } from './overview-ticket-pipeline'
 
 const POLL_MS = 15_000
@@ -39,19 +40,14 @@ function subscribe(
 ): () => void {
   let poller = pollers.get(projectId)
   if (!poller) {
-    const timer = window.setInterval(() => read(projectId), POLL_MS)
-    const onVisible = (): void => read(projectId)
-    document.addEventListener('visibilitychange', onVisible)
-    poller = {
-      status: null,
-      listeners: new Set(),
-      stop: () => {
-        window.clearInterval(timer)
-        document.removeEventListener('visibilitychange', onVisible)
-      }
-    }
+    poller = { status: null, listeners: new Set(), stop: () => undefined }
     pollers.set(projectId, poller)
-    read(projectId)
+    // Reads at once, then on the cadence while visible; slower behind another app.
+    poller.stop = installWindowVisibilityInterval({
+      run: () => read(projectId),
+      intervalMs: POLL_MS,
+      slowWhileUnfocused: true
+    })
   }
   poller.listeners.add(listener)
   return () => {

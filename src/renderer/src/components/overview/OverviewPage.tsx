@@ -25,6 +25,7 @@ import { OverviewProjectCard, type OverviewProjectCardActions } from './Overview
 import { OverviewHeader } from './OverviewHeader'
 import { OverviewStatsStrip } from './OverviewStatsStrip'
 import { refreshOverviewTicketStatus } from './use-overview-ticket-status'
+import { installWindowVisibilityInterval } from '@/lib/window-activity/window-visibility-interval'
 import { OverviewTable } from './OverviewTable'
 import { OverviewViewMenu } from './OverviewViewMenu'
 import { useOverviewKeyboardTriage } from './use-overview-keyboard-triage'
@@ -82,8 +83,7 @@ export default function OverviewPage(): React.JSX.Element {
   useCloseOnEscape(closePage)
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), CLOCK_MS)
-    return () => window.clearInterval(timer)
+    return installWindowVisibilityInterval({ run: () => setNow(Date.now()), intervalMs: CLOCK_MS })
   }, [])
 
   // The list changes on every agent update; read it at refresh time so the timer is not restarted.
@@ -99,9 +99,11 @@ export default function OverviewPage(): React.JSX.Element {
   }, [])
   // PR/CI data is otherwise fetched only for cards on screen; keep every row here fresh.
   useEffect(() => {
-    refreshPrs()
-    const timer = window.setInterval(refreshPrs, PR_REFRESH_MS)
-    return () => window.clearInterval(timer)
+    return installWindowVisibilityInterval({
+      run: refreshPrs,
+      intervalMs: PR_REFRESH_MS,
+      slowWhileUnfocused: true
+    })
   }, [refreshPrs])
 
   const { scheduleStale } = surveys
