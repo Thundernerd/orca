@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
-import { Check, Circle } from 'lucide-react-native'
+import { ScrollView, Text, View } from 'react-native'
 import { BottomDrawer } from '../components/bottom-drawer/BottomDrawer'
-import { colors } from '../theme/mobile-theme'
 import { useMobileColorScheme } from '../theme/use-mobile-color-scheme'
 import { useMobileTranslation } from '../i18n/use-mobile-translation'
+import { ticketQueueHead } from '../../../src/shared/ticket-pipeline/ticket-queue-head'
 import type { MobileTicketActions, MobileTicketResult } from './mobile-ticket-actions'
 import type {
   MobileTicketDraftBatch,
@@ -13,6 +12,7 @@ import type {
   MobileWorkspaceCleanSurvey
 } from './overview-ticket-operations'
 import { overviewStyles as styles } from './mobile-overview-styles'
+import { ActionButton, SelectAllToggle, Toggle } from './mobile-ticket-sheet-rows'
 
 export type MobileTicketSheetMode = 'launch' | 'clean' | 'queue' | 'drafts'
 
@@ -33,94 +33,6 @@ async function load(mode: MobileTicketSheetMode, actions: MobileTicketActions): 
     case 'drafts':
       return { mode, batches: (await actions.drafts()).filter((b) => b.status === 'review') }
   }
-}
-
-function Toggle({
-  checked,
-  label,
-  meta,
-  disabled,
-  onPress
-}: {
-  checked: boolean
-  label: string
-  meta?: string
-  disabled?: boolean
-  onPress: () => void
-}) {
-  const Icon = checked ? Check : Circle
-  return (
-    <Pressable
-      disabled={disabled}
-      onPress={onPress}
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked, disabled }}
-      style={({ pressed }) => [styles.workspaceRow, pressed && styles.pressed]}
-    >
-      <View style={styles.row}>
-        <Icon size={16} color={disabled ? colors.textSecondary : colors.textPrimary} />
-        <View style={styles.grow}>
-          <Text style={styles.text} numberOfLines={2}>
-            {label}
-          </Text>
-          {meta ? <Text style={styles.meta}>{meta}</Text> : null}
-        </View>
-      </View>
-    </Pressable>
-  )
-}
-
-/** Selects every row that can go, or none once all are selected. */
-function SelectAllToggle({
-  ids,
-  selected,
-  onChange
-}: {
-  ids: readonly string[]
-  selected: ReadonlySet<string>
-  onChange: (next: ReadonlySet<string>) => void
-}) {
-  const t = useMobileTranslation()
-  if (ids.length < 2) {
-    return null
-  }
-  const all = selected.size === ids.length
-  return (
-    <Toggle
-      checked={all}
-      label={
-        all
-          ? t('overview.mobile.tickets.deselectAll', 'Deselect all')
-          : t('overview.mobile.tickets.selectAll', 'Select all')
-      }
-      meta={t('overview.mobile.tickets.selectedCount', '{{count}} of {{total}} selected', {
-        count: selected.size,
-        total: ids.length
-      })}
-      onPress={() => onChange(new Set(all ? [] : ids))}
-    />
-  )
-}
-
-function ActionButton({
-  label,
-  disabled,
-  onPress
-}: {
-  label: string
-  disabled?: boolean
-  onPress: () => void
-}) {
-  return (
-    <Pressable
-      disabled={disabled}
-      onPress={onPress}
-      accessibilityRole="button"
-      style={({ pressed }) => [styles.button, (pressed || disabled) && styles.pressed]}
-    >
-      <Text style={styles.buttonText}>{label}</Text>
-    </Pressable>
-  )
 }
 
 /** Launch, clean up, merge and draft review for one project, run on the host that serves it. */
@@ -190,6 +102,26 @@ export function MobileTicketSheet({
       : loaded?.mode === 'clean'
         ? loaded.survey.rows.filter((r) => r.verdict === 'remove').map((r) => r.worktreeId)
         : []
+
+  const queueHead = loaded?.mode === 'queue' ? ticketQueueHead(loaded.queue.entries) : undefined
+
+  const selectQueue = (itemIds: readonly string[], included: boolean) => {
+    if (loaded?.mode !== 'queue' || !actions) {
+      return
+    }
+    const ids = new Set(itemIds)
+    setLoaded({
+      mode: 'queue',
+      queue: {
+        ...loaded.queue,
+        entries: loaded.queue.entries.map((e) => (ids.has(e.itemId) ? { ...e, included } : e))
+      }
+    })
+    actions.queueSelect(itemIds, included).then(
+      (queue) => setLoaded({ mode: 'queue', queue }),
+      (caught: unknown) => setError(caught instanceof Error ? caught.message : String(caught))
+    )
+  }
 
   const finish = (run: () => Promise<MobileTicketResult>) => {
     onClose()
@@ -301,16 +233,34 @@ export function MobileTicketSheet({
                 })}
               </Text>
             ) : null}
+            <SelectAllToggle
+              ids={loaded.queue.entries.map((e) => e.itemId)}
+              selected={
+                new Set(
+                  loaded.queue.entries.filter((e) => e.included !== false).map((e) => e.itemId)
+                )
+              }
+              onChange={(next) =>
+                selectQueue(
+                  loaded.queue.entries.map((e) => e.itemId),
+                  next.size > 0
+                )
+              }
+            />
             {loaded.queue.entries.map((entry) => (
-              <View key={entry.itemId} style={styles.workspaceRow}>
-                <Text style={styles.text} numberOfLines={2}>
-                  {`${entry.ticketId} ${entry.ticketTitle}${entry.reviewNumber ? ` · #${entry.reviewNumber}` : ''}`}
-                </Text>
-                <Text style={styles.meta}>
-                  {entry.queue?.detail ??
-                    t('overview.mobile.tickets.waitingTurn', 'Waiting its turn.')}
-                </Text>
-              </View>
+              <Toggle
+                key={entry.itemId}
+                checked={entry.included !== false}
+                label={`${entry.ticketId} ${entry.ticketTitle}${entry.reviewNumber ? ` · #${entry.reviewNumber}` : ''}`}
+                meta={
+                  entry.included === false
+                    ? t('overview.mobile.tickets.held', 'Held out of the queue.')
+                    : entry.itemId === queueHead?.itemId && entry.queue
+                      ? entry.queue.detail
+                      : t('overview.mobile.tickets.waitingTurn', 'Waiting its turn.')
+                }
+                onPress={() => selectQueue([entry.itemId], entry.included === false)}
+              />
             ))}
             {loaded.queue.entries.length === 0 ? (
               <Text style={styles.empty}>
@@ -332,13 +282,13 @@ export function MobileTicketSheet({
                   }
                 />
               ) : null}
-              {loaded.queue.entries[0]?.queue?.status === 'ready' && !loaded.queue.pausedReason ? (
+              {queueHead?.queue?.status === 'ready' && !loaded.queue.pausedReason ? (
                 <ActionButton
                   label={t('overview.mobile.tickets.merge', 'Merge {{ticket}}', {
-                    ticket: loaded.queue.entries[0].ticketId
+                    ticket: queueHead.ticketId
                   })}
                   onPress={() => {
-                    const head = loaded.queue.entries[0]!
+                    const head = queueHead
                     finish(async () => {
                       await actions!.merge(head.itemId)
                       return {

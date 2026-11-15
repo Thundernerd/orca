@@ -10,11 +10,19 @@ function ticketOrder(item: TicketItem): number {
   return item.issueNumber ?? Number(/\d+/.exec(item.ticketId)?.[0] ?? Number.MAX_SAFE_INTEGER)
 }
 
-/** In-review items of one parent, in the order they merge. */
-export function queueOrder(items: readonly TicketItem[], parentWorktreeId: string): TicketItem[] {
+/** In-review items of one parent in ticket order, held-out ones included. */
+export function queueCandidates(
+  items: readonly TicketItem[],
+  parentWorktreeId: string
+): TicketItem[] {
   return items
     .filter((i) => i.parentWorktreeId === parentWorktreeId && i.stage === 'in-review')
     .sort((a, b) => ticketOrder(a) - ticketOrder(b))
+}
+
+/** The items the queue merges, in order: the candidates the user did not hold out. */
+export function queueOrder(items: readonly TicketItem[], parentWorktreeId: string): TicketItem[] {
+  return queueCandidates(items, parentWorktreeId).filter((i) => !i.queueHeld)
 }
 
 /** The queue as the user sees it: only the head carries queue state, the rest wait their turn. */
@@ -23,15 +31,17 @@ export async function ticketQueueView(
   repoId: string,
   store: TicketItemStore = getTicketItemStore()
 ): Promise<TicketQueueView> {
-  const ordered = queueOrder(await store.list(), parentWorktreeId)
-  const entries: TicketQueueEntry[] = ordered.map((item, index) => ({
+  const items = await store.list()
+  const head = queueOrder(items, parentWorktreeId)[0]
+  const entries: TicketQueueEntry[] = queueCandidates(items, parentWorktreeId).map((item) => ({
     itemId: item.id,
     ticketId: item.ticketId,
     ticketTitle: item.ticketTitle,
     reviewNumber: item.reviewNumber,
     reviewUrl: item.reviewUrl,
     childWorktreeId: item.childWorktreeId,
-    queue: index === 0 ? (item.queue ?? null) : null
+    queue: item.id === head?.id ? (item.queue ?? null) : null,
+    included: !item.queueHeld
   }))
   return {
     parentWorktreeId,
@@ -52,5 +62,20 @@ export async function resumeTicketQueue(
     await store.update(head.id, {
       queue: { status: 'waiting-ci', detail: 'Resumed.', fixAttempts: {}, statusSince: Date.now() }
     })
+  }
+}
+
+/** Holds PRs out of the queue or lets them back in; only this parent's in-review items change. */
+export async function selectTicketQueue(
+  parentWorktreeId: string,
+  itemIds: readonly string[],
+  included: boolean,
+  store: TicketItemStore = getTicketItemStore()
+): Promise<void> {
+  const ids = new Set(itemIds)
+  for (const item of queueCandidates(await store.list(), parentWorktreeId)) {
+    if (ids.has(item.id) && !item.queueHeld !== included) {
+      await store.update(item.id, { queueHeld: !included })
+    }
   }
 }

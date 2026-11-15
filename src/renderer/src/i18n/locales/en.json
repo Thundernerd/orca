@@ -20239,7 +20239,11 @@
           "paused": "The merge queue in {{project}} is paused: {{reason}}",
           "notReady": "{{ticket}} is not ready to merge yet: {{detail}}",
           "empty": "No ticket PRs are waiting to merge in {{project}}.",
-          "merged": "Merged {{ticket}} in {{project}}."
+          "merged": "Merged {{ticket}} in {{project}}.",
+          "selectAll": "Put every PR in the queue",
+          "selectedCount": "{{count}} of {{total}} in the queue",
+          "include": "Keep {{ticket}} in the queue",
+          "held": "Held out of the queue."
         },
         "draftReview": {
           "title": "Review ticket drafts for {{project}}",

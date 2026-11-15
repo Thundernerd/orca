@@ -114,6 +114,8 @@ export type TicketItem = {
   agentSessionId?: string
   /** Why auto-clean last kept this merged ticket's workspace; it tries again on the next check. */
   autoCleanHeld?: { reason: string; at: number }
+  /** The user held it out of the merge queue; it keeps its place and rejoins when ticked again. */
+  queueHeld?: boolean
   /** Where the merge queue has this item; absent until it reaches the head of the queue. */
   queue?: TicketQueueState
   /** Tickets its agent filed for problems outside this ticket's scope. */
@@ -200,6 +202,8 @@ export type TicketQueueEntry = {
   childWorktreeId: string
   /** Null for entries behind the head: they wait their turn. */
   queue: TicketQueueState | null
+  /** False when the user held it out of the queue; absent from a host older than this field. */
+  included?: boolean
 }
 
 export type TicketQueueView = {

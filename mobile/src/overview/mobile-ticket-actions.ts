@@ -12,6 +12,7 @@ import {
   ticketMergeRun,
   ticketQueueRead,
   ticketQueueResumeRun,
+  ticketQueueSelectRun,
   ticketStatusRead,
   ticketSurveyRead,
   type MobileTicketDraftBatch,
@@ -122,6 +123,20 @@ export function mobileTicketActions(client: RpcClient, projectId: string) {
       return interpretOrThrowRefusalMessage(
         () => ticketStatusRead.interpret(response),
         failed('read the merge queue status')
+      )
+    },
+    queueSelect: async (
+      itemIds: readonly string[],
+      included: boolean
+    ): Promise<MobileTicketQueue> => {
+      const response = await ticketQueueSelectRun.request(
+        client,
+        { repo, itemIds: [...itemIds], included },
+        READ
+      )
+      return interpretOrThrowRefusalMessage(
+        () => ticketQueueSelectRun.interpret(response),
+        failed('change the merge queue')
       )
     },
     merge: async (itemId: string): Promise<MobileTicketQueue> => {

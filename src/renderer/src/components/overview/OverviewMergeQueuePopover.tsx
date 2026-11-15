@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Switch } from '@/components/ui/switch'
 import { useTranslate } from '@/i18n/use-translate'
 import type { TicketQueueView } from '../../../../shared/ticket-pipeline/ticket-types'
-import { overviewMergeQueue } from './overview-ticket-pipeline'
+import { ticketQueueHead } from '../../../../shared/ticket-pipeline/ticket-queue-head'
+import { overviewMergeQueue, selectOverviewQueue } from './overview-ticket-pipeline'
+import { refreshOverviewTicketStatus } from './use-overview-ticket-status'
 import { useOverviewTicketSettings } from './use-overview-ticket-settings'
 
 type LoadState =
@@ -42,8 +45,33 @@ export function OverviewMergeQueuePopover({
     }
   }
 
+  const select = (itemIds: string[], included: boolean): void => {
+    setState((current) =>
+      current.kind === 'loaded'
+        ? {
+            kind: 'loaded',
+            view: {
+              ...current.view,
+              entries: current.view.entries.map((e) =>
+                itemIds.includes(e.itemId) ? { ...e, included } : e
+              )
+            }
+          }
+        : current
+    )
+    void selectOverviewQueue(projectId, itemIds, included).then(
+      (next) => {
+        setState({ kind: 'loaded', view: next })
+        refreshOverviewTicketStatus(projectId)
+      },
+      () => void load()
+    )
+  }
+
   const view = state.kind === 'loaded' ? state.view : null
-  const head = view?.entries[0]
+  const head = view ? ticketQueueHead(view.entries) : undefined
+  const includedCount = view?.entries.filter((e) => e.included !== false).length ?? 0
+  const total = view?.entries.length ?? 0
   const autoMergeLabel = t(
     'auto.components.overview.mergeQueue.auto',
     'Merge the first PR automatically once it is ready'
@@ -109,19 +137,61 @@ export function OverviewMergeQueuePopover({
               {t('auto.components.overview.mergeQueue.none', 'No ticket PRs are waiting to merge.')}
             </p>
           ) : null}
+          {view && total > 1 ? (
+            <label className="flex items-center gap-2 border-b border-border pb-1 text-xs text-muted-foreground">
+              <Checkbox
+                checked={
+                  includedCount === total ? true : includedCount === 0 ? false : 'indeterminate'
+                }
+                onCheckedChange={() =>
+                  select(
+                    view.entries.map((e) => e.itemId),
+                    includedCount < total
+                  )
+                }
+                aria-label={t(
+                  'auto.components.overview.mergeQueue.selectAll',
+                  'Put every PR in the queue'
+                )}
+              />
+              {t(
+                'auto.components.overview.mergeQueue.selectedCount',
+                '{{count}} of {{total}} in the queue',
+                {
+                  count: includedCount,
+                  total
+                }
+              )}
+            </label>
+          ) : null}
           {view && view.entries.length > 0 ? (
             <ol className="scrollbar-sleek flex max-h-72 flex-col gap-1 overflow-y-auto">
               {view.entries.map((entry) => (
                 <li key={entry.itemId} className="flex items-start gap-2">
+                  <Checkbox
+                    className="mt-0.5"
+                    checked={entry.included !== false}
+                    onCheckedChange={(checked) => select([entry.itemId], checked === true)}
+                    aria-label={t(
+                      'auto.components.overview.mergeQueue.include',
+                      'Keep {{ticket}} in the queue',
+                      { ticket: entry.ticketId }
+                    )}
+                  />
                   <span className="w-12 shrink-0 font-mono text-xs text-muted-foreground">
                     {entry.ticketId}
                   </span>
                   <div className="min-w-0 flex-1">
                     <span className="block truncate text-xs">{entry.ticketTitle}</span>
                     <span className="block text-xs text-muted-foreground">
-                      {entry.queue
-                        ? entry.queue.detail
-                        : t('auto.components.overview.mergeQueue.waitingTurn', 'Waiting its turn.')}
+                      {entry.included === false
+                        ? t('auto.components.overview.mergeQueue.held', 'Held out of the queue.')
+                        : entry.queue && entry.itemId === head?.itemId
+                          ? entry.queue.detail
+                          : t(
+                              'auto.components.overview.mergeQueue.waitingTurn',
+                              'Waiting its turn.'
+                            )}
                     </span>
                   </div>
                   {entry.reviewUrl ? (

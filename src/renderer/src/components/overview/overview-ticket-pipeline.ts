@@ -18,6 +18,7 @@ import type {
 import type { OverviewActionResult } from './overview-actions'
 import { projectRoute, requireProjectRoute } from './overview-project-route'
 import { keptWorkspaceNotes } from './workspace-clean-outcome-text'
+import { ticketQueueHead } from '../../../../shared/ticket-pipeline/ticket-queue-head'
 
 const SURVEY_TIMEOUT_MS = 120_000
 // Each ticket creates a workspace and starts an agent before the next one begins.
@@ -164,6 +165,20 @@ export async function overviewMergeQueue(
   )
 }
 
+/** Holds ticket PRs out of the merge queue, or lets them back in. */
+export async function selectOverviewQueue(
+  projectId: string,
+  itemIds: readonly string[],
+  included: boolean
+): Promise<TicketQueueView> {
+  const route = requireProjectRoute(projectId)
+  return callRuntimeRpc<TicketQueueView>(route.target, 'tickets.queueSelect', {
+    repo: route.repo,
+    itemIds,
+    included
+  })
+}
+
 /** Merges the queue head if it is ready; otherwise reports what it is waiting on. */
 export async function mergeOverviewQueueHead(
   projectId: string,
@@ -171,7 +186,7 @@ export async function mergeOverviewQueueHead(
 ): Promise<OverviewActionResult> {
   const { target } = requireProjectRoute(projectId)
   const view = await overviewMergeQueue(projectId)
-  const head = view.entries[0]
+  const head = ticketQueueHead(view.entries)
   if (view.pausedReason) {
     return {
       ok: false,

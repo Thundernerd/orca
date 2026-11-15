@@ -61,7 +61,12 @@ export function formatQueue(view: TicketQueueView): string {
   }
   for (const entry of view.entries) {
     const pr = entry.reviewNumber ? `#${entry.reviewNumber}` : '-'
-    const state = entry.queue ? `${entry.queue.status}: ${entry.queue.detail}` : 'waiting its turn'
+    const state =
+      entry.included === false
+        ? 'held out of the queue'
+        : entry.queue
+          ? `${entry.queue.status}: ${entry.queue.detail}`
+          : 'waiting its turn'
     lines.push([entry.ticketId, pr, entry.ticketTitle, state].join('\t'))
   }
   return lines.join('\n')

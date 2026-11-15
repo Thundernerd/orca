@@ -5084,7 +5084,8 @@
         "discarded": "Drafts discarded",
         "deselectAll": "Deselect all",
         "selectAll": "Select all",
-        "selectedCount": "{{count}} of {{total}} selected"
+        "selectedCount": "{{count}} of {{total}} selected",
+        "held": "Held out of the queue."
       },
       "pin": "Pin {{project}}",
       "unpin": "Unpin {{project}}",

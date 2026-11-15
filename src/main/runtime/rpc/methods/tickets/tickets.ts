@@ -11,6 +11,7 @@ import {
   TicketLaunch,
   TicketMerge,
   TicketQueue,
+  TicketQueueSelect,
   TicketSettings,
   TicketStatus,
   TicketSourceOptions,
@@ -36,6 +37,7 @@ import {
 import {
   queueOrder,
   resumeTicketQueue,
+  selectTicketQueue,
   ticketQueueView
 } from '../../../../ticket-pipeline/merge-queue-order'
 import {
@@ -156,6 +158,19 @@ export const TICKET_METHODS = [
       )
       await adoptForQueue(runtime, parent)
       await resumeTicketQueue(parent.id)
+      startTicketTracker(runtime)
+      return ticketQueueView(parent.id, parent.repoId)
+    }
+  }),
+  defineMethod({
+    name: 'tickets.queueSelect',
+    permission: 'workspace',
+    params: TicketQueueSelect,
+    handler: async (params, { runtime }) => {
+      const parent = await runtime.showManagedWorktree(
+        await resolveTicketParentSelector(runtime, ticketParentScope(params))
+      )
+      await selectTicketQueue(parent.id, params.itemIds, params.included)
       startTicketTracker(runtime)
       return ticketQueueView(parent.id, parent.repoId)
     }

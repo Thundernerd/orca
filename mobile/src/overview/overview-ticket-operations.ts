@@ -47,7 +47,9 @@ const queueSchema = z.looseObject({
       ticketId: z.string(),
       ticketTitle: z.string(),
       reviewNumber: z.number().nullable(),
-      queue: z.looseObject({ status: z.string(), detail: z.string() }).nullable()
+      queue: z.looseObject({ status: z.string(), detail: z.string() }).nullable(),
+      // Absent from a desktop older than holding PRs out of the queue.
+      included: z.boolean().optional()
     })
   )
 })
@@ -134,6 +136,7 @@ export const ticketCleanSurveyRead = ticketOperation('tickets.cleanSurvey', clea
 export const ticketCleanRun = ticketOperation('tickets.clean', cleanSchema)
 export const ticketQueueRead = ticketOperation('tickets.queue', queueSchema)
 export const ticketStatusRead = ticketOperation('tickets.status', statusSchema)
+export const ticketQueueSelectRun = ticketOperation('tickets.queueSelect', queueSchema)
 export const ticketQueueResumeRun = ticketOperation('tickets.queueResume', queueSchema)
 export const ticketMergeRun = ticketOperation('tickets.merge', queueSchema)
 export const ticketDraftStartRun = ticketOperation('tickets.draftStart', batchSchema)
