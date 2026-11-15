@@ -1,43 +1,12 @@
-import { useEffect, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { hasTicketPipelineStatus } from '../../../src/shared/ticket-pipeline/ticket-pipeline-status-presence'
-import { useAppActive } from '../hooks/use-now'
 import { useMobileTranslation } from '../i18n/use-mobile-translation'
 import type { Translate } from '../i18n/mobile-i18n'
-import type { RpcClient } from '../transport/rpc/rpc-client-contract'
 import { formatTimeAgo } from '../worktree/agent-row-display'
-import { mobileTicketActions } from './mobile-ticket-actions'
 import type { MobileTicketPipelineStatus as Status } from './overview-ticket-operations'
 import { overviewStyles as styles } from './mobile-overview-styles'
 
-const POLL_MS = 15_000
 const HELD_SHOWN = 2
-
-function useTicketStatus(client: RpcClient | null, projectId: string): Status | null {
-  const active = useAppActive()
-  const [status, setStatus] = useState<Status | null>(null)
-  useEffect(() => {
-    if (!client || !active) {
-      return
-    }
-    let current = true
-    const actions = mobileTicketActions(client, projectId)
-    const read = (): void => {
-      actions.status().then(
-        (next) => current && setStatus(next),
-        // An older desktop lacks the method; a failed read leaves nothing to show.
-        () => current && setStatus(null)
-      )
-    }
-    read()
-    const timer = setInterval(read, POLL_MS)
-    return () => {
-      current = false
-      clearInterval(timer)
-    }
-  }, [client, projectId, active])
-  return status
-}
 
 function queueText({ queue }: Status, now: number, t: Translate): string {
   if (queue.pausedReason) {
@@ -106,20 +75,17 @@ function checkedText(status: Status, now: number, t: Translate): string {
     : t('overview.mobile.status.checking', 'Checking for the first time…')
 }
 
-/** What the merge queue and auto-clean are doing right now, read from the desktop that runs them. */
+/** What the merge queue and auto-clean are doing right now, as the desktop that runs them reports. */
 export function MobileTicketPipelineStatus({
-  client,
-  projectId,
+  status,
   now,
   onReviewDrafts
 }: {
-  client: RpcClient | null
-  projectId: string
+  status: Status | null
   now: number
   onReviewDrafts: () => void
 }) {
   const t = useMobileTranslation()
-  const status = useTicketStatus(client, projectId)
   if (!status) {
     return null
   }

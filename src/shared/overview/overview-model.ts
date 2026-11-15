@@ -61,7 +61,11 @@ function truncate(text: string | null | undefined, max: number): string | null {
 
 type Condition = { kind: OverviewAttentionKind; reason: string; since: number | null }
 
-function workspaceConditions(worktree: OverviewWorktreeInput, comment: string | null): Condition[] {
+function workspaceConditions(
+  worktree: OverviewWorktreeInput,
+  comment: string | null,
+  automated: boolean
+): Condition[] {
   const conditions: Condition[] = []
   const waiting = worktree.agents.find(isWaitingAgent)
   if (waiting) {
@@ -73,9 +77,15 @@ function workspaceConditions(worktree: OverviewWorktreeInput, comment: string | 
     })
   }
   const pr = worktree.pr
-  if (comment && /^blocked:/i.test(comment)) {
+  const blocked = comment !== null && /^blocked:/i.test(comment)
+  if (blocked) {
     conditions.push({ kind: 'flagged', reason: comment, since: worktree.lastActivityAt })
-  } else if (worktree.isUnread) {
+  }
+  // The merge queue or auto-clean carries it on: unread marks and the PR's state are theirs to act on.
+  if (automated) {
+    return conditions.sort((a, b) => KIND_RANK[a.kind] - KIND_RANK[b.kind])
+  }
+  if (!blocked && worktree.isUnread) {
     // A comment that is only the PR's link says nothing the PR line does not.
     const saysMore = comment && !(pr?.url && comment === pr.url)
     conditions.push({
@@ -100,13 +110,16 @@ function workspaceConditions(worktree: OverviewWorktreeInput, comment: string | 
   return conditions.sort((a, b) => KIND_RANK[a.kind] - KIND_RANK[b.kind])
 }
 
-function workspaceRow(worktree: OverviewWorktreeInput): {
+function workspaceRow(
+  worktree: OverviewWorktreeInput,
+  automated: boolean
+): {
   row: OverviewWorkspaceRow
   conditions: Condition[]
 } {
   const urgent = agentsByUrgency(worktree.agents)[0] ?? null
   const comment = worktree.comment.trim() || null
-  const conditions = workspaceConditions(worktree, comment)
+  const conditions = workspaceConditions(worktree, comment, automated)
   const pr = worktree.pr
   return {
     conditions,
@@ -163,7 +176,10 @@ export function buildOverviewSnapshot(input: OverviewModelInput): OverviewSnapsh
     const rows: OverviewWorkspaceRow[] = []
     const items: OverviewAttentionItem[] = []
     for (const worktree of worktrees) {
-      const { row, conditions } = workspaceRow(worktree)
+      const { row, conditions } = workspaceRow(
+        worktree,
+        input.automated?.get(repo.id)?.has(worktree.id) === true
+      )
       rows.push(row)
       if (conditions.length === 0) {
         continue

@@ -8,6 +8,8 @@ import type {
   OverviewWorktreeInput
 } from '../../../../shared/overview/overview-model-types'
 import { buildOverviewStoreInputs, selectOverviewStoreSlice } from './overview-store-inputs'
+import { ticketProjectIds } from '../../../../shared/overview/overview-ticket-projects'
+import { useOverviewAutomatedWorktrees } from './use-overview-ticket-status'
 import { useSidebarHostScopeOptions } from '@/components/sidebar/worktree-list/controls/use-sidebar-host-scope-options'
 import { sidebarHostDisplayLabel } from '@/components/sidebar/worktree-list/controls/sidebar-host-options'
 
@@ -32,6 +34,9 @@ export function useOverviewData(ticketsLoading: ReadonlySet<string> = EMPTY_SET)
     [inputs]
   )
 
+  const projectIds = useMemo(() => ticketProjectIds(inputs.worktrees), [inputs])
+  const automated = useOverviewAutomatedWorktrees(projectIds)
+
   const snapshot = useMemo(
     () =>
       buildOverviewSnapshot({
@@ -42,9 +47,10 @@ export function useOverviewData(ticketsLoading: ReadonlySet<string> = EMPTY_SET)
         hidden: new Set(prefs.hidden),
         pinned: new Set(prefs.pinned),
         sort: prefs.sort ?? 'attention',
-        locale: getIntlLocale()
+        locale: getIntlLocale(),
+        automated
       }),
-    [inputs, prefs, ticketsLoading]
+    [inputs, prefs, ticketsLoading, automated]
   )
 
   return { snapshot, worktreesById }

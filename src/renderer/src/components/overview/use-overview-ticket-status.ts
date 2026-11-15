@@ -1,5 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { TicketPipelineStatus } from '../../../../shared/ticket-pipeline/ticket-types'
+import {
+  automatedWorktreesFromKey,
+  ticketAutomatedWorktreesKey
+} from '../../../../shared/ticket-pipeline/ticket-automated-worktrees'
 import { installWindowVisibilityInterval } from '@/lib/window-activity/window-visibility-interval'
 import { overviewTicketStatus } from './overview-ticket-pipeline'
 
@@ -76,4 +80,40 @@ export function useOverviewTicketStatus(projectId: string): TicketPipelineStatus
     return subscribe(projectId, setStatus)
   }, [projectId])
   return status
+}
+
+/** Several projects' statuses at once, for counts that span the Overview. */
+export function useOverviewTicketStatuses(
+  projectIds: readonly string[]
+): ReadonlyMap<string, TicketPipelineStatus | null> {
+  const key = projectIds.join('\n')
+  const [statuses, setStatuses] = useState<ReadonlyMap<string, TicketPipelineStatus | null>>(
+    () => new Map()
+  )
+  useEffect(() => {
+    const ids = key ? key.split('\n') : []
+    setStatuses(new Map(ids.map((id) => [id, pollers.get(id)?.status ?? null])))
+    const stops = ids.map((id) =>
+      subscribe(id, (status) =>
+        setStatuses((current) => {
+          if (current.get(id) === status) {
+            return current
+          }
+          const next = new Map(current)
+          next.set(id, status)
+          return next
+        })
+      )
+    )
+    return () => stops.forEach((stop) => stop())
+  }, [key])
+  return statuses
+}
+
+/** The workspaces each project's merge queue or auto-clean carries on; stable until that set changes. */
+export function useOverviewAutomatedWorktrees(
+  projectIds: readonly string[]
+): ReadonlyMap<string, ReadonlySet<string>> {
+  const key = ticketAutomatedWorktreesKey(useOverviewTicketStatuses(projectIds))
+  return useMemo(() => automatedWorktreesFromKey(key), [key])
 }

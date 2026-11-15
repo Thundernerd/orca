@@ -237,6 +237,9 @@ export type TicketPipelineStatus = {
     /** Merged tickets auto-clean has not tried yet. */
     pending: number
   }
+  /** Child workspaces Corka is carrying on its own: queued for auto-merge, or merged for
+   *  auto-clean. Absent from a host older than this field. */
+  automatedWorktreeIds?: string[]
   /** Ticket drafting from Write ticket; absent from a host older than this field. */
   drafts?: {
     /** Batches whose agent is still drafting. */

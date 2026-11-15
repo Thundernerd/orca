@@ -1,11 +1,19 @@
+import { useMemo } from 'react'
 import { useAppStore } from '@/store/index'
 import { useTranslate } from '@/i18n/use-translate'
-import { selectOverviewNeedsYouCount } from './overview-needs-you-count'
+import {
+  selectOverviewNeedsYouCount,
+  selectOverviewTicketProjectKey
+} from './overview-needs-you-count'
+import { useOverviewAutomatedWorktrees } from './use-overview-ticket-status'
 
 /** The sidebar entry's count of workspaces that need you. */
 export function OverviewNeedsYouBadge(): React.JSX.Element | null {
   const t = useTranslate()
-  const count = useAppStore(selectOverviewNeedsYouCount)
+  const projectKey = useAppStore(selectOverviewTicketProjectKey)
+  const projectIds = useMemo(() => (projectKey ? projectKey.split('\n') : []), [projectKey])
+  const automated = useOverviewAutomatedWorktrees(projectIds)
+  const count = useAppStore((state) => selectOverviewNeedsYouCount(state, automated))
   if (count === 0) {
     return null
   }

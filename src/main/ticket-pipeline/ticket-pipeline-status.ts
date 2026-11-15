@@ -34,8 +34,16 @@ export async function ticketPipelineStatus(
   const held = merged.flatMap((i) =>
     i.autoCleanHeld ? [{ ticketId: i.ticketId, ...i.autoCleanHeld }] : []
   )
+  // A paused queue, or a workspace auto-clean keeps for anything but a busy agent, waits on the user.
+  const automated = [
+    ...(settings.autoMerge && !pausedReason ? ordered : []),
+    ...(settings.autoClean
+      ? merged.filter((i) => !i.autoCleanHeld || i.autoCleanHeld.reason === 'agent-active')
+      : [])
+  ].map((i) => i.childWorktreeId)
   return {
     ...ticketTrackerStatus(),
+    automatedWorktreeIds: automated,
     autoMerge: settings.autoMerge,
     autoClean: settings.autoClean,
     queue: {

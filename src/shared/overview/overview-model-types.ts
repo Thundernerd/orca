@@ -64,6 +64,9 @@ export type OverviewModelInput = {
   hidden: ReadonlySet<string>
   pinned: ReadonlySet<string>
   sort: OverviewSort
+  /** Per project, the workspaces (by their host's id) Corka merges or cleans up on its own;
+   *  they need you only for a stuck agent or a blocked flag. */
+  automated?: ReadonlyMap<string, ReadonlySet<string>>
   /** UI language for the name sort; the caller's, since this model runs on desktop and phone. */
   locale?: string
 }

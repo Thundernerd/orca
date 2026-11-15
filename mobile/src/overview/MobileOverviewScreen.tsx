@@ -21,6 +21,12 @@ import { useMobileTranslation } from '../i18n/use-mobile-translation'
 import { getMobileUiLocale } from '../i18n/mobile-i18n'
 import { getExecutionHostLabel } from '../../../src/shared/execution-host'
 import { buildOverviewSnapshot } from '../../../src/shared/overview/overview-model'
+import { ticketProjectIds } from '../../../src/shared/overview/overview-ticket-projects'
+import {
+  automatedWorktreesFromKey,
+  ticketAutomatedWorktreesKey
+} from '../../../src/shared/ticket-pipeline/ticket-automated-worktrees'
+import { useMobileTicketStatuses } from './use-mobile-ticket-statuses'
 import { tierOverviewProjects } from '../../../src/shared/overview/overview-project-tiers'
 import type {
   OverviewSort,
@@ -104,11 +110,21 @@ export function MobileOverviewScreen() {
     void saveNeedsYouFolded(next).catch(() => {})
   }
 
-  const { snapshot, byKey } = useMemo(() => {
-    const inputs = overviewInputsFromRows(catalog.data?.worktrees ?? [], (hostId) =>
-      getExecutionHostLabel(hostId)
-    )
-    return {
+  const inputs = useMemo(
+    () =>
+      overviewInputsFromRows(catalog.data?.worktrees ?? [], (hostId) =>
+        getExecutionHostLabel(hostId)
+      ),
+    [catalog.data]
+  )
+  const ticketProjects = useMemo(() => ticketProjectIds(inputs.worktrees), [inputs])
+  const ticketStatuses = useMobileTicketStatuses(
+    client !== null && connState === 'connected' ? client : null,
+    ticketProjects
+  )
+  const automatedKey = ticketAutomatedWorktreesKey(ticketStatuses)
+  const { snapshot, byKey } = useMemo(
+    () => ({
       byKey: new Map(inputs.worktrees.map((w) => [w.key, w])),
       snapshot: buildOverviewSnapshot({
         ...inputs,
@@ -117,10 +133,12 @@ export function MobileOverviewScreen() {
         hidden: projectLists.hidden,
         pinned: projectLists.pinned,
         sort,
-        locale: getMobileUiLocale()
+        locale: getMobileUiLocale(),
+        automated: automatedWorktreesFromKey(automatedKey)
       })
-    }
-  }, [catalog.data, sort, projectLists.hidden, projectLists.pinned])
+    }),
+    [inputs, sort, projectLists.hidden, projectLists.pinned, automatedKey]
+  )
 
   const run = async (action: () => Promise<MobileOverviewResult>): Promise<boolean> => {
     setBusy(true)
@@ -282,7 +300,7 @@ export function MobileOverviewScreen() {
               <MobileOverviewProjectCard
                 key={project.id}
                 project={project}
-                client={live}
+                ticketStatus={ticketStatuses.get(project.id) ?? null}
                 now={now}
                 busy={busy}
                 expanded={expanded.has(project.id)}

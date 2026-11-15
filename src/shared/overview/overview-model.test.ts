@@ -84,6 +84,27 @@ describe('buildOverviewSnapshot', () => {
     expect(snapshot.attention.map((item) => item.projectId)).toEqual(['repo-a'])
     expect(snapshot.projects.map((project) => project.id)).toEqual(['repo-a', 'repo-b'])
   })
+
+  it('asks about automated workspaces only for a stuck agent or a blocked flag', () => {
+    const green = { number: 7, state: 'open' as const, checks: 'success' as const, url: null }
+    const snapshot = input(
+      [
+        worktree('queued', { isUnread: true, pr: { ...green, failingChecks: [] } }),
+        worktree('failing', {
+          pr: { ...green, checks: 'failure', failingChecks: ['test'] }
+        }),
+        worktree('stuck', { agents: [agent({ state: 'waiting' })] }),
+        worktree('flagged', { isUnread: true, comment: 'blocked: needs a key' }),
+        worktree('manual', { pr: { ...green, failingChecks: [] } })
+      ],
+      { automated: new Map([['repo-a', new Set(['queued', 'failing', 'stuck', 'flagged'])]]) }
+    )
+    expect(snapshot.attention.map((item) => [item.worktreeId, item.kinds])).toEqual([
+      ['stuck', ['agent-waiting']],
+      ['manual', ['pr-ready']],
+      ['flagged', ['flagged']]
+    ])
+  })
 })
 
 describe('project sort', () => {

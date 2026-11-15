@@ -10,7 +10,7 @@ import { useMobileColorScheme } from '../theme/use-mobile-color-scheme'
 import { useMobileTranslation } from '../i18n/use-mobile-translation'
 import type { Translate } from '../i18n/mobile-i18n'
 import { formatTimeAgo } from '../worktree/agent-row-display'
-import type { RpcClient } from '../transport/rpc/rpc-client-contract'
+import type { MobileTicketPipelineStatus as TicketStatus } from './overview-ticket-operations'
 import type { MobileTicketSheetMode } from './MobileTicketSheet'
 import { MobileTicketPipelineStatus } from './MobileTicketPipelineStatus'
 import { overviewStyles as styles } from './mobile-overview-styles'
@@ -86,7 +86,7 @@ function WorkspaceRow({
 
 export function MobileOverviewProjectCard({
   project,
-  client,
+  ticketStatus,
   now,
   expanded,
   busy,
@@ -98,8 +98,8 @@ export function MobileOverviewProjectCard({
   onToggleHidden
 }: {
   project: OverviewProject
-  /** The connected desktop, for the merge queue status; null while offline. */
-  client: RpcClient | null
+  /** The merge queue, auto-clean and draft status its desktop reports; null until read. */
+  ticketStatus: TicketStatus | null
   now: number
   expanded: boolean
   busy: boolean
@@ -206,8 +206,7 @@ export function MobileOverviewProjectCard({
       </View>
       {project.mainWorktreeId && !project.hidden ? (
         <MobileTicketPipelineStatus
-          client={client}
-          projectId={project.id}
+          status={ticketStatus}
           now={now}
           onReviewDrafts={() => onOpenTickets('drafts')}
         />

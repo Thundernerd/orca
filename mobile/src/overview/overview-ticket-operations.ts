@@ -75,7 +75,8 @@ const statusSchema = z.looseObject({
     held: z.array(z.looseObject({ ticketId: z.string(), reason: z.string(), at: z.number() })),
     pending: z.number()
   }),
-  // Absent from a desktop older than draft status.
+  // Absent from a desktop older than these fields.
+  automatedWorktreeIds: z.array(z.string()).optional(),
   drafts: z
     .looseObject({
       drafting: z.number(),
