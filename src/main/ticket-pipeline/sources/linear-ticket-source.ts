@@ -140,7 +140,8 @@ export function linearTicketSource(config: LinearConfig): TicketSource {
     briefHints: (ticket) => ({
       readCommand: `orca linear issue ${ticket.id} --comments --relations`,
       // Linear's GitHub integration links the PR and closes the issue on merge from this magic word.
-      reviewRule: `with 'Fixes ${ticket.id}' in the body`
+      reviewRule: `with 'Fixes ${ticket.id}' in the body`,
+      commentCommand: `orca linear comment add ${ticket.id} --body-file <file>`
     }),
     complete: async (ticketId) => {
       const issue = await getIssue(ticketId, config.workspaceId)

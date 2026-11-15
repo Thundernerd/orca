@@ -15,6 +15,8 @@ export type TicketBriefHints = {
   readCommand: string | null
   /** How the PR names the ticket so the tracker links it (`with 'Closes #12' in the body`). */
   reviewRule: string
+  /** A command that comments on the ticket, with `<file>` for the body; null when the ticket is a file. */
+  commentCommand: string | null
 }
 
 /** One tracker the pipeline reads tickets from and writes them to. */

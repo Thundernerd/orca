@@ -90,7 +90,8 @@ export function repoFileTicketSource(
     workspaceLink: () => ({}),
     briefHints: (ticket) => ({
       readCommand: null,
-      reviewRule: `titled '${ticket.id}: ${ticket.title}'`
+      reviewRule: `titled '${ticket.id}: ${ticket.title}'`,
+      commentCommand: null
     }),
     complete: async () => undefined
   }

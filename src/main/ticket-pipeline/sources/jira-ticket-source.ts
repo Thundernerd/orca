@@ -168,7 +168,8 @@ export function jiraTicketSource(config: JiraConfig): TicketSource {
     briefHints: (ticket) => ({
       readCommand: `orca jira issue ${ticket.id}`,
       // Jira links a PR to the issue by its key in the title.
-      reviewRule: `with '${ticket.id}' at the start of its title`
+      reviewRule: `with '${ticket.id}' at the start of its title`,
+      commentCommand: `orca jira comment add ${ticket.id} --body-file <file>`
     }),
     complete: async (ticketId) => {
       const issue = await getIssue(ticketId, config.siteId)

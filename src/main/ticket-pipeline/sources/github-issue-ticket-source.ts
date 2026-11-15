@@ -40,7 +40,8 @@ export function githubIssueTicketSource(repo: Repo): TicketSource {
       ticket.issueNumber === null ? {} : { linkedIssue: ticket.issueNumber },
     briefHints: (ticket) => ({
       readCommand: `gh issue view ${ticket.issueNumber} --comments`,
-      reviewRule: `with 'Closes #${ticket.issueNumber}' in the body`
+      reviewRule: `with 'Closes #${ticket.issueNumber}' in the body`,
+      commentCommand: `gh issue comment ${ticket.issueNumber} --body-file <file> [--attach <screenshot>]`
     }),
     // `Closes #n` in the PR closes the issue when it merges.
     complete: async () => undefined,
