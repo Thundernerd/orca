@@ -92,7 +92,9 @@ export async function launchTickets(
   const outcomes: TicketLaunchOutcome[] = []
   for (const selection of request.tickets) {
     const row = rowsById.get(selection.id)
-    if (!row || row.status !== 'ready') {
+    const launchable =
+      row?.status === 'ready' || (row?.status === 'triage' && selection.skipTriage === true)
+    if (!row || !launchable) {
       outcomes.push({
         id: selection.id,
         status: 'skipped',

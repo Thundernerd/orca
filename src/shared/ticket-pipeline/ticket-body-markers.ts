@@ -4,6 +4,28 @@ export function isOwnedByUser(body: string): boolean {
   return OWNER_USER_LINE.test(body)
 }
 
+// `triage`, `needs-triage`, `status: needs triage`, `untriaged`; never `triaged`, which is done.
+const TRIAGE_WORD = /(^|[^a-z])(un)?triage(d?)([^a-z]|$)/i
+const TRIAGE_LINE = /^\s*(?:status:\s*)?(?:needs[ -]?)?triage\s*$/im
+
+/** A ticket waiting for someone to decide what it is: a triage label, state or body line. */
+export function needsTriage(input: {
+  labels: readonly string[]
+  body?: string
+  /** The tracker's workflow state name or type (Linear's `triage`, a Jira `Needs Triage`). */
+  state?: string
+}): boolean {
+  const marked = (text: string) => {
+    const match = TRIAGE_WORD.exec(text)
+    return match !== null && (match[2] !== undefined || match[3] === '')
+  }
+  return (
+    input.labels.some(marked) ||
+    (input.state !== undefined && marked(input.state)) ||
+    (input.body !== undefined && TRIAGE_LINE.test(input.body))
+  )
+}
+
 /** Issue numbers listed under a markdown `Blocked by` heading, up to the next heading. */
 export function parseBlockedBySection(body: string): number[] {
   const numbers = new Set<number>()

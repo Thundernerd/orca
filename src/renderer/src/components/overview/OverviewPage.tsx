@@ -27,6 +27,7 @@ import { OverviewStatsStrip } from './OverviewStatsStrip'
 import { refreshOverviewTicketStatus } from './use-overview-ticket-status'
 import { installWindowVisibilityInterval } from '@/lib/window-activity/window-visibility-interval'
 import { OverviewTable } from './OverviewTable'
+import { triageOverviewTicket } from './overview-ticket-triage'
 import { OverviewViewMenu } from './OverviewViewMenu'
 import { useOverviewKeyboardTriage } from './use-overview-keyboard-triage'
 import { sectionOverviewProjects } from './overview-project-sections'
@@ -241,6 +242,11 @@ export default function OverviewPage(): React.JSX.Element {
     },
     [run, snapshot.projects, surveys]
   )
+  const triageTicket = useCallback(
+    (projectId: string, ticketId: string) =>
+      void run(() => triageOverviewTicket(projectId, ticketId)),
+    [run]
+  )
   const cleanUp = useCallback(
     (projectId: string, worktreeIds: string[]) => {
       const project = snapshot.projects.find((p) => p.id === projectId)
@@ -256,6 +262,7 @@ export default function OverviewPage(): React.JSX.Element {
     writeTicket,
     ticketsPublished,
     launchTickets,
+    triageTicket,
     cleanUp,
     mergeQueueHead,
     refreshTickets: surveys.requestSurvey,

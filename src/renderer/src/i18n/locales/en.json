@@ -20101,7 +20101,8 @@
           "counting": "Counting tickets…",
           "notCounted": "Tickets not counted yet",
           "failed": "(last count failed)",
-          "refresh": "Recount tickets"
+          "refresh": "Recount tickets",
+          "triage": "{{count}} need triage"
         },
         "workspaces": "{{count}} workspaces",
         "table": {
@@ -20291,6 +20292,16 @@
         "drafts": {
           "review": "{{count}} drafts to review",
           "drafting": "Drafting tickets…"
+        },
+        "triage": {
+          "titleSkill": "Needs triage ({{count}}): /{{skill}} decides what each one is first",
+          "title": "Needs triage ({{count}}): not launched until you decide",
+          "run": "Triage",
+          "decide": "Decide…",
+          "question": "No triage skill is installed. Launch {{ticket}} as it is, or leave it for later?",
+          "leave": "Leave it",
+          "launch": "Launch anyway",
+          "started": "Triaging {{ticket}} with /{{skill}}."
         }
       }
     },

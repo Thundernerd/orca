@@ -153,6 +153,9 @@ export function OverviewTable({
                             onLaunch={(tickets) =>
                               projectActions.launchTickets(project.id, tickets)
                             }
+                            onTriage={(ticketId) =>
+                              projectActions.triageTicket(project.id, ticketId)
+                            }
                           />
                         ) : null}
                         {project.mainWorktreeId && !project.hidden ? (

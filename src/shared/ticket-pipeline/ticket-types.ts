@@ -30,9 +30,11 @@ export type Ticket = {
   blockerIds: string[]
   /** Tracker labels; pick the branch's Conventional Commits type. */
   labels: string[]
+  /** Marked for triage: never launched as is; a triage skill or the user decides first. */
+  needsTriage: boolean
 }
 
-export type TicketSurveyStatus = 'ready' | 'blocked' | 'launched' | 'owned' | 'claimed'
+export type TicketSurveyStatus = 'ready' | 'blocked' | 'launched' | 'owned' | 'claimed' | 'triage'
 
 export type TicketSurveyRow = {
   status: TicketSurveyStatus
@@ -49,6 +51,8 @@ export type TicketSurveyResult = {
   /** Null for a project-wide survey. */
   parentWorktreeId: string | null
   rows: TicketSurveyRow[]
+  /** The Claude skill that triages tickets here, when a ticket needs triage and one is installed. */
+  triageSkill?: string | null
 }
 
 export const CONVENTIONAL_TYPES = [
@@ -68,6 +72,8 @@ export type TicketLaunchSelection = {
   /** The ticket id the survey reported (`#12`, `T86`). */
   id: string
   type?: ConventionalType
+  /** The user chose to launch a ticket marked for triage without triaging it. */
+  skipTriage?: boolean
 }
 
 export type TicketLaunchOutcome =

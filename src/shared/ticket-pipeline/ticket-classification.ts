@@ -48,6 +48,9 @@ export function classifyTickets(
     if (ticket.assignees.length > 0) {
       return { status: 'claimed', ticket, waitingOn: [...ticket.assignees] }
     }
+    if (ticket.needsTriage) {
+      return { status: 'triage', ticket, waitingOn: [] }
+    }
     const open = ticket.blockerIds.filter((id) => !doneIds.has(id))
     return open.length > 0
       ? { status: 'blocked', ticket, waitingOn: open }

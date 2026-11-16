@@ -12,8 +12,12 @@ const surveySchema = z.looseObject({
       ticket: z.looseObject({ id: z.string(), title: z.string() }),
       waitingOn: z.array(z.string())
     })
-  )
+  ),
+  // Absent from a desktop older than triage.
+  triageSkill: z.string().nullable().optional()
 })
+
+const triageSchema = z.looseObject({ ticketId: z.string(), skill: z.string() })
 
 const launchSchema = z.looseObject({
   outcomes: z.array(
@@ -132,6 +136,7 @@ function ticketOperation<Method extends RpcMethodName, T extends z.ZodType>(
 
 export const ticketSurveyRead = ticketOperation('tickets.survey', surveySchema)
 export const ticketLaunchRun = ticketOperation('tickets.launch', launchSchema)
+export const ticketTriageRun = ticketOperation('tickets.triage', triageSchema)
 export const ticketCleanSurveyRead = ticketOperation('tickets.cleanSurvey', cleanSurveySchema)
 export const ticketCleanRun = ticketOperation('tickets.clean', cleanSchema)
 export const ticketQueueRead = ticketOperation('tickets.queue', queueSchema)

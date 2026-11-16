@@ -1,5 +1,6 @@
 import {
   isOwnedByUser,
+  needsTriage,
   parseTicketFileDeps,
   parseTicketFileTitle,
   TICKET_FILE_NAME
@@ -70,7 +71,8 @@ export async function surveyRepoFileTickets(
       assignees: [],
       ownedByUser: isOwnedByUser(body),
       blockerIds: parseTicketFileDeps(body),
-      labels: []
+      labels: [],
+      needsTriage: needsTriage({ labels: [], body })
     })
   }
   return { tickets, doneIds }

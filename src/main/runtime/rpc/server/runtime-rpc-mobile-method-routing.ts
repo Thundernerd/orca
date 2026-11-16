@@ -253,6 +253,7 @@ export const EXECUTION_HOST_METHODS = [
   'tickets.settings',
   'tickets.status',
   'tickets.survey',
+  'tickets.triage',
   'worktree.activate',
   'worktree.create',
   'worktree.forceDeleteBranch',

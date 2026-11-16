@@ -11,6 +11,7 @@ import type {
   TicketSurveyResult
 } from '../../shared/ticket-pipeline/ticket-types'
 import { resolveTicketSource } from './sources/ticket-source-resolution'
+import { findTicketTriageSkill } from './ticket-triage-skill'
 import type { TicketSource } from './sources/ticket-source'
 
 export type TicketSurveyRuntime = {
@@ -51,12 +52,16 @@ export async function surveyTicketsWithSource(
       branch: w.branch
     }))
 
+  const rows = classifyTickets(tickets, doneIds, signatures)
   return {
     result: {
       source: source.kind,
       baseRef,
       parentWorktreeId: parent?.id ?? null,
-      rows: classifyTickets(tickets, doneIds, signatures)
+      rows,
+      triageSkill: rows.some((r) => r.status === 'triage')
+        ? await findTicketTriageSkill(repo)
+        : null
     },
     source,
     repo

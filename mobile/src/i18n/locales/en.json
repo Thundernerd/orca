@@ -5085,7 +5085,14 @@
         "deselectAll": "Deselect all",
         "selectAll": "Select all",
         "selectedCount": "{{count}} of {{total}} selected",
-        "held": "Held out of the queue."
+        "held": "Held out of the queue.",
+        "triaging": "Triaging {{ticket}} with /{{skill}}",
+        "triageTitle": "{{ticket}} needs triage",
+        "triageQuestion": "No triage skill is installed. Launch it as it is, or leave it for later?",
+        "triageLeave": "Leave it",
+        "triageLaunch": "Launch anyway",
+        "triageWithSkill": "Needs triage: tap to triage with /{{skill}}",
+        "triageAsk": "Needs triage: tap to decide"
       },
       "pin": "Pin {{project}}",
       "unpin": "Unpin {{project}}",

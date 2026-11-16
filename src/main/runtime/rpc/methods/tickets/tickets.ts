@@ -14,6 +14,7 @@ import {
   TicketQueueSelect,
   TicketSettings,
   TicketStatus,
+  TicketTriage,
   TicketSourceOptions,
   TicketSurvey
 } from '../../../../../shared/rpc-contract/ticket-params'
@@ -23,6 +24,7 @@ import { launchTickets } from '../../../../ticket-pipeline/ticket-launch'
 import { surveyTickets } from '../../../../ticket-pipeline/ticket-survey'
 import { startTicketTracker } from '../../../../ticket-pipeline/ticket-tracker'
 import { ticketPipelineStatus } from '../../../../ticket-pipeline/ticket-pipeline-status'
+import { startTicketTriage } from '../../../../ticket-pipeline/ticket-triage'
 import { cleanWorkspaces, surveyWorkspaceClean } from '../../../../ticket-pipeline/workspace-clean'
 import { getMergeQueue } from '../../../../ticket-pipeline/merge-queue'
 import { listTicketSourceOptions } from '../../../../ticket-pipeline/sources/ticket-source-options'
@@ -83,6 +85,13 @@ export const TICKET_METHODS = [
       startTicketTracker(context.runtime)
       return result
     }
+  }),
+  defineMethod({
+    name: 'tickets.triage',
+    permission: 'workspace',
+    params: TicketTriage,
+    handler: async (params, context) =>
+      startTicketTriage(context, ticketParentScope(params), params.ticketId)
   }),
   defineMethod({
     name: 'tickets.items',

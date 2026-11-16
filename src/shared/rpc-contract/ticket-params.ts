@@ -33,7 +33,13 @@ export const TicketLaunch = z
     repo: Selector.optional(),
     source: z.enum(['github-issues', 'repo-files']).optional(),
     tickets: z
-      .array(z.object({ id: z.string().min(1).max(200), type: ConventionalTypeParam.optional() }))
+      .array(
+        z.object({
+          id: z.string().min(1).max(200),
+          type: ConventionalTypeParam.optional(),
+          skipTriage: z.boolean().optional()
+        })
+      )
       .min(1)
       .max(50)
   })
@@ -81,6 +87,11 @@ export const TicketSettings = z.object({
 
 /** The merge queue of a parent workspace (or the project's main one). */
 export const TicketQueue = z.object(ScopeFields).refine(exactlyOneScope, scopeMessage)
+
+/** Starts an agent on one ticket marked for triage, with the project's triage skill. */
+export const TicketTriage = z
+  .object({ ...ScopeFields, ticketId: z.string().min(1).max(200) })
+  .refine(exactlyOneScope, scopeMessage)
 
 /** Holds ticket PRs out of the merge queue, or lets them back in. */
 export const TicketQueueSelect = z

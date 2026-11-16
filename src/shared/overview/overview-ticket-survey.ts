@@ -6,6 +6,8 @@ export type OverviewTicketCounts = {
   launched: number
   owned: number
   claimed: number
+  /** Absent from counts saved before triage existed. */
+  triage?: number
   readyTitles: string[]
   fetchedAt: number
   error: string | null
@@ -21,12 +23,13 @@ export function countTicketSurvey(
     launched: 0,
     owned: 0,
     claimed: 0,
+    triage: 0,
     readyTitles: [],
     fetchedAt: now,
     error: null
   }
   for (const row of rows) {
-    counts[row.status] += 1
+    counts[row.status] = (counts[row.status] ?? 0) + 1
     if (row.status === 'ready') {
       counts.readyTitles.push(`${row.ticket.id} ${row.ticket.title}`.trim())
     }

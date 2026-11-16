@@ -1,7 +1,8 @@
 import type { IssueSourcePreference } from '../../../shared/repo-types'
 import {
   isOwnedByUser,
-  parseBlockedBySection
+  parseBlockedBySection,
+  needsTriage
 } from '../../../shared/ticket-pipeline/ticket-body-markers'
 import type { Ticket } from '../../../shared/ticket-pipeline/ticket-types'
 import type { LocalGitExecOptions } from '../repositories/github-repository-identity'
@@ -163,7 +164,11 @@ export async function surveyOpenIssueTickets(
       assignees: node.assignees.nodes.map((a) => a.login),
       ownedByUser: isOwnedByUser(node.body ?? ''),
       blockerIds: [...blockerIds],
-      labels: node.labels.nodes.map((l) => l.name)
+      labels: node.labels.nodes.map((l) => l.name),
+      needsTriage: needsTriage({
+        labels: node.labels.nodes.map((l) => l.name),
+        body: node.body ?? ''
+      })
     }
   })
   return { tickets, doneIds }

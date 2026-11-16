@@ -1,4 +1,4 @@
-import { isOwnedByUser } from '../../../shared/ticket-pipeline/ticket-body-markers'
+import { isOwnedByUser, needsTriage } from '../../../shared/ticket-pipeline/ticket-body-markers'
 import type { Ticket, TicketSourceConfig } from '../../../shared/ticket-pipeline/ticket-types'
 import { getClients } from '../../linear/accounts/linear-account-client'
 import { withLinearRead } from '../../linear/issues/context/issue-context-resolution'
@@ -27,6 +27,7 @@ const OPEN_ISSUES_QUERY = `query TicketSurvey($teamId: ID!, $after: String) {
     pageInfo { hasNextPage endCursor }
     nodes {
       id identifier title url description
+      state { name type }
       assignee { displayName }
       labels { nodes { name } }
       inverseRelations(first: 50) { nodes { type issue { identifier state { type } } } }
@@ -40,6 +41,7 @@ type RawIssue = {
   title: string
   url: string
   description: string | null
+  state: { name: string; type: string }
   assignee: { displayName: string } | null
   labels: { nodes: { name: string }[] }
   inverseRelations: {
@@ -121,7 +123,15 @@ export function linearTicketSource(config: LinearConfig): TicketSource {
           assignees: issue.assignee ? [issue.assignee.displayName] : [],
           ownedByUser: isOwnedByUser(issue.description ?? ''),
           blockerIds: blockers.map((b) => b.issue.identifier),
-          labels: issue.labels.nodes.map((l) => l.name)
+          labels: issue.labels.nodes.map((l) => l.name),
+          // Linear's Triage inbox is a state of its own type.
+          needsTriage:
+            issue.state.type === 'triage' ||
+            needsTriage({
+              labels: issue.labels.nodes.map((l) => l.name),
+              body: issue.description ?? '',
+              state: issue.state.name
+            })
         }
       })
       return { tickets, doneIds }

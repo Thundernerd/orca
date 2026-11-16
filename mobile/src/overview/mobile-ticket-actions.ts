@@ -9,6 +9,7 @@ import {
   ticketDraftPublishRun,
   ticketDraftStartRun,
   ticketLaunchRun,
+  ticketTriageRun,
   ticketMergeRun,
   ticketQueueRead,
   ticketQueueResumeRun,
@@ -42,12 +43,15 @@ export function mobileTicketActions(client: RpcClient, projectId: string) {
         failed('read the tickets')
       )
     },
-    launch: async (ids: readonly string[]): Promise<MobileTicketResult> => {
+    launch: async (
+      ids: readonly string[],
+      options: { skipTriage?: boolean } = {}
+    ): Promise<MobileTicketResult> => {
       const response = await ticketLaunchRun.request(
         client,
         {
           repo,
-          tickets: ids.map((id) => ({ id }))
+          tickets: ids.map((id) => ({ id, ...(options.skipTriage ? { skipTriage: true } : {}) }))
         },
         RUN
       )
@@ -68,6 +72,24 @@ export function mobileTicketActions(client: RpcClient, projectId: string) {
           }),
           ...problems
         ].join(' ')
+      }
+    },
+    triage: async (ticketId: string): Promise<MobileTicketResult> => {
+      const response = await ticketTriageRun.request(client, { repo, ticketId }, RUN)
+      const result = interpretOrThrowRefusalMessage(
+        () => ticketTriageRun.interpret(response),
+        failed('start the triage')
+      )
+      return {
+        ok: true,
+        message: translate(
+          'overview.mobile.tickets.triaging',
+          'Triaging {{ticket}} with /{{skill}}',
+          {
+            ticket: result.ticketId,
+            skill: result.skill
+          }
+        )
       }
     },
     cleanSurvey: async (): Promise<MobileWorkspaceCleanSurvey> => {

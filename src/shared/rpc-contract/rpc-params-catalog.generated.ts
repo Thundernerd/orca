@@ -742,7 +742,8 @@ import {
   TicketSettings,
   TicketSourceOptions,
   TicketStatus,
-  TicketSurvey
+  TicketSurvey,
+  TicketTriage
 } from './ticket-params'
 import { UpdaterCheckParams } from './updater-params'
 import {
@@ -1658,6 +1659,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'tickets.sourceOptions': TicketSourceOptions,
   'tickets.status': TicketStatus,
   'tickets.survey': TicketSurvey,
+  'tickets.triage': TicketTriage,
   'ui.get': null,
   'ui.getJiraQuickFilters': null,
   'ui.getJiraSavedFilters': null,

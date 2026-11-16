@@ -31,6 +31,7 @@ export type OverviewProjectCardActions = {
   writeTicket: (projectId: string, request: string) => void
   ticketsPublished: (projectId: string, batch: TicketDraftBatch) => void
   launchTickets: (projectId: string, tickets: TicketLaunchSelection[]) => void
+  triageTicket: (projectId: string, ticketId: string) => void
   cleanUp: (projectId: string, worktreeIds: string[]) => void
   mergeQueueHead: (projectId: string) => void
   refreshTickets: (ticketSource: string) => void
@@ -211,6 +212,11 @@ export function OverviewProjectCard({
                   : project.ticketsLoading
                     ? t('auto.components.overview.tickets.counting', 'Counting tickets…')
                     : t('auto.components.overview.tickets.notCounted', 'Tickets not counted yet')}
+                {tickets?.triage
+                  ? ` · ${t('auto.components.overview.tickets.triage', '{{count}} need triage', {
+                      count: tickets.triage
+                    })}`
+                  : null}
                 {tickets?.error ? (
                   <span className="text-destructive" title={tickets.error}>
                     {' '}
@@ -244,6 +250,7 @@ export function OverviewProjectCard({
                 busy={actions.busy}
                 variant="outline"
                 onLaunch={(tickets) => actions.launchTickets(project.id, tickets)}
+                onTriage={(ticketId) => actions.triageTicket(project.id, ticketId)}
               />
               <OverviewMergeQueuePopover
                 projectId={project.id}

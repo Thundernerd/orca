@@ -13,6 +13,7 @@ import type {
 } from './overview-ticket-operations'
 import { overviewStyles as styles } from './mobile-overview-styles'
 import { ActionButton, SelectAllToggle, Toggle } from './mobile-ticket-sheet-rows'
+import { pressTriageTicket, triageRowMeta } from './mobile-ticket-triage'
 
 export type MobileTicketSheetMode = 'launch' | 'clean' | 'queue' | 'drafts'
 
@@ -159,16 +160,27 @@ export function MobileTicketSheet({
               <Toggle
                 key={row.ticket.id}
                 checked={selected.has(row.ticket.id)}
-                disabled={row.status !== 'ready'}
+                disabled={row.status !== 'ready' && row.status !== 'triage'}
                 label={`${row.ticket.id} ${row.ticket.title}`}
                 meta={
                   row.status === 'ready'
                     ? undefined
-                    : row.waitingOn.length > 0
-                      ? `${row.status}: ${row.waitingOn.join(', ')}`
-                      : row.status
+                    : row.status === 'triage'
+                      ? triageRowMeta(loaded.survey.triageSkill ?? null)
+                      : row.waitingOn.length > 0
+                        ? `${row.status}: ${row.waitingOn.join(', ')}`
+                        : row.status
                 }
-                onPress={() => toggle(row.ticket.id)}
+                onPress={() =>
+                  row.status === 'triage'
+                    ? pressTriageTicket({
+                        ticketId: row.ticket.id,
+                        triageSkill: loaded.survey.triageSkill ?? null,
+                        actions: actions!,
+                        finish
+                      })
+                    : toggle(row.ticket.id)
+                }
               />
             ))}
             {loaded.survey.rows.length === 0 ? (

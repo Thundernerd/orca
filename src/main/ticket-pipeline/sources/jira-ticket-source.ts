@@ -1,3 +1,4 @@
+import { needsTriage } from '../../../shared/ticket-pipeline/ticket-body-markers'
 import type { Ticket, TicketSourceConfig } from '../../../shared/ticket-pipeline/ticket-types'
 import { apiBasePath, jiraRequest, type JiraClientForSite } from '../../jira/authenticated-request'
 import { getClients } from '../../jira/client'
@@ -25,6 +26,7 @@ type RawIssue = {
   key: string
   fields: {
     summary?: string
+    status?: { name?: string }
     assignee?: { displayName?: string } | null
     labels?: string[]
     issuelinks?: RawLink[]
@@ -146,7 +148,11 @@ export function jiraTicketSource(config: JiraConfig): TicketSource {
           // The list read skips descriptions (ADF, one request per issue); ownership lives in assignees.
           ownedByUser: false,
           blockerIds: blockers.map((b) => b.key),
-          labels: issue.fields.labels ?? []
+          labels: issue.fields.labels ?? [],
+          needsTriage: needsTriage({
+            labels: issue.fields.labels ?? [],
+            ...(issue.fields.status?.name ? { state: issue.fields.status.name } : {})
+          })
         }
       })
       return { tickets, doneIds }

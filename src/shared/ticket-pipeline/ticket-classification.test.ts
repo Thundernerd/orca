@@ -14,6 +14,7 @@ function issue(n: number, extra: Partial<Ticket> = {}): Ticket {
     ownedByUser: false,
     blockerIds: [],
     labels: [],
+    needsTriage: false,
     externalId: null,
     ...extra
   }
@@ -72,6 +73,18 @@ describe('classifyTickets', () => {
       ['owned', []],
       ['claimed', ['alice']],
       ['launched', []]
+    ])
+  })
+
+  it('holds a ticket marked for triage back from launching, even with its blockers done', () => {
+    const rows = classifyTickets(
+      [issue(5, { needsTriage: true, blockerIds: ['#1'] }), issue(6, { needsTriage: true })],
+      new Set(['#1']),
+      [workspace({ linkedIssue: 6 })]
+    )
+    expect(rows.map((r) => [r.ticket.id, r.status])).toEqual([
+      ['#5', 'triage'],
+      ['#6', 'launched']
     ])
   })
 

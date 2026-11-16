@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   isOwnedByUser,
+  needsTriage,
   parseBlockedBySection,
   parseTicketFileDeps,
   parseTicketFileTitle
@@ -27,5 +28,17 @@ describe('ticket body markers', () => {
     expect(parseTicketFileTitle(body)).toBe('Discover filters')
     expect(isOwnedByUser(body)).toBe(true)
     expect(isOwnedByUser('Owner: someone')).toBe(false)
+  })
+
+  it('reads triage from labels, a workflow state or a body line, but not once triaged', () => {
+    expect(needsTriage({ labels: ['bug', 'needs-triage'] })).toBe(true)
+    expect(needsTriage({ labels: ['Status: Triage'] })).toBe(true)
+    expect(needsTriage({ labels: ['untriaged'] })).toBe(true)
+    expect(needsTriage({ labels: ['triaged', 'bug'] })).toBe(false)
+    expect(needsTriage({ labels: [], state: 'Needs Triage' })).toBe(true)
+    expect(needsTriage({ labels: [], body: '# Crash\nStatus: needs triage\n' })).toBe(true)
+    expect(needsTriage({ labels: [], body: 'We should triage this later in the sprint.' })).toBe(
+      false
+    )
   })
 })

@@ -19,13 +19,20 @@ import {
 } from '../../../../shared/ticket-pipeline/ticket-types'
 import { surveyOverviewProject } from './overview-ticket-pipeline'
 import { OverviewTicketSourceSelect } from './OverviewTicketSourceSelect'
+import { OverviewTriageTickets } from './OverviewTriageTickets'
 
 type Choice = { row: TicketSurveyRow; selected: boolean; type: ConventionalType }
 
 type LoadState =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'loaded'; choices: Choice[]; others: number }
+  | {
+      kind: 'loaded'
+      choices: Choice[]
+      others: number
+      triage: TicketSurveyRow[]
+      triageSkill: string | null
+    }
 
 function isConventionalType(value: string): value is ConventionalType {
   return CONVENTIONAL_TYPES.some((type) => type === value)
@@ -37,13 +44,15 @@ export function OverviewLaunchTicketsPopover({
   projectName,
   busy,
   variant,
-  onLaunch
+  onLaunch,
+  onTriage
 }: {
   projectId: string
   projectName: string
   busy: boolean
   variant: 'outline' | 'ghost'
   onLaunch: (tickets: TicketLaunchSelection[]) => void
+  onTriage: (ticketId: string) => void
 }): React.JSX.Element {
   const t = useTranslate()
   const [open, setOpen] = useState(false)
@@ -74,7 +83,9 @@ export function OverviewLaunchTicketsPopover({
         selected: true,
         type: conventionalTypeForTicket(row.ticket)
       })),
-      others: outcome.result.rows.length - ready.length
+      others: outcome.result.rows.length - ready.length,
+      triage: outcome.result.rows.filter((row) => row.status === 'triage'),
+      triageSkill: outcome.result.triageSkill ?? null
     })
   }
 
@@ -140,7 +151,7 @@ export function OverviewLaunchTicketsPopover({
             <p className="text-xs text-muted-foreground">
               {t(
                 'auto.components.overview.launchTickets.none',
-                'No ticket is ready: {{count}} are blocked, launched, claimed or yours.',
+                'No ticket is ready: {{count}} are blocked, waiting for triage, launched, claimed or yours.',
                 { count: state.others }
               )}
             </p>
@@ -214,6 +225,28 @@ export function OverviewLaunchTicketsPopover({
               </ul>
             </>
           )}
+          {state.kind === 'loaded' ? (
+            <OverviewTriageTickets
+              rows={state.triage}
+              triageSkill={state.triageSkill}
+              busy={busy}
+              onTriage={(ticketId) => {
+                onTriage(ticketId)
+                setOpen(false)
+              }}
+              onLaunchAnyway={(ticketId) => {
+                const row = state.triage.find((r) => r.ticket.id === ticketId)
+                onLaunch([
+                  {
+                    id: ticketId,
+                    type: row ? conventionalTypeForTicket(row.ticket) : 'feat',
+                    skipTriage: true
+                  }
+                ])
+                setOpen(false)
+              }}
+            />
+          ) : null}
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs text-muted-foreground">
               {t(
