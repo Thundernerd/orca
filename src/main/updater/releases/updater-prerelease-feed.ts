@@ -1,5 +1,5 @@
 import { net } from 'electron'
-import { APP_RELEASE_REPO } from '../../../shared/release-channel'
+import { APP_RELEASE_REPO } from '../../../shared/updater/release-channel'
 import { compareVersions, isPrereleaseVersion, isValidVersion } from './updater-fallback'
 import {
   FETCH_TIMEOUT_MS,

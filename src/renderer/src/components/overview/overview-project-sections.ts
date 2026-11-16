@@ -1,4 +1,4 @@
-import type { ProjectGroup } from '../../../../shared/project-group-types'
+import type { ProjectGroup } from '../../../../shared/project/groups/project-group-types'
 import type { OverviewProject } from '../../../../shared/overview/overview-model-types'
 
 export type OverviewGroupBy = 'none' | 'group'

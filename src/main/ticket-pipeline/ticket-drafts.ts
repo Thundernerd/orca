@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { getRepoRoutingConnectionId } from '../../shared/execution-host'
-import { isFolderRepo } from '../../shared/repo-kind'
-import type { Repo } from '../../shared/repo-types'
-import { AgentLaunch } from '../../shared/rpc-contract/agent-launch-params'
+import { getRepoRoutingConnectionId } from '../../shared/execution-host/execution-host'
+import { isFolderRepo } from '../../shared/repository/repo-kind'
+import type { Repo } from '../../shared/repository/repo-types'
+import { AgentLaunch } from '../../shared/rpc-contract/agent-launch/agent-launch-params'
 import { renderTicketDraftBrief } from '../../shared/ticket-pipeline/ticket-draft-brief'
 import {
   draftBlockerIds,

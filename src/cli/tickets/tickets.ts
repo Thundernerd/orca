@@ -13,7 +13,7 @@ import {
   type WorkspaceCleanResult,
   type WorkspaceCleanSurveyResult
 } from '../../shared/ticket-pipeline/ticket-types'
-import type { RuntimeWorktreeRecord } from '../../shared/runtime-worktree-contracts'
+import type { RuntimeWorktreeRecord } from '../../shared/worktree/catalog/runtime-worktree-contracts'
 import type {
   TicketDraftBatch,
   TicketFinding
@@ -36,7 +36,7 @@ import {
   formatQueue,
   formatSurvey
 } from './ticket-format'
-import { RuntimeClientError } from '../runtime/types'
+import { RuntimeClientError } from '../runtime/connection/types'
 import {
   getOptionalWorktreeSelector,
   resolveCurrentWorktreeSelector

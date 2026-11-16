@@ -18,6 +18,7 @@ import {
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import { getTicketItemStore, type TicketItemStore } from './ticket-item-store'
 import { queueOrder } from './merge-queue-order'
+import { foundPR } from './ticket-pr-lookup'
 import {
   findTicketAgent,
   sendTicketAgentFixBrief,
@@ -47,7 +48,7 @@ async function readPR(runtime: OrcaRuntimeService, item: TicketItem): Promise<PR
       'watch'
     )
     .catch(() => null)
-  return outcome?.kind === 'found' ? outcome.pr : null
+  return foundPR(outcome)
 }
 
 export class MergeQueue {

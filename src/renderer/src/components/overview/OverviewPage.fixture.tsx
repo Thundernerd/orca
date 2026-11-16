@@ -1,7 +1,7 @@
 import { defineFixture } from '../../component-fixtures/component-fixture'
 import OverviewPage from './OverviewPage'
 import { useAppStore } from '@/store/index'
-import type { Repo } from '../../../../shared/repo-types'
+import type { Repo } from '../../../../shared/repository/repo-types'
 import type { Worktree } from '../../../../shared/worktree/types'
 
 const NOW = Date.now()

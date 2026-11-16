@@ -1,6 +1,6 @@
 import { net } from 'electron'
 import { parse } from 'yaml'
-import { APP_RELEASE_REPO } from '../../../shared/release-channel'
+import { APP_RELEASE_REPO } from '../../../shared/updater/release-channel'
 
 const RELEASES_DOWNLOAD_BASE = `https://github.com/${APP_RELEASE_REPO}/releases/download`
 export const FETCH_TIMEOUT_MS = 5000

@@ -34,6 +34,8 @@ import { PLUGIN_AUTHORING_COMMAND_SPECS, PLUGIN_RUNTIME_COMMAND_SPECS } from './
 import { PAIR_COMMAND_SPECS } from './pair'
 import { PLUGIN_VIEW_COMMAND_SPECS } from './plugin-view'
 import { PLUGIN_INSTALL_COMMAND_SPECS } from './plugin-install'
+import { WORKSPACE_CLEANUP_COMMAND_SPECS } from './workspace-cleanup'
+import { UNINSTALL_COMMAND_SPECS } from './uninstall'
 import { TICKET_COMMAND_SPECS } from './tickets'
 
 export const COMMAND_SPECS: CommandSpec[] = [
@@ -44,6 +46,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
   ...PROJECT_COMMAND_SPECS,
   ...FILE_COMMAND_SPECS,
   ...AUTOMATION_COMMAND_SPECS,
+  ...WORKSPACE_CLEANUP_COMMAND_SPECS,
   ...BROWSER_BASIC_COMMAND_SPECS,
   ...BROWSER_ADVANCED_COMMAND_SPECS,
   ...ORCHESTRATION_COMMAND_SPECS.map(withFullRecordFlag),
@@ -72,5 +75,6 @@ export const COMMAND_SPECS: CommandSpec[] = [
   ...PLUGIN_VIEW_COMMAND_SPECS,
   ...PLUGIN_INSTALL_COMMAND_SPECS,
   ...PAIR_COMMAND_SPECS,
+  ...UNINSTALL_COMMAND_SPECS,
   ...TICKET_COMMAND_SPECS
 ]

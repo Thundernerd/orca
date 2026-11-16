@@ -1,4 +1,4 @@
-import type { Repo } from '../../shared/repo-types'
+import type { Repo } from '../../shared/repository/repo-types'
 import { discoverSkills } from '../skills/discovery/skill-native-discovery'
 
 /** The Claude skill that triages tickets in this project (user, repo or plugin), or null. */

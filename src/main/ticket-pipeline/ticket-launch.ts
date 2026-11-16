@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
-import { AgentLaunch } from '../../shared/rpc-contract/agent-launch-params'
+import { AgentLaunch } from '../../shared/rpc-contract/agent-launch/agent-launch-params'
 import { renderTicketBrief } from '../../shared/ticket-pipeline/ticket-brief'
 import {
   conventionalTypeForTicket,

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { AgentLaunch } from '../../shared/rpc-contract/agent-launch-params'
+import { AgentLaunch } from '../../shared/rpc-contract/agent-launch/agent-launch-params'
 import { renderTicketTriageBrief } from '../../shared/ticket-pipeline/ticket-triage-brief'
 import type { RpcContext } from '../runtime/rpc/core'
 import { launchAgentOnHost } from '../runtime/rpc/methods/agent-launch/agent-launch'

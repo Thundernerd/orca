@@ -1,5 +1,5 @@
 import type { OverviewTicketCounts } from './overview-ticket-survey'
-import type { ExecutionHostId } from '../execution-host'
+import type { ExecutionHostId } from '../execution-host/execution-host'
 
 export type OverviewAttentionKind = 'agent-waiting' | 'ci-failing' | 'pr-ready' | 'flagged'
 export type OverviewAgentState = 'blocked' | 'waiting' | 'working' | 'done'

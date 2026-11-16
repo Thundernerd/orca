@@ -3,6 +3,7 @@ import type { TicketItem } from '../../shared/ticket-pipeline/ticket-types'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import { getTicketItemStore } from './ticket-item-store'
 import { surveyTicketsWithSource } from './ticket-survey'
+import { foundPR } from './ticket-pr-lookup'
 
 const SCAN_LIMIT = 10_000
 
@@ -30,11 +31,13 @@ export async function adoptUntrackedTicketWorkspaces(
     if (!branch || !branch.split('/').some((part) => part.startsWith(`${row.ticket.slugId}-`))) {
       continue
     }
-    const outcome = await runtime
-      .getRepoPRForBranch(`id:${parent.repoId}`, branch, null, null, false, null, 'watch')
-      .catch(() => null)
+    const pr = foundPR(
+      await runtime
+        .getRepoPRForBranch(`id:${parent.repoId}`, branch, null, null, false, null, 'watch')
+        .catch(() => null)
+    )
     // Only an open PR belongs in the queue; drafts and finished PRs stay out.
-    if (outcome?.kind !== 'found' || outcome.pr.state !== 'open') {
+    if (pr?.state !== 'open') {
       continue
     }
     const now = Date.now()
@@ -50,8 +53,8 @@ export async function adoptUntrackedTicketWorkspaces(
       issueNumber: row.ticket.issueNumber,
       branch,
       stage: 'in-review',
-      reviewNumber: outcome.pr.number,
-      reviewUrl: outcome.pr.url,
+      reviewNumber: pr.number,
+      reviewUrl: pr.url,
       createdAt: now,
       updatedAt: now
     }

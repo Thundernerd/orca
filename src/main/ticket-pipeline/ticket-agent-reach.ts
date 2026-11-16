@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { isOrcaSessionId } from '../../shared/orca-session-address'
+import { isOrcaSessionId } from '../../shared/agent-session/identity/orca-session-address'
 import type { TicketItem } from '../../shared/ticket-pipeline/ticket-types'
 import { getStructuredAgentSessionHost } from '../native-chat/agent-session-wire/host/structured-agent-session-registry'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'

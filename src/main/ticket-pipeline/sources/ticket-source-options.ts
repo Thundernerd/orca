@@ -1,6 +1,6 @@
 import type { JiraProject } from '../../../shared/jira/jira-types'
 import type { LinearTeam } from '../../../shared/linear/workspace-types'
-import type { Repo } from '../../../shared/repo-types'
+import type { Repo } from '../../../shared/repository/repo-types'
 import type { TicketSourceOption } from '../../../shared/ticket-pipeline/ticket-types'
 import { listProjects } from '../../jira/jira-project-queries'
 import { listTeams } from '../../linear/teams/linear-team-queries'

@@ -1,14 +1,14 @@
 import type { AppState } from '@/store/types'
 import { selectLiveAgentStatusEntriesForWorktree } from '@/components/sidebar/workspace-card/activity/worktree-agent-row-selectors'
-import { readWorkspaceReviewPR } from '../../../../shared/sidebar-list/workspace-review-facts'
+import { readWorkspaceReviewPR } from '../../../../shared/sidebar-list/feed-facts/workspace-review-facts'
 import {
   getExecutionHostLabel,
   getRepoExecutionHostId,
   LOCAL_EXECUTION_HOST_ID,
   normalizeExecutionHostId,
   type ExecutionHostId
-} from '../../../../shared/execution-host'
-import { folderWorkspaceKey } from '../../../../shared/workspace-scope'
+} from '../../../../shared/execution-host/execution-host'
+import { folderWorkspaceKey } from '../../../../shared/workspace/identity/workspace-scope'
 import { getFolderWorkspaceHostId } from '../../../../shared/folder-workspaces/folder-workspace-host-id'
 import type { AgentStatusEntry } from '../../../../shared/agent-status/contracts/agent-status-types'
 import type { PRInfo } from '../../../../shared/github/pull-requests/pull-request-types'
@@ -31,7 +31,6 @@ export type OverviewStoreSlice = Pick<
   | 'prCache'
   | 'agentStatusByPaneKey'
   | 'migrationUnsupportedByPtyId'
-  | 'retainedAgentsByPaneKey'
   | 'tabsByWorktree'
   | 'unifiedTabsByWorktree'
 >
@@ -47,7 +46,6 @@ export function selectOverviewStoreSlice(state: AppState): OverviewStoreSlice {
     prCache: state.prCache,
     agentStatusByPaneKey: state.agentStatusByPaneKey,
     migrationUnsupportedByPtyId: state.migrationUnsupportedByPtyId,
-    retainedAgentsByPaneKey: state.retainedAgentsByPaneKey,
     tabsByWorktree: state.tabsByWorktree,
     unifiedTabsByWorktree: state.unifiedTabsByWorktree
   }

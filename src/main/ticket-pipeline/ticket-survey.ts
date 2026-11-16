@@ -1,10 +1,10 @@
-import { getRepoRoutingConnectionId } from '../../shared/execution-host'
-import { isFolderRepo } from '../../shared/repo-kind'
-import type { Repo } from '../../shared/repo-types'
+import { getRepoRoutingConnectionId } from '../../shared/execution-host/execution-host'
+import { isFolderRepo } from '../../shared/repository/repo-kind'
+import type { Repo } from '../../shared/repository/repo-types'
 import type {
   RuntimeWorktreeListResult,
   RuntimeWorktreeRecord
-} from '../../shared/runtime-worktree-contracts'
+} from '../../shared/worktree/catalog/runtime-worktree-contracts'
 import { classifyTickets } from '../../shared/ticket-pipeline/ticket-classification'
 import type {
   TicketSourceKind,

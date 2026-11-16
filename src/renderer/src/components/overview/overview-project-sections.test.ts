@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { ProjectGroup } from '../../../../shared/project-group-types'
+import type { ProjectGroup } from '../../../../shared/project/groups/project-group-types'
 import type { OverviewProject } from '../../../../shared/overview/overview-model-types'
 import { sectionOverviewProjects } from './overview-project-sections'
 

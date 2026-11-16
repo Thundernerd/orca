@@ -1,4 +1,4 @@
-import type { IssueSourcePreference } from '../../../shared/repo-types'
+import type { IssueSourcePreference } from '../../../shared/repository/repo-types'
 import { ghExecFileAsync } from '../../git/command-runner/hosted-cli/gh-exec-file'
 import { acquire, release } from '../execution/github-operation-slots'
 import {

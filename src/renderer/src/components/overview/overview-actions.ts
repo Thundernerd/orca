@@ -1,12 +1,12 @@
 import { useAppStore } from '@/store/index'
 import { translate } from '@/i18n/i18n'
 import { runtimeEnvironmentIdOrLocalUnlessTwin } from '@/lib/workspace/ownership/worktree-runtime-owner'
-import { LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host/execution-host'
 import { activateAndRevealWorkspaceWithOutcome } from '@/lib/workspace/activation/worktree-activation'
 import { activateWorktreeAgentPane } from '@/components/sidebar/workspace-card/activity/use-worktree-agent-activation'
 import { sendMessageToAgent } from '@/lib/agent-session/messaging/agent-message-send'
 import { parsePaneKey } from '../../../../shared/workspace-layout/stable-pane-id'
-import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
+import { parseWorkspaceKey } from '../../../../shared/workspace/identity/workspace-scope'
 import { agentsByUrgency, isWaitingAgent } from '../../../../shared/overview/overview-model'
 import type {
   OverviewAgentInput,

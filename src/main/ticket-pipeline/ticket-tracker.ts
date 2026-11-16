@@ -1,9 +1,9 @@
 import type { PRState } from '../../shared/github/pull-requests/pull-request-types'
-import type { PRRefreshOutcome } from '../../shared/github/pull-requests/refresh/pull-request-refresh-types'
+import type { PRSnapshotReply } from '../../shared/github/pull-requests/refresh/pull-request-refresh-types'
 import type {
   RuntimeWorktreeListResult,
   RuntimeWorktreePsResult
-} from '../../shared/runtime-worktree-contracts'
+} from '../../shared/worktree/catalog/runtime-worktree-contracts'
 import {
   reconcileTicketItem,
   type TicketItemObservation
@@ -14,6 +14,7 @@ import { getTicketItemStore, type TicketItemStore } from './ticket-item-store'
 import { cleanWorkspaces } from './workspace-clean'
 import { getMergeQueue } from './merge-queue'
 import { resolveTicketSource } from './sources/ticket-source-resolution'
+import { foundPR } from './ticket-pr-lookup'
 
 export type TicketTrackerRuntime = {
   getWorktreePs(limit: number): Promise<RuntimeWorktreePsResult>
@@ -26,7 +27,7 @@ export type TicketTrackerRuntime = {
     acceptMergedFallbackPR?: boolean,
     currentHeadOid?: string | null,
     reason?: 'watch'
-  ): Promise<PRRefreshOutcome>
+  ): Promise<PRSnapshotReply>
   updateManagedWorktreeMeta(
     worktreeSelector: string,
     updates: { workspaceStatus?: string; linkedPR?: number | null }
@@ -81,20 +82,20 @@ async function findReview(
     return { number: cached.number, url: cached.url, state: cached.state }
   }
   // The branch lookup shares the PR refresh budget; it only runs until the PR is linked and cached.
-  const outcome = await runtime
-    .getRepoPRForBranch(
-      `id:${item.repoId}`,
-      item.branch,
-      closed ? null : item.reviewNumber,
-      null,
-      true,
-      null,
-      'watch'
-    )
-    .catch(() => null)
-  return outcome?.kind === 'found'
-    ? { number: outcome.pr.number, url: outcome.pr.url, state: outcome.pr.state }
-    : null
+  const pr = foundPR(
+    await runtime
+      .getRepoPRForBranch(
+        `id:${item.repoId}`,
+        item.branch,
+        closed ? null : item.reviewNumber,
+        null,
+        true,
+        null,
+        'watch'
+      )
+      .catch(() => null)
+  )
+  return pr ? { number: pr.number, url: pr.url, state: pr.state } : null
 }
 
 /** Follows each launched ticket to its PR and merge, keeping the item and the workspace board in step. */

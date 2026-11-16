@@ -1,4 +1,4 @@
-import type { Repo } from '../../../shared/repo-types'
+import type { Repo } from '../../../shared/repository/repo-types'
 import type { TicketSourceKind } from '../../../shared/ticket-pipeline/ticket-types'
 import { gitExecFileAsync } from '../../git/command-runner/git-exec-file'
 import { getDefaultBaseRefAsync } from '../../git/refs/resolution/repo-default-base-ref'

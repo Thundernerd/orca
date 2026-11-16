@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAppStore } from '@/store/index'
 import { useTranslate } from '@/i18n/use-translate'
-import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
+import { parseWorkspaceKey } from '../../../../shared/workspace/identity/workspace-scope'
 import type { OverviewPrefs } from '../../../../shared/overview-prefs'
 import { useOverviewData } from './use-overview-data'
 import { useOverviewTicketSurveys } from './use-overview-ticket-surveys'
@@ -34,7 +34,7 @@ import { sectionOverviewProjects } from './overview-project-sections'
 import { tierOverviewProjects } from '../../../../shared/overview/overview-project-tiers'
 import { OverviewProjectTierList } from './OverviewProjectTierList'
 import { runWorktreeDelete } from '@/components/sidebar/workspace-actions/deletion/delete-worktree-flow'
-import { LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host/execution-host'
 
 const PR_REFRESH_MS = 2 * 60_000
 const CLOCK_MS = 30_000

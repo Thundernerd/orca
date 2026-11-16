@@ -1,4 +1,4 @@
-import type { Repo } from '../../../shared/repo-types'
+import type { Repo } from '../../../shared/repository/repo-types'
 import { createIssue } from '../../github/issues/issue-create'
 import { linkIssueBlockedBy } from '../../github/issues/issue-dependency-link'
 import { surveyOpenIssueTickets } from '../../github/issues/issue-dependency-survey'

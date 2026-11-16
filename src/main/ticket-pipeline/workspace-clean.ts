@@ -1,8 +1,8 @@
 import { access } from 'node:fs/promises'
 import { join } from 'node:path'
-import { getRepoRoutingConnectionId } from '../../shared/execution-host'
-import { isFolderRepo } from '../../shared/repo-kind'
-import type { RuntimeWorktreeRecord } from '../../shared/runtime-worktree-contracts'
+import { getRepoRoutingConnectionId } from '../../shared/execution-host/execution-host'
+import { isFolderRepo } from '../../shared/repository/repo-kind'
+import type { RuntimeWorktreeRecord } from '../../shared/worktree/catalog/runtime-worktree-contracts'
 import {
   decideWorkspaceClean,
   type WorkspaceCleanEvidence
@@ -19,6 +19,7 @@ import type { RpcContext } from '../runtime/rpc/core'
 import { removeWorktreeForRpc } from '../runtime/rpc/methods/workspaces/worktree-removal-rpc'
 import { getTicketItemStore } from './ticket-item-store'
 import { resolveTicketParentSelector, type TicketParentScope } from './ticket-parent-workspace'
+import { foundPR } from './ticket-pr-lookup'
 
 const SCAN_LIMIT = 10_000
 
@@ -80,17 +81,18 @@ async function gatherEvidence(
     return { evidence, reviewNumber: null }
   }
   const branch = child.branch.replace(/^refs\/heads\//, '')
-  const outcome = await runtime
-    .getRepoPRForBranch(`id:${child.repoId}`, branch, child.linkedPR, null, true, head, 'watch')
-    .catch(() => null)
-  if (outcome?.kind === 'found') {
-    const prHead = outcome.pr.headSha
+  const pr = foundPR(
+    await runtime
+      .getRepoPRForBranch(`id:${child.repoId}`, branch, child.linkedPR, null, true, head, 'watch')
+      .catch(() => null)
+  )
+  if (pr) {
     evidence.review = {
-      number: outcome.pr.number,
-      state: outcome.pr.state,
-      headContainedInReview: prHead ? await isAncestor(child.path, head, prHead) : false
+      number: pr.number,
+      state: pr.state,
+      headContainedInReview: pr.headSha ? await isAncestor(child.path, head, pr.headSha) : false
     }
-    return { evidence, reviewNumber: outcome.pr.number }
+    return { evidence, reviewNumber: pr.number }
   }
   return { evidence, reviewNumber: null }
 }

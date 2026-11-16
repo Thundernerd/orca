@@ -1,9 +1,9 @@
 import { useAppStore } from '@/store/index'
 import { translate } from '@/i18n/i18n'
 import { ipcOrRuntimeTargetForHostId } from '@/runtime/rpc/targets/runtime-client-target'
-import { getRepoExecutionHostId } from '../../../../shared/execution-host'
-import { isFolderRepo } from '../../../../shared/repo-kind'
-import type { RuntimeClientTarget } from '../../../../shared/runtime-client-target'
+import { getRepoExecutionHostId } from '../../../../shared/execution-host/execution-host'
+import { isFolderRepo } from '../../../../shared/repository/repo-kind'
+import type { RuntimeClientTarget } from '../../../../shared/remote-runtime/host-catalog/runtime-client-target'
 import { parseOverviewProjectId } from './overview-store-inputs'
 
 export type ProjectRoute = { target: RuntimeClientTarget; repo: string }

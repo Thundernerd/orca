@@ -19,7 +19,6 @@ const SLICE_KEYS: readonly (keyof OverviewStoreSlice)[] = [
   'prCache',
   'agentStatusByPaneKey',
   'migrationUnsupportedByPtyId',
-  'retainedAgentsByPaneKey',
   'tabsByWorktree',
   'unifiedTabsByWorktree'
 ]
