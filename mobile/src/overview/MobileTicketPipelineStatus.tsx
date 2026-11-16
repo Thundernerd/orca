@@ -2,7 +2,7 @@ import { Pressable, Text, View } from 'react-native'
 import { hasTicketPipelineStatus } from '../../../src/shared/ticket-pipeline/ticket-pipeline-status-presence'
 import { useMobileTranslation } from '../i18n/use-mobile-translation'
 import type { Translate } from '../i18n/mobile-i18n'
-import { formatTimeAgo } from '../worktree/agent-row-display'
+import { formatTimeAgo } from '../worktree/agent-lineage/agent-row-display'
 import type { MobileTicketPipelineStatus as Status } from './overview-ticket-operations'
 import { overviewStyles as styles } from './mobile-overview-styles'
 

@@ -1,5 +1,8 @@
 // Maps the host's `worktree.ps` rows to the shared overview model's inputs.
-import { LOCAL_EXECUTION_HOST_ID, type ExecutionHostId } from '../../../src/shared/execution-host'
+import {
+  LOCAL_EXECUTION_HOST_ID,
+  type ExecutionHostId
+} from '../../../src/shared/execution-host/execution-host'
 import type {
   OverviewAgentInput,
   OverviewAgentState,
@@ -8,7 +11,7 @@ import type {
   OverviewRepoInput,
   OverviewWorktreeInput
 } from '../../../src/shared/overview/overview-model-types'
-import type { Worktree } from '../worktree/workspace-list-types'
+import type { Worktree } from '../worktree/workspace-list/workspace-list-types'
 
 const AGENT_STATES: readonly OverviewAgentState[] = ['working', 'blocked', 'waiting', 'done']
 

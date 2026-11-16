@@ -7,7 +7,7 @@ import type {
 import { colors } from '../theme/mobile-theme'
 import { useMobileColorScheme } from '../theme/use-mobile-color-scheme'
 import { useMobileTranslation } from '../i18n/use-mobile-translation'
-import { formatTimeAgo } from '../worktree/agent-row-display'
+import { formatTimeAgo } from '../worktree/agent-lineage/agent-row-display'
 import { overviewStyles as styles } from './mobile-overview-styles'
 
 function kindTone(kind: OverviewAttentionKind) {

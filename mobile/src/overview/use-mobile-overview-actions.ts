@@ -5,18 +5,18 @@ import type { RpcClient } from '../transport/rpc/rpc-client-contract'
 import type { ConnectionState } from '../transport/connection/connection-state'
 import { interpretOrThrowRefusalMessage } from '../transport/rpc/rpc-refusal-message'
 import { useOpenMobileSession } from '../session/use-open-mobile-session'
-import { healMobileNativeChatStaleInput } from '../session/native-chat/composer/mobile-native-chat-stale-input'
+import { healMobileNativeChatStaleInput } from '../session/native-chat/composer/delivery/mobile-native-chat-stale-input'
 import {
   reviewTerminalListRead,
   reviewTerminalSendRun
-} from '../source-control/review/mobile-review-terminal-operations'
-import { hostWorktreeCatalogKey } from '../host-screen/host-list-queries'
+} from '../source-control/review/terminal-delivery/mobile-review-terminal-operations'
+import { hostWorktreeCatalogKey } from '../host-screen/catalog/host-list-queries'
 import { agentsByUrgency, isWaitingAgent } from '../../../src/shared/overview/overview-model'
 import type {
   OverviewAgentInput,
   OverviewWorktreeInput
 } from '../../../src/shared/overview/overview-model-types'
-import { parseWorkspaceKey } from '../../../src/shared/workspace-scope'
+import { parseWorkspaceKey } from '../../../src/shared/workspace/identity/workspace-scope'
 import { worktreeMarkReadWrite } from './overview-operations'
 
 export type MobileOverviewResult = { ok: boolean; message: string }

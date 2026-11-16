@@ -5,7 +5,7 @@ import { useLocalSearchParams } from 'expo-router'
 import { CheckCheck, ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react-native'
 import { NavBar } from '../components/nav-bar/NavBar'
 import { NavBarButton } from '../components/nav-bar/NavBarButton'
-import { TextInputModal } from '../components/TextInputModal'
+import { TextInputModal } from '../components/sheets/TextInputModal'
 import { useHostClient } from '../transport/connection/host-client-hooks'
 import { useRouteHandoff } from '../navigation/route-handoff'
 import { useHostQuery } from '../query/host-query'
@@ -13,13 +13,13 @@ import {
   HOST_LIST_TARGET,
   NO_HOST_LIST_INPUT,
   hostWorktreeCatalogQuery
-} from '../host-screen/host-list-queries'
+} from '../host-screen/catalog/host-list-queries'
 import { useNow } from '../hooks/use-now'
 import { colors } from '../theme/mobile-theme'
 import { useMobileColorScheme } from '../theme/use-mobile-color-scheme'
 import { useMobileTranslation } from '../i18n/use-mobile-translation'
 import { getMobileUiLocale } from '../i18n/mobile-i18n'
-import { getExecutionHostLabel } from '../../../src/shared/execution-host'
+import { getExecutionHostLabel } from '../../../src/shared/execution-host/execution-host'
 import { buildOverviewSnapshot } from '../../../src/shared/overview/overview-model'
 import { ticketProjectIds } from '../../../src/shared/overview/overview-ticket-projects'
 import {
@@ -32,7 +32,7 @@ import type {
   OverviewSort,
   OverviewWorktreeInput
 } from '../../../src/shared/overview/overview-model-types'
-import { MobileSegmentedControl } from '../components/MobileSegmentedControl'
+import { MobileSegmentedControl } from '../components/controls/MobileSegmentedControl'
 import { overviewInputsFromRows } from './overview-ps-inputs'
 import {
   loadNeedsYouFolded,

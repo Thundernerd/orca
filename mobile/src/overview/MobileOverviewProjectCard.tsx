@@ -4,12 +4,12 @@ import type {
   OverviewProject,
   OverviewWorkspaceRow
 } from '../../../src/shared/overview/overview-model-types'
-import { AgentStateDot } from '../components/AgentStateDot'
+import { AgentStateDot } from '../agents/presentation/AgentStateDot'
 import { colors } from '../theme/mobile-theme'
 import { useMobileColorScheme } from '../theme/use-mobile-color-scheme'
 import { useMobileTranslation } from '../i18n/use-mobile-translation'
 import type { Translate } from '../i18n/mobile-i18n'
-import { formatTimeAgo } from '../worktree/agent-row-display'
+import { formatTimeAgo } from '../worktree/agent-lineage/agent-row-display'
 import type { MobileTicketPipelineStatus as TicketStatus } from './overview-ticket-operations'
 import type { MobileTicketSheetMode } from './MobileTicketSheet'
 import { MobileTicketPipelineStatus } from './MobileTicketPipelineStatus'
