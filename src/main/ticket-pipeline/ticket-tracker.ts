@@ -42,8 +42,15 @@ function isPRState(value: string): value is PRState {
   return PR_STATES.some((state) => state === value)
 }
 
-function isActive(item: TicketItem): boolean {
-  return item.stage !== 'merged' && item.stage !== 'closed' && item.stage !== 'cleaned'
+// How long a closed ticket stays watched for a new PR on its branch.
+const CLOSED_WATCH_MS = 7 * 24 * 60 * 60 * 1000
+
+/** Followed each tick: still in progress, or closed recently enough that a new PR may reopen it. */
+function isActive(item: TicketItem, now: number): boolean {
+  if (item.stage === 'closed') {
+    return now - item.updatedAt < CLOSED_WATCH_MS
+  }
+  return item.stage !== 'merged' && item.stage !== 'cleaned'
 }
 
 /** The workspace status a stage puts on the board; null leaves the user's choice alone. */
@@ -68,7 +75,9 @@ async function findReview(
 ): Promise<TicketItemObservation['review']> {
   // A PR the queue just merged can stay cached as open, which would hold the queue on it.
   const queueMerged = item.queue?.status === 'merging'
-  if (cached?.url && isPRState(cached.state) && !queueMerged) {
+  // A closed PR may have been replaced: look the branch up afresh, where an open PR wins.
+  const closed = cached?.state === 'closed' || item.stage === 'closed'
+  if (cached?.url && isPRState(cached.state) && !queueMerged && !closed) {
     return { number: cached.number, url: cached.url, state: cached.state }
   }
   // The branch lookup shares the PR refresh budget; it only runs until the PR is linked and cached.
@@ -76,7 +85,7 @@ async function findReview(
     .getRepoPRForBranch(
       `id:${item.repoId}`,
       item.branch,
-      item.reviewNumber,
+      closed ? null : item.reviewNumber,
       null,
       true,
       null,
@@ -153,7 +162,8 @@ export class TicketTracker {
   /** One pass over the active items; false when none are left, so the timer stops until the next launch. */
   async tick(): Promise<boolean> {
     const items = await this.store.list()
-    const active = items.filter(isActive)
+    const now = Date.now()
+    const active = items.filter((item) => isActive(item, now))
     const cleanable = await this.awaitingAutoClean(items)
     if (active.length === 0 && cleanable.length === 0) {
       return false
@@ -164,7 +174,11 @@ export class TicketTracker {
     ])
     const existing = new Set(listed.worktrees.map((w) => w.id))
     const summaries = new Map(ps.worktrees.map((w) => [w.worktreeId, w]))
-    for (const item of active) {
+    // A closed ticket can only reopen while its workspace is still there to push from.
+    const followed = active.filter(
+      (item) => item.stage !== 'closed' || existing.has(item.childWorktreeId)
+    )
+    for (const item of followed) {
       const summary = summaries.get(item.childWorktreeId)
       const observed: TicketItemObservation = {
         workspaceExists: existing.has(item.childWorktreeId),
@@ -200,7 +214,7 @@ export class TicketTracker {
         console.warn('[tickets] auto-clean failed', error)
       )
     }
-    return true
+    return followed.length > 0 || cleanable.length > 0
   }
 }
 

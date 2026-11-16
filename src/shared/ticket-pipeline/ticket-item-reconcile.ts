@@ -12,14 +12,20 @@ export type TicketItemObservation = {
 
 export type TicketItemUpdate = Pick<TicketItem, 'stage' | 'reviewNumber' | 'reviewUrl'>
 
-/** One reconciliation step: the review decides, then the agent's attention. Null when nothing changed. */
+/** One reconciliation step: the review decides, then the agent's attention. Null when nothing changed.
+ *  Merged and cleaned are final; closed reopens when a new PR opens on the branch. */
 export function reconcileTicketItem(
   item: TicketItem,
   observed: TicketItemObservation
 ): TicketItemUpdate | null {
   let stage: TicketItemStage
-  if (item.stage === 'merged' || item.stage === 'closed' || item.stage === 'cleaned') {
+  if (item.stage === 'merged' || item.stage === 'cleaned') {
     stage = item.stage
+  } else if (item.stage === 'closed') {
+    // A closed PR is not the end: a new PR on the same branch brings the ticket back.
+    const state = observed.workspaceExists ? observed.review?.state : undefined
+    stage =
+      state === 'open' || state === 'draft' ? 'in-review' : state === 'merged' ? 'merged' : 'closed'
   } else if (observed.review?.state === 'merged') {
     stage = 'merged'
   } else if (observed.review?.state === 'closed') {

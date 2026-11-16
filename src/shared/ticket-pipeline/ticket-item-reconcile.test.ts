@@ -51,10 +51,29 @@ describe('reconcileTicketItem', () => {
     )
   })
 
-  it('closes an item whose workspace is gone, and never reopens a finished one', () => {
+  it('closes an item whose workspace is gone, and never reopens a merged one', () => {
     expect(reconcileTicketItem(item, seen({ workspaceExists: false }))?.stage).toBe('closed')
     expect(
       reconcileTicketItem({ ...item, stage: 'merged' }, seen({ agentWaiting: true }))
     ).toBeNull()
+  })
+
+  it('reopens a closed item when a new PR opens on its branch, while its workspace exists', () => {
+    const closed = { ...item, stage: 'closed' as const, reviewNumber: 40, reviewUrl: 'x/40' }
+    const fresh = { number: 52, url: 'x/52', state: 'open' as const }
+    expect(reconcileTicketItem(closed, seen({ review: fresh }))).toEqual({
+      stage: 'in-review',
+      reviewNumber: 52,
+      reviewUrl: 'x/52'
+    })
+    expect(
+      reconcileTicketItem(closed, seen({ review: { ...fresh, state: 'merged' } }))?.stage
+    ).toBe('merged')
+    expect(
+      reconcileTicketItem(closed, seen({ review: { number: 40, url: 'x/40', state: 'closed' } }))
+    ).toBeNull()
+    expect(
+      reconcileTicketItem(closed, seen({ workspaceExists: false, review: fresh }))?.stage
+    ).toBe('closed')
   })
 })
