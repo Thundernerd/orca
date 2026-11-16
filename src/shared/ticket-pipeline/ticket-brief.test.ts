@@ -19,56 +19,6 @@ function brief(
   return renderTicketBrief(input)
 }
 
-function findingsSection(text: string): string[] {
-  const lines = text.split('\n')
-  const start = lines.findIndex((line) => line.startsWith('- Findings:'))
-  const end = lines.findIndex((line, index) => index > start && line.startsWith('- '))
-  return lines.slice(start + 1, end)
-}
-
-describe.each([true, false])('renderTicketBrief with findingsPublish %s', (findingsPublish) => {
-  const text = brief(findingsPublish)
-
-  it('triages each finding: done, ticketed, fix here, file, then ask', () => {
-    expect(findingsSection(text).map((line) => line.split(':')[0].trim())).toEqual([
-      '- Already done',
-      '- Already ticketed',
-      '- Related to this ticket and small',
-      '- Bigger, or unrelated',
-      '- Unsure which'
-    ])
-  })
-
-  it('checks the fetched base branch before anything is filed', () => {
-    const [done] = findingsSection(text)
-    expect(done).toContain('git fetch origin')
-    expect(done).toContain('origin/develop')
-  })
-
-  it('searches the open tickets through the survey', () => {
-    expect(findingsSection(text)[1]).toContain('orca tickets survey --json')
-  })
-
-  it('reports every finding with its outcome', () => {
-    const report = text.split('\n').find((line) => line.startsWith('- Once the PR is up, report:'))
-    for (const outcome of ['done already', 'extended', 'fixed', 'filed']) {
-      expect(report).toContain(outcome)
-    }
-  })
-})
-
-describe('renderTicketBrief ticket sources', () => {
-  it('comments in the tracker when findings publish', () => {
-    expect(findingsSection(brief(true))[1]).toContain('comment on it in its tracker')
-  })
-
-  it('searches other branches and notes the ticket file when findings are files', () => {
-    const [, ticketed] = findingsSection(brief(false))
-    expect(ticketed).toContain('docs/tickets')
-    expect(ticketed).toContain('git branch -r')
-  })
-})
-
 describe('renderTicketBrief proof and ticket record', () => {
   const lines = brief(true).split('\n')
   const index = (prefix: string) => lines.findIndex((line) => line.startsWith(prefix))

@@ -8,6 +8,10 @@ export function isOwnedByUser(body: string): boolean {
 const TRIAGE_WORD = /(^|[^a-z])(un)?triage(d?)([^a-z]|$)/i
 const TRIAGE_LINE = /^\s*(?:status:\s*)?(?:needs[ -]?)?triage\s*$/im
 
+/** What Corka marks a filed finding with, so it waits for triage before anyone launches it. */
+export const TRIAGE_BODY_LINE = 'Status: needs triage'
+export const TRIAGE_LABEL = 'needs-triage'
+
 /** A ticket waiting for someone to decide what it is: a triage label, state or body line. */
 export function needsTriage(input: {
   labels: readonly string[]

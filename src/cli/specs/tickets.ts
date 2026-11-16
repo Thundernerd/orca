@@ -108,8 +108,30 @@ export const TICKET_COMMAND_SPECS: CommandSpec[] = [
     examples: ['orca tickets draft submit --batch 0f3c… --drafts-file drafts.json']
   },
   {
+    path: ['tickets', 'finding'],
+    summary: 'Hand over a finding outside the ticket being implemented; an agent checks it first',
+    usage:
+      'orca tickets finding --of <ticket> --title <text> (--body <text> | --body-file <path|->) [--blocked-by <id>...] [--worktree <selector>] [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'of', 'title', 'body', 'body-file', 'blocked-by', 'worktree'],
+    repeatableFlags: ['blocked-by'],
+    notes: [
+      'Nothing is filed yet: Corka starts an agent in the parent workspace that checks the default branch and the open tickets, files the finding only if it is new, and links its blockers.',
+      '--of must name a ticket Corka launched in this project.'
+    ],
+    examples: [
+      'orca tickets finding --of "#12" --title "Login form drops focus" --body-file finding.md'
+    ]
+  },
+  {
+    path: ['tickets', 'link'],
+    summary: 'Mark one existing ticket as blocked by another in the tracker',
+    usage: 'orca tickets link --ticket <id> --blocked-by <id> [--worktree <selector>] [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'ticket', 'blocked-by', 'worktree'],
+    examples: ['orca tickets link --ticket "#14" --blocked-by "#20"']
+  },
+  {
     path: ['tickets', 'create'],
-    summary: 'Publish a ticket at once, such as a finding outside the ticket being implemented',
+    summary: 'Publish a ticket at once, such as a finding an agent checked is new',
     usage:
       'orca tickets create --title <text> (--body <text> | --body-file <path|->) [--finding-of <ticket>] [--blocked-by <#n>...] [--label <name>...] [--worktree <selector>] [--json]',
     allowedFlags: [
@@ -124,7 +146,7 @@ export const TICKET_COMMAND_SPECS: CommandSpec[] = [
     ],
     repeatableFlags: ['blocked-by', 'label'],
     notes: [
-      'With --finding-of, the body opens with "Found while implementing <ticket>." and the finding is recorded on that ticket.',
+      'With --finding-of, the ticket is marked for triage (a "Status: needs triage" line and a needs-triage label), the body opens with "Found while implementing <ticket>.", and the finding is recorded on that ticket, which must be one Corka launched in this project.',
       'The body gets a Blocked by section from --blocked-by; labels that do not exist in the repo are dropped.'
     ],
     examples: [

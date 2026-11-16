@@ -9,6 +9,8 @@ import {
   draftIssueBody,
   orderDraftsForPublish
 } from '../../shared/ticket-pipeline/ticket-draft-order'
+import { TRIAGE_BODY_LINE, TRIAGE_LABEL } from '../../shared/ticket-pipeline/ticket-body-markers'
+import type { TicketItem } from '../../shared/ticket-pipeline/ticket-types'
 import type {
   TicketDraft,
   TicketDraftBatch,
@@ -125,17 +127,32 @@ export async function discardTicketDrafts(batchId: string): Promise<TicketDraftB
 }
 
 /** The project's source, if its tickets can be published (ticket files are committed instead). */
-async function publishingSource(repo: Repo): Promise<PublishingSource> {
+export async function resolvePublishingSource(
+  repo: Repo
+): Promise<{ source: PublishingSource; baseRef: string }> {
   requirePublishableRepo(repo)
-  const { source } = await resolveTicketSource(repo)
+  const { source, baseRef } = await resolveTicketSource(repo)
   const { create, linkBlocker } = source
   if (!create || !linkBlocker) {
     throw new Error('This project keeps tickets as files in the repo; commit them there instead.')
   }
-  return { create, linkBlocker }
+  return { source: { create, linkBlocker }, baseRef }
 }
 
 type PublishingSource = Required<Pick<TicketSource, 'create' | 'linkBlocker'>>
+
+/** The launched ticket a finding came from; a finding never files against an unknown ticket. */
+export async function findFindingOrigin(repoId: string, ticketId: string): Promise<TicketItem> {
+  const origin = (await getTicketItemStore().list()).find(
+    (item) => item.repoId === repoId && item.ticketId === ticketId
+  )
+  if (!origin) {
+    throw new Error(
+      `No ticket ${ticketId} was launched in this project; name the ticket you are implementing.`
+    )
+  }
+  return origin
+}
 
 async function publishTicket(
   source: PublishingSource,
@@ -170,7 +187,7 @@ export async function publishTicketDrafts(
   if (!ordered.ok) {
     throw new Error(ordered.error)
   }
-  const source = await publishingSource(await runtime.showRepo(`id:${batch.repoId}`))
+  const { source } = await resolvePublishingSource(await runtime.showRepo(`id:${batch.repoId}`))
   const ids = new Map(batch.published.map((p) => [p.key, p.id]))
   const titles = new Map(drafts.map((d) => [d.key, d.title.trim()]))
   batch = await store.putDraftBatch({ ...batch, drafts })
@@ -196,7 +213,7 @@ export async function publishTicketDrafts(
   return store.putDraftBatch({ ...batch, status: 'published', error: undefined })
 }
 
-/** An implementing agent's finding: published at once, linked to the ticket it came from. */
+/** A finding a finding agent checked: published at once, marked for triage, linked to its ticket. */
 export async function createFindingTicket(
   runtime: Runtime,
   scope: TicketParentScope,
@@ -212,13 +229,15 @@ export async function createFindingTicket(
     await resolveTicketParentSelector(runtime, scope)
   )
   const repo = await runtime.showRepo(worktree.repoId)
+  const origin = input.findingOf ? await findFindingOrigin(repo.id, input.findingOf) : null
   const draft: TicketDraft = {
     key: 'finding',
     title: input.title,
+    // The body line holds it back on trackers that drop labels they do not have; Jira reads the label.
     body: input.findingOf
-      ? `Found while implementing ${input.findingOf}.\n\n${input.body}`
+      ? `Found while implementing ${input.findingOf}.\n\n${TRIAGE_BODY_LINE}\n\n${input.body}`
       : input.body,
-    labels: input.labels,
+    labels: input.findingOf ? [...new Set([...input.labels, TRIAGE_LABEL])] : input.labels,
     blockedBy: input.blockedBy,
     covers: []
   }
@@ -226,14 +245,34 @@ export async function createFindingTicket(
   if (!checked.ok) {
     throw new Error(checked.error)
   }
-  const created = await publishTicket(await publishingSource(repo), draft, new Map(), new Map())
+  const { source } = await resolvePublishingSource(repo)
+  const created = await publishTicket(source, draft, new Map(), new Map())
   const finding: TicketFinding = { id: created.id, url: created.url, title: draft.title.trim() }
-  const store = getTicketItemStore()
-  const origin = (await store.list()).find(
-    (item) => item.repoId === repo.id && item.ticketId === input.findingOf
-  )
   if (origin) {
-    await store.update(origin.id, { findings: [...(origin.findings ?? []), finding] })
+    await getTicketItemStore().update(origin.id, {
+      findings: [...(origin.findings ?? []), finding]
+    })
   }
   return finding
+}
+
+/** Records "ticket is blocked by blocker" in the tracker; a finding agent's blocker pass. */
+export async function linkTicketBlocker(
+  runtime: Runtime,
+  scope: TicketParentScope,
+  input: { ticketId: string; blockerId: string }
+): Promise<{ ticketId: string; blockerId: string }> {
+  if (input.ticketId === input.blockerId) {
+    throw new Error('A ticket cannot block itself.')
+  }
+  const worktree = await runtime.showManagedWorktree(
+    await resolveTicketParentSelector(runtime, scope)
+  )
+  const { source } = await resolvePublishingSource(await runtime.showRepo(worktree.repoId))
+  if (!(await source.linkBlocker(input.ticketId, input.blockerId))) {
+    throw new Error(
+      `The tracker refused to mark ${input.ticketId} as blocked by ${input.blockerId}.`
+    )
+  }
+  return input
 }

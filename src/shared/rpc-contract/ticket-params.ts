@@ -149,7 +149,23 @@ export const TicketDraftPublish = z.object({
 
 export const TicketDraftDiscard = z.object({ batchId: z.string().min(1).max(200) })
 
-/** A finding an implementing agent publishes at once. */
+/** A finding an implementing agent hands over; an agent checks it before anything is filed. */
+export const TicketFindingCheck = z.object({
+  worktree: Selector,
+  findingOf: z.string().trim().min(1).max(200),
+  title: z.string().trim().min(1).max(256),
+  body: z.string().max(60_000),
+  blockedBy: z.array(TicketRef).max(20).default([])
+})
+
+/** Marks one existing ticket as blocked by another in the tracker. */
+export const TicketLink = z.object({
+  worktree: Selector,
+  ticketId: TicketRef,
+  blockerId: TicketRef
+})
+
+/** A ticket a finding agent publishes once it has checked the finding is new. */
 export const TicketCreate = z.object({
   worktree: Selector,
   title: z.string().trim().min(1).max(256),

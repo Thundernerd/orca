@@ -7,8 +7,10 @@ import {
   TicketDraftPublish,
   TicketDraftStart,
   TicketDraftSubmit,
+  TicketFindingCheck,
   TicketItemsList,
   TicketLaunch,
+  TicketLink,
   TicketMerge,
   TicketQueue,
   TicketQueueSelect,
@@ -20,6 +22,7 @@ import {
 } from '../../../../../shared/rpc-contract/ticket-params'
 import { getTicketItemStore } from '../../../../ticket-pipeline/ticket-item-store'
 import { adoptUntrackedTicketWorkspaces } from '../../../../ticket-pipeline/ticket-adoption'
+import { startFindingCheck } from '../../../../ticket-pipeline/ticket-finding-check'
 import { launchTickets } from '../../../../ticket-pipeline/ticket-launch'
 import { surveyTickets } from '../../../../ticket-pipeline/ticket-survey'
 import { startTicketTracker } from '../../../../ticket-pipeline/ticket-tracker'
@@ -31,6 +34,7 @@ import { listTicketSourceOptions } from '../../../../ticket-pipeline/sources/tic
 import {
   createFindingTicket,
   discardTicketDrafts,
+  linkTicketBlocker,
   listTicketDraftBatches,
   publishTicketDrafts,
   startTicketDrafting,
@@ -255,6 +259,29 @@ export const TICKET_METHODS = [
           blockedBy: params.blockedBy,
           ...(params.findingOf ? { findingOf: params.findingOf } : {})
         }
+      )
+  }),
+  defineMethod({
+    name: 'tickets.finding',
+    permission: 'workspace',
+    params: TicketFindingCheck,
+    handler: async (params, context) =>
+      startFindingCheck(context, params.worktree, {
+        findingOf: params.findingOf,
+        title: params.title,
+        body: params.body,
+        blockedBy: params.blockedBy
+      })
+  }),
+  defineMethod({
+    name: 'tickets.link',
+    permission: 'workspace',
+    params: TicketLink,
+    handler: async (params, { runtime }) =>
+      linkTicketBlocker(
+        runtime,
+        { worktree: params.worktree },
+        { ticketId: params.ticketId, blockerId: params.blockerId }
       )
   }),
   defineMethod({

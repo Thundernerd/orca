@@ -261,6 +261,28 @@ export const TICKET_HANDLERS: Record<string, CommandHandler> = {
     })
     printResult(result, json, (finding) => `${finding.id} ${finding.title}\n${finding.url}`)
   },
+  'tickets finding': async ({ flags, client, cwd, json }) => {
+    const result = await client.call<{ findingOf: string; title: string }>('tickets.finding', {
+      worktree: await currentWorktree(flags, cwd, client),
+      findingOf: getRequiredStringFlag(flags, 'of'),
+      title: getRequiredStringFlag(flags, 'title'),
+      body: (await readTextOrFileFlag(flags, cwd, 'body', true)) ?? '',
+      blockedBy: getRepeatedStringFlag(flags, 'blocked-by')
+    })
+    printResult(
+      result,
+      json,
+      (r) => `Corka started an agent to check "${r.title}" before filing it.`
+    )
+  },
+  'tickets link': async ({ flags, client, cwd, json }) => {
+    const result = await client.call<{ ticketId: string; blockerId: string }>('tickets.link', {
+      worktree: await currentWorktree(flags, cwd, client),
+      ticketId: getRequiredStringFlag(flags, 'ticket'),
+      blockerId: getRequiredStringFlag(flags, 'blocked-by')
+    })
+    printResult(result, json, (r) => `${r.ticketId} is now blocked by ${r.blockerId}.`)
+  },
   'tickets items': async ({ flags, client, json }) => {
     const repo = getOptionalStringFlag(flags, 'repo')
     const result = await client.call<{ items: TicketItem[] }>('tickets.items', repo ? { repo } : {})
