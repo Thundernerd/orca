@@ -20394,7 +20394,7 @@
           "button": "Launch tickets",
           "title": "Launch ready tickets in {{project}}",
           "loading": "Checking which tickets are ready…",
-          "none": "No ticket is ready: {{count}} are blocked, launched, claimed or yours.",
+          "none": "No ticket is ready: {{count}} are blocked, waiting for triage, launched, claimed or yours.",
           "type": "Commit type",
           "hint": "Each gets its own workspace and a Claude agent that works until its PR is up.",
           "launch": "Launch {{count}}",
@@ -20503,9 +20503,6 @@
         "triage": {
           "titleSkill": "Needs triage ({{count}}): /{{skill}} decides what each one is first",
           "title": "Needs triage ({{count}}): not launched until you decide",
-          "run": "Triage",
-          "decide": "Decide…",
-          "question": "No triage skill is installed. Launch {{ticket}} as it is, or leave it for later?",
           "leave": "Leave it",
           "launch": "Launch anyway",
           "started": "Triaging {{ticket}} with /{{skill}}.",

@@ -2,7 +2,7 @@ name: Corka Desktop Release
 
 # Corka (this fork's build of Orca): tag `v<major>.<minor>.<upstream patch × 100 + build>` on `mine`,
 # e.g. upstream 1.4.214 + build 1 → v1.4.21401. Builds macOS arm64 and Linux x64 and publishes one
-# GitHub Release the in-app updater reads (APP_RELEASE_REPO in src/shared/release-channel.ts).
+# GitHub Release the in-app updater reads (APP_RELEASE_REPO in src/shared/updater/release-channel.ts).
 #
 # The macOS job runs on a self-hosted Apple-silicon Mac registered to this repo with the label
 # `corka-release-mac`; start its runner (`./run.sh` in the runner folder) before tagging. That Mac
@@ -105,7 +105,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/Library/Caches/orca-node-runtime
-          key: orca-node-runtime-mac-${{ hashFiles('src/shared/node-runtime-pin.ts') }}
+          key: orca-node-runtime-mac-${{ hashFiles('src/shared/node-runtime/node-runtime-pin.ts') }}
 
       - name: Cache electron-builder downloads
         uses: actions/cache@v5

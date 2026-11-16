@@ -29,7 +29,7 @@ Pushing a tag on `mine` starts the build. The workflow refuses a tag that doesn'
 
 ## Updates
 
-- **Desktop:** reads releases from `APP_RELEASE_REPO` (`src/shared/release-channel.ts`).
+- **Desktop:** reads releases from `APP_RELEASE_REPO` (`src/shared/updater/release-channel.ts`).
   - **macOS:** each build is signed with the same self-signed certificate, so updates install in place. The first install needs right-click → Open, because Gatekeeper doesn't know the certificate.
   - **Linux:** the AppImage updates itself. A `.deb` install is told about new versions only.
 - **Phone:** checks `CORKA_RELEASE_REPO` (`mobile/src/app-update/corka-release-repo.ts`) and opens the release page; you install the APK from there.
