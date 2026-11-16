@@ -20301,7 +20301,11 @@
           "question": "No triage skill is installed. Launch {{ticket}} as it is, or leave it for later?",
           "leave": "Leave it",
           "launch": "Launch anyway",
-          "started": "Triaging {{ticket}} with /{{skill}}."
+          "started": "Triaging {{ticket}} with /{{skill}}.",
+          "selectAll": "Select every ticket to triage",
+          "questionMany": "No triage skill is installed. Launch {{count}} as they are, or leave them for later?",
+          "runMany": "Triage {{count}}",
+          "decideMany": "Launch {{count}} anyway…"
         }
       }
     },

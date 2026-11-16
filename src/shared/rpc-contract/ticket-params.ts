@@ -88,9 +88,9 @@ export const TicketSettings = z.object({
 /** The merge queue of a parent workspace (or the project's main one). */
 export const TicketQueue = z.object(ScopeFields).refine(exactlyOneScope, scopeMessage)
 
-/** Starts an agent on one ticket marked for triage, with the project's triage skill. */
+/** Starts an agent per chosen ticket marked for triage, each with the project's triage skill. */
 export const TicketTriage = z
-  .object({ ...ScopeFields, ticketId: z.string().min(1).max(200) })
+  .object({ ...ScopeFields, ticketIds: z.array(z.string().min(1).max(200)).min(1).max(50) })
   .refine(exactlyOneScope, scopeMessage)
 
 /** Holds ticket PRs out of the merge queue, or lets them back in. */

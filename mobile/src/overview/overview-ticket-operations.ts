@@ -17,7 +17,11 @@ const surveySchema = z.looseObject({
   triageSkill: z.string().nullable().optional()
 })
 
-const triageSchema = z.looseObject({ ticketId: z.string(), skill: z.string() })
+const triageSchema = z.looseObject({
+  ticketIds: z.array(z.string()),
+  skill: z.string(),
+  failed: z.array(z.looseObject({ id: z.string(), reason: z.string() })).optional()
+})
 
 const launchSchema = z.looseObject({
   outcomes: z.array(

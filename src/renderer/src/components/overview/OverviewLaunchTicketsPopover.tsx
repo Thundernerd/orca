@@ -52,7 +52,7 @@ export function OverviewLaunchTicketsPopover({
   busy: boolean
   variant: 'outline' | 'ghost'
   onLaunch: (tickets: TicketLaunchSelection[]) => void
-  onTriage: (ticketId: string) => void
+  onTriage: (ticketIds: string[]) => void
 }): React.JSX.Element {
   const t = useTranslate()
   const [open, setOpen] = useState(false)
@@ -230,19 +230,20 @@ export function OverviewLaunchTicketsPopover({
               rows={state.triage}
               triageSkill={state.triageSkill}
               busy={busy}
-              onTriage={(ticketId) => {
-                onTriage(ticketId)
+              onTriage={(ticketIds) => {
+                onTriage(ticketIds)
                 setOpen(false)
               }}
-              onLaunchAnyway={(ticketId) => {
-                const row = state.triage.find((r) => r.ticket.id === ticketId)
-                onLaunch([
-                  {
-                    id: ticketId,
-                    type: row ? conventionalTypeForTicket(row.ticket) : 'feat',
-                    skipTriage: true
-                  }
-                ])
+              onLaunchAnyway={(ticketIds) => {
+                onLaunch(
+                  state.triage
+                    .filter((row) => ticketIds.includes(row.ticket.id))
+                    .map((row) => ({
+                      id: row.ticket.id,
+                      type: conventionalTypeForTicket(row.ticket),
+                      skipTriage: true
+                    }))
+                )
                 setOpen(false)
               }}
             />

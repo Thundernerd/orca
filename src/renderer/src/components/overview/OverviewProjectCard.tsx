@@ -31,7 +31,7 @@ export type OverviewProjectCardActions = {
   writeTicket: (projectId: string, request: string) => void
   ticketsPublished: (projectId: string, batch: TicketDraftBatch) => void
   launchTickets: (projectId: string, tickets: TicketLaunchSelection[]) => void
-  triageTicket: (projectId: string, ticketId: string) => void
+  triageTickets: (projectId: string, ticketIds: string[]) => void
   cleanUp: (projectId: string, worktreeIds: string[]) => void
   mergeQueueHead: (projectId: string) => void
   refreshTickets: (ticketSource: string) => void
@@ -250,7 +250,7 @@ export function OverviewProjectCard({
                 busy={actions.busy}
                 variant="outline"
                 onLaunch={(tickets) => actions.launchTickets(project.id, tickets)}
-                onTriage={(ticketId) => actions.triageTicket(project.id, ticketId)}
+                onTriage={(ticketIds) => actions.triageTickets(project.id, ticketIds)}
               />
               <OverviewMergeQueuePopover
                 projectId={project.id}

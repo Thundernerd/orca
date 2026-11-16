@@ -91,7 +91,7 @@ export const TICKET_METHODS = [
     permission: 'workspace',
     params: TicketTriage,
     handler: async (params, context) =>
-      startTicketTriage(context, ticketParentScope(params), params.ticketId)
+      startTicketTriage(context, ticketParentScope(params), params.ticketIds)
   }),
   defineMethod({
     name: 'tickets.items',

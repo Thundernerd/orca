@@ -13,7 +13,7 @@ import type {
 } from './overview-ticket-operations'
 import { overviewStyles as styles } from './mobile-overview-styles'
 import { ActionButton, SelectAllToggle, Toggle } from './mobile-ticket-sheet-rows'
-import { pressTriageTicket, triageRowMeta } from './mobile-ticket-triage'
+import { MobileTriageSection } from './mobile-ticket-triage'
 
 export type MobileTicketSheetMode = 'launch' | 'clean' | 'queue' | 'drafts'
 
@@ -156,33 +156,24 @@ export function MobileTicketSheet({
         {loaded?.mode === 'launch' ? (
           <>
             <SelectAllToggle ids={selectableIds} selected={selected} onChange={setSelected} />
-            {loaded.survey.rows.map((row) => (
-              <Toggle
-                key={row.ticket.id}
-                checked={selected.has(row.ticket.id)}
-                disabled={row.status !== 'ready' && row.status !== 'triage'}
-                label={`${row.ticket.id} ${row.ticket.title}`}
-                meta={
-                  row.status === 'ready'
-                    ? undefined
-                    : row.status === 'triage'
-                      ? triageRowMeta(loaded.survey.triageSkill ?? null)
+            {loaded.survey.rows
+              .filter((row) => row.status !== 'triage')
+              .map((row) => (
+                <Toggle
+                  key={row.ticket.id}
+                  checked={selected.has(row.ticket.id)}
+                  disabled={row.status !== 'ready'}
+                  label={`${row.ticket.id} ${row.ticket.title}`}
+                  meta={
+                    row.status === 'ready'
+                      ? undefined
                       : row.waitingOn.length > 0
                         ? `${row.status}: ${row.waitingOn.join(', ')}`
                         : row.status
-                }
-                onPress={() =>
-                  row.status === 'triage'
-                    ? pressTriageTicket({
-                        ticketId: row.ticket.id,
-                        triageSkill: loaded.survey.triageSkill ?? null,
-                        actions: actions!,
-                        finish
-                      })
-                    : toggle(row.ticket.id)
-                }
-              />
-            ))}
+                  }
+                  onPress={() => toggle(row.ticket.id)}
+                />
+              ))}
             {loaded.survey.rows.length === 0 ? (
               <Text style={styles.empty}>
                 {t('overview.mobile.tickets.noTickets', 'No open tickets.')}
@@ -198,6 +189,14 @@ export function MobileTicketSheet({
                 finish(() => actions!.launch(ids))
               }}
             />
+            {actions ? (
+              <MobileTriageSection
+                rows={loaded.survey.rows.filter((row) => row.status === 'triage')}
+                triageSkill={loaded.survey.triageSkill ?? null}
+                actions={actions}
+                finish={finish}
+              />
+            ) : null}
           </>
         ) : null}
 

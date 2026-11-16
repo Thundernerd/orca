@@ -5087,12 +5087,14 @@
         "selectedCount": "{{count}} of {{total}} selected",
         "held": "Held out of the queue.",
         "triaging": "Triaging {{ticket}} with /{{skill}}",
-        "triageTitle": "{{ticket}} needs triage",
-        "triageQuestion": "No triage skill is installed. Launch it as it is, or leave it for later?",
         "triageLeave": "Leave it",
         "triageLaunch": "Launch anyway",
-        "triageWithSkill": "Needs triage: tap to triage with /{{skill}}",
-        "triageAsk": "Needs triage: tap to decide"
+        "triageTitleMany": "{{count}} need triage",
+        "triageQuestionMany": "No triage skill is installed. Launch them as they are, or leave them for later?",
+        "triageMany": "Triage {{count}}",
+        "triageLaunchMany": "Launch {{count}} anyway…",
+        "triageSkillNote": "Needs triage: /{{skill}} decides first",
+        "triageAskNote": "Needs triage: not launched until you decide"
       },
       "pin": "Pin {{project}}",
       "unpin": "Unpin {{project}}",

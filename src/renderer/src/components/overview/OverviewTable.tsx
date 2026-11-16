@@ -153,8 +153,8 @@ export function OverviewTable({
                             onLaunch={(tickets) =>
                               projectActions.launchTickets(project.id, tickets)
                             }
-                            onTriage={(ticketId) =>
-                              projectActions.triageTicket(project.id, ticketId)
+                            onTriage={(ticketIds) =>
+                              projectActions.triageTickets(project.id, ticketIds)
                             }
                           />
                         ) : null}

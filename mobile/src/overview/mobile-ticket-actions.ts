@@ -74,22 +74,34 @@ export function mobileTicketActions(client: RpcClient, projectId: string) {
         ].join(' ')
       }
     },
-    triage: async (ticketId: string): Promise<MobileTicketResult> => {
-      const response = await ticketTriageRun.request(client, { repo, ticketId }, RUN)
+    triage: async (ticketIds: readonly string[]): Promise<MobileTicketResult> => {
+      const response = await ticketTriageRun.request(
+        client,
+        { repo, ticketIds: [...ticketIds] },
+        RUN
+      )
       const result = interpretOrThrowRefusalMessage(
         () => ticketTriageRun.interpret(response),
         failed('start the triage')
       )
+      const failures = result.failed ?? []
       return {
-        ok: true,
-        message: translate(
-          'overview.mobile.tickets.triaging',
-          'Triaging {{ticket}} with /{{skill}}',
-          {
-            ticket: result.ticketId,
-            skill: result.skill
-          }
-        )
+        ok: failures.length === 0,
+        message: [
+          ...(result.ticketIds.length > 0
+            ? [
+                translate(
+                  'overview.mobile.tickets.triaging',
+                  'Triaging {{ticket}} with /{{skill}}',
+                  {
+                    ticket: result.ticketIds.join(', '),
+                    skill: result.skill
+                  }
+                )
+              ]
+            : []),
+          ...failures.map((f) => `${f.id}: ${f.reason}`)
+        ].join(' ')
       }
     },
     cleanSurvey: async (): Promise<MobileWorkspaceCleanSurvey> => {

@@ -3,30 +3,38 @@ import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 import type { OverviewActionResult } from './overview-actions'
 import { requireProjectRoute } from './overview-project-route'
 
-// The host surveys the tickets before starting the agent.
-const TRIAGE_TIMEOUT_MS = 120_000
+// The host surveys the tickets, then starts an agent per ticket, as a launch does.
+const TRIAGE_TIMEOUT_MS = 10 * 60_000
 
-/** Starts the project's triage skill on one ticket marked for triage, in its main workspace. */
-export async function triageOverviewTicket(
+/** Starts an agent per chosen ticket with the project's triage skill, in its main workspace. */
+export async function triageOverviewTickets(
   projectId: string,
-  ticketId: string
+  ticketIds: readonly string[]
 ): Promise<OverviewActionResult> {
   const route = requireProjectRoute(projectId)
-  const result = await callRuntimeRpc<{ ticketId: string; skill: string }>(
+  const result = await callRuntimeRpc<{
+    ticketIds: string[]
+    failed: { id: string; reason: string }[]
+    skill: string
+  }>(
     route.target,
     'tickets.triage',
-    { repo: route.repo, ticketId },
+    { repo: route.repo, ticketIds },
     { timeoutMs: TRIAGE_TIMEOUT_MS }
   )
   return {
-    ok: true,
-    message: translate(
-      'auto.components.overview.triage.started',
-      'Triaging {{ticket}} with /{{skill}}.',
-      {
-        ticket: result.ticketId,
-        skill: result.skill
-      }
-    )
+    ok: result.failed.length === 0,
+    message: [
+      ...(result.ticketIds.length > 0
+        ? [
+            translate(
+              'auto.components.overview.triage.started',
+              'Triaging {{ticket}} with /{{skill}}.',
+              { ticket: result.ticketIds.join(', '), skill: result.skill }
+            )
+          ]
+        : []),
+      ...result.failed.map((f) => `${f.id}: ${f.reason}`)
+    ].join(' ')
   }
 }
