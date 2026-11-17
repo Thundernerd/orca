@@ -143,7 +143,12 @@ export const TICKET_HANDLERS: Record<string, CommandHandler> = {
       (await resolveCurrentWorktreeSelector(cwd, client, 'worktree'))
     const result = await client.call<TicketLaunchResult>(
       'tickets.launch',
-      { worktree, tickets, ...(source ? { source } : {}) },
+      {
+        worktree,
+        tickets,
+        ...(source ? { source } : {}),
+        ...(flags.get('cloud') === true ? { cloud: true } : {})
+      },
       { timeoutMs: 10 * 60_000 }
     )
     printResult(result, json, formatLaunch)

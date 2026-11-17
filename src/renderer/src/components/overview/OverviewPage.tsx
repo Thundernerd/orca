@@ -227,13 +227,13 @@ export default function OverviewPage(): React.JSX.Element {
     }
   }
   const launchTickets = useCallback(
-    (projectId: string, tickets: TicketLaunchSelection[]) => {
+    (projectId: string, tickets: TicketLaunchSelection[], options?: { cloud?: boolean }) => {
       const project = snapshot.projects.find((p) => p.id === projectId)
       if (!project) {
         return
       }
       void run(async () => {
-        const result = await launchOverviewTickets(projectId, project.name, tickets)
+        const result = await launchOverviewTickets(projectId, project.name, tickets, options)
         if (project.ticketSource) {
           surveys.requestSurvey(project.ticketSource)
         }

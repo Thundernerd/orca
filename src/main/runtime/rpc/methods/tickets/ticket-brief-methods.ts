@@ -1,5 +1,5 @@
 import { TicketBrief } from '../../../../../shared/rpc-contract/ticket-params'
-import { cloudTicketBrief } from '../../../../ticket-pipeline/ticket-cloud-brief-command'
+import { cloudTicketBrief } from '../../../../ticket-pipeline/ticket-cloud-launch'
 import { ticketParentScope } from '../../../../ticket-pipeline/ticket-parent-workspace'
 import { defineMethod } from '../../core'
 

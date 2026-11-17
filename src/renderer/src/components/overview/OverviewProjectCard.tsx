@@ -30,7 +30,11 @@ export type OverviewProjectCardActions = {
   open: (worktreeId: string) => void
   writeTicket: (projectId: string, request: string) => void
   ticketsPublished: (projectId: string, batch: TicketDraftBatch) => void
-  launchTickets: (projectId: string, tickets: TicketLaunchSelection[]) => void
+  launchTickets: (
+    projectId: string,
+    tickets: TicketLaunchSelection[],
+    options?: { cloud?: boolean }
+  ) => void
   triageTickets: (projectId: string, ticketIds: string[]) => void
   cleanUp: (projectId: string, worktreeIds: string[]) => void
   mergeQueueHead: (projectId: string) => void
@@ -249,7 +253,7 @@ export function OverviewProjectCard({
                 projectName={project.name}
                 busy={actions.busy}
                 variant="outline"
-                onLaunch={(tickets) => actions.launchTickets(project.id, tickets)}
+                onLaunch={(tickets, options) => actions.launchTickets(project.id, tickets, options)}
                 onTriage={(ticketIds) => actions.triageTickets(project.id, ticketIds)}
               />
               <OverviewMergeQueuePopover

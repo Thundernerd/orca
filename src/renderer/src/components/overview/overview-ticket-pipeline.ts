@@ -49,7 +49,8 @@ export async function surveyOverviewProject(projectId: string): Promise<Overview
 export async function launchOverviewTickets(
   projectId: string,
   projectName: string,
-  tickets: readonly TicketLaunchSelection[]
+  tickets: readonly TicketLaunchSelection[],
+  options: { cloud?: boolean } = {}
 ): Promise<OverviewActionResult> {
   const route = projectRoute(projectId)
   if (!route) {
@@ -65,21 +66,28 @@ export async function launchOverviewTickets(
   const result = await callRuntimeRpc<TicketLaunchResult>(
     route.target,
     'tickets.launch',
-    { repo: route.repo, tickets },
+    { repo: route.repo, tickets, ...(options.cloud ? { cloud: true } : {}) },
     { timeoutMs: LAUNCH_TIMEOUT_MS }
   )
-  const launched = result.outcomes.filter((o) => o.status === 'launched')
+  const launched = result.outcomes.filter((o) => o.status === 'launched' || o.status === 'started')
   const details = result.outcomes.flatMap((o) =>
-    o.status === 'launched' ? [] : [`${o.id}: ${o.reason}`]
+    o.status === 'launched' || o.status === 'started' ? [] : [`${o.id}: ${o.reason}`]
   )
+  const counts = { count: launched.length, total: result.outcomes.length, project: projectName }
   return {
     ok: details.length === 0,
     message: [
-      translate(
-        'auto.components.overview.launchTickets.result',
-        'Launched {{count}} of {{total}} tickets in {{project}}.',
-        { count: launched.length, total: result.outcomes.length, project: projectName }
-      ),
+      options.cloud
+        ? translate(
+            'auto.components.overview.launchTickets.cloudResult',
+            'Started {{count}} of {{total}} tickets in Claude cloud sessions for {{project}}; their terminals show any prompt to answer.',
+            counts
+          )
+        : translate(
+            'auto.components.overview.launchTickets.result',
+            'Launched {{count}} of {{total}} tickets in {{project}}.',
+            counts
+          ),
       ...details
     ].join(' ')
   }

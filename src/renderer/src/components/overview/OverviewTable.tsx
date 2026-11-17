@@ -150,8 +150,8 @@ export function OverviewTable({
                             projectName={project.name}
                             busy={projectActions.busy}
                             variant="ghost"
-                            onLaunch={(tickets) =>
-                              projectActions.launchTickets(project.id, tickets)
+                            onLaunch={(tickets, options) =>
+                              projectActions.launchTickets(project.id, tickets, options)
                             }
                             onTriage={(ticketIds) =>
                               projectActions.triageTickets(project.id, ticketIds)

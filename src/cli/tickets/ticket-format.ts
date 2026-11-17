@@ -10,8 +10,8 @@ import type {
 export function formatLaunch(result: TicketLaunchResult): string {
   return result.outcomes
     .map((o) =>
-      o.status === 'launched'
-        ? `launched\t${o.id}\t${o.branch}`
+      o.status === 'launched' || o.status === 'started'
+        ? `${o.status}\t${o.id}\t${o.branch}`
         : `${o.status}\t${o.id}\t${o.reason}`
     )
     .join('\n')

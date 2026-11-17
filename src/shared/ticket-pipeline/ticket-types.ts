@@ -78,6 +78,8 @@ export type TicketLaunchSelection = {
 
 export type TicketLaunchOutcome =
   | { id: string; status: 'launched'; itemId: string; worktreeId: string; branch: string }
+  /** Started as a Claude cloud session in `terminal`; Corka adopts the PR it opens. */
+  | { id: string; status: 'started'; branch: string; terminal: string }
   | { id: string; status: 'skipped'; reason: string }
   | { id: string; status: 'failed'; reason: string; worktreeId?: string }
 

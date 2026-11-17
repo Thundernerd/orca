@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -33,6 +34,8 @@ type LoadState =
       others: number
       triage: TicketSurveyRow[]
       triageSkill: string | null
+      /** Claude cloud sessions take GitHub issues only. */
+      cloudCapable: boolean
     }
 
 function isConventionalType(value: string): value is ConventionalType {
@@ -52,12 +55,13 @@ export function OverviewLaunchTicketsPopover({
   projectName: string
   busy: boolean
   variant: 'outline' | 'ghost'
-  onLaunch: (tickets: TicketLaunchSelection[]) => void
+  onLaunch: (tickets: TicketLaunchSelection[], options?: { cloud?: boolean }) => void
   onTriage: (ticketIds: string[]) => void
 }): React.JSX.Element {
   const t = useTranslate()
   const [open, setOpen] = useState(false)
   const [state, setState] = useState<LoadState>({ kind: 'loading' })
+  const [inCloud, setInCloud] = useState(false)
 
   const load = async (): Promise<void> => {
     setState({ kind: 'loading' })
@@ -86,7 +90,8 @@ export function OverviewLaunchTicketsPopover({
       })),
       others: outcome.result.rows.length - ready.length,
       triage: outcome.result.rows.filter((row) => row.status === 'triage'),
-      triageSkill: outcome.result.triageSkill ?? null
+      triageSkill: outcome.result.triageSkill ?? null,
+      cloudCapable: outcome.result.source === 'github-issues'
     })
   }
 
@@ -250,18 +255,43 @@ export function OverviewLaunchTicketsPopover({
               }}
             />
           ) : null}
+          {state.kind === 'loaded' && state.cloudCapable ? (
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={inCloud}
+                onCheckedChange={setInCloud}
+                aria-label={t(
+                  'auto.components.overview.launchTickets.cloud',
+                  'Run in Claude cloud'
+                )}
+              />
+              <span className="text-xs text-muted-foreground">
+                {t('auto.components.overview.launchTickets.cloud', 'Run in Claude cloud')}
+              </span>
+            </div>
+          ) : null}
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs text-muted-foreground">
-              {t(
-                'auto.components.overview.launchTickets.hint',
-                'Each gets its own workspace and a Claude agent that works until its PR is up.'
-              )}
+              {inCloud
+                ? t(
+                    'auto.components.overview.launchTickets.cloudHint',
+                    'Each starts a Claude cloud session in a terminal here; Corka takes its PR into the merge queue.'
+                  )
+                : t(
+                    'auto.components.overview.launchTickets.hint',
+                    'Each gets its own workspace and a Claude agent that works until its PR is up.'
+                  )}
             </span>
             <Button
               size="sm"
               disabled={busy || selected.length === 0}
               onClick={() => {
-                onLaunch(selected.map((c) => ({ id: c.row.ticket.id, type: c.type })))
+                onLaunch(
+                  selected.map((c) => ({ id: c.row.ticket.id, type: c.type })),
+                  inCloud && state.kind === 'loaded' && state.cloudCapable
+                    ? { cloud: true }
+                    : undefined
+                )
                 setOpen(false)
               }}
             >

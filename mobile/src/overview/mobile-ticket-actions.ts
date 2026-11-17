@@ -59,9 +59,11 @@ export function mobileTicketActions(client: RpcClient, projectId: string) {
         () => ticketLaunchRun.interpret(response),
         failed('launch the tickets')
       )
-      const launched = result.outcomes.filter((o) => o.status === 'launched').length
+      // `started` is a cloud session the desktop opened for it.
+      const isStarted = (o: { status: string }) => o.status === 'launched' || o.status === 'started'
+      const launched = result.outcomes.filter(isStarted).length
       const problems = result.outcomes.flatMap((o) =>
-        o.status === 'launched' ? [] : [`${o.id}: ${o.reason ?? o.status}`]
+        isStarted(o) ? [] : [`${o.id}: ${o.reason ?? o.status}`]
       )
       return {
         ok: problems.length === 0,

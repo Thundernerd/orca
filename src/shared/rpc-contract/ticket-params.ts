@@ -41,7 +41,9 @@ export const TicketLaunch = z
         })
       )
       .min(1)
-      .max(50)
+      .max(50),
+    /** Start each as a Claude cloud session instead of a local workspace. */
+    cloud: z.boolean().optional()
   })
   .refine((params) => (params.worktree === undefined) !== (params.repo === undefined), {
     message: 'Pass exactly one of worktree or repo'
