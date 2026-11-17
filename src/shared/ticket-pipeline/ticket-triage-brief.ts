@@ -7,7 +7,9 @@ export type TicketToTriage = {
 }
 
 /** The prompt for an agent that triages one or more tickets with the project's triage skill, one
- *  at a time, implementing nothing. Several share one session so the repo docs load once. */
+ *  at a time, implementing nothing. Several share one session so the repo docs load once. It opens
+ *  with the skill's slash command: a triage skill may be closed to the model's own invocation
+ *  (`disable-model-invocation`), and only a prompt that starts with the command loads it then. */
 export function renderTicketTriageBrief(input: {
   tickets: readonly TicketToTriage[]
   skill: string
@@ -15,8 +17,8 @@ export function renderTicketTriageBrief(input: {
   const only = input.tickets.length === 1 ? input.tickets[0] : null
   return [
     only
-      ? `Triage ticket ${only.ticket.id} (${only.ticket.title}) with the /${input.skill} skill. Read it in full first: ${only.read}.`
-      : `Triage these ${input.tickets.length} tickets with the /${input.skill} skill, one at a time and in this order, reading each in full before you start on it:`,
+      ? `/${input.skill} Triage ticket ${only.ticket.id} (${only.ticket.title}). Read it in full first: ${only.read}.`
+      : `/${input.skill} Triage these ${input.tickets.length} tickets, one at a time and in this order, reading each in full before you start on it:`,
     ...(only
       ? []
       : input.tickets.map(({ ticket, read }) => `  - ${ticket.id} (${ticket.title}): ${read}`)),
