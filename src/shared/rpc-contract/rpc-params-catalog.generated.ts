@@ -744,6 +744,7 @@ import {
   TerminalUpdateViewport
 } from './terminal/terminal-viewport-schemas-params'
 import {
+  TicketBrief,
   TicketClean,
   TicketCleanSurvey,
   TicketCreate,
@@ -1685,6 +1686,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'terminalDaemon.restartSevered': TerminalDaemonRestartSeveredParams,
   'terminalDaemon.setLimit': TerminalLimitUpdateParams,
   'terminalDaemon.severedStatus': null,
+  'tickets.brief': TicketBrief,
   'tickets.clean': TicketClean,
   'tickets.cleanSurvey': TicketCleanSurvey,
   'tickets.create': TicketCreate,

@@ -51,6 +51,7 @@ import {
   ticketParentScope
 } from '../../../../ticket-pipeline/ticket-parent-workspace'
 import { defineMethod } from '../../core'
+import { TICKET_BRIEF_METHODS } from './ticket-brief-methods'
 
 /** Adoption reads the tracker and GitHub; a failure must not hide the queue itself. */
 async function adoptForQueue(
@@ -64,6 +65,7 @@ async function adoptForQueue(
 }
 
 export const TICKET_METHODS = [
+  ...TICKET_BRIEF_METHODS,
   defineMethod({
     name: 'tickets.survey',
     permission: 'workspace',
@@ -271,9 +273,7 @@ export const TICKET_METHODS = [
     handler: async (params, context) =>
       startFindingCheck(context, params.worktree, {
         findingOf: params.findingOf,
-        title: params.title,
-        body: params.body,
-        blockedBy: params.blockedBy
+        findings: [{ title: params.title, body: params.body, blockedBy: params.blockedBy }]
       })
   }),
   defineMethod({

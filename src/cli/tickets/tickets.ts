@@ -28,6 +28,8 @@ import {
   getRequiredStringFlag
 } from '../arguments/flags'
 import { printResult } from '../output/command-result-output'
+import { TICKET_BRIEF_HANDLERS } from './ticket-brief-command'
+import { currentWorktree } from './ticket-cli-worktree'
 import {
   formatClean,
   formatCleanSurvey,
@@ -85,17 +87,6 @@ function readSelections(flags: Map<string, string | boolean>): TicketLaunchSelec
   })
 }
 
-async function currentWorktree(
-  flags: Map<string, string | boolean>,
-  cwd: string,
-  client: Parameters<CommandHandler>[0]['client']
-): Promise<string> {
-  return (
-    (await getOptionalWorktreeSelector(flags, 'worktree', cwd, client)) ??
-    (await resolveCurrentWorktreeSelector(cwd, client, 'worktree'))
-  )
-}
-
 /** Matches `auto`, `github-issues`, `linear:<TEAM>` or `jira:<PROJECT>` against what the host can reach. */
 async function pickSource(
   client: Parameters<CommandHandler>[0]['client'],
@@ -126,6 +117,7 @@ function onOff(flags: Map<string, string | boolean>, name: string): boolean | un
 }
 
 export const TICKET_HANDLERS: Record<string, CommandHandler> = {
+  ...TICKET_BRIEF_HANDLERS,
   'tickets survey': async ({ flags, client, cwd, json }) => {
     const source = readSource(flags)
     const worktree =
@@ -264,17 +256,21 @@ export const TICKET_HANDLERS: Record<string, CommandHandler> = {
     printResult(result, json, (finding) => `${finding.id} ${finding.title}\n${finding.url}`)
   },
   'tickets finding': async ({ flags, client, cwd, json }) => {
-    const result = await client.call<{ findingOf: string; title: string }>('tickets.finding', {
-      worktree: await currentWorktree(flags, cwd, client),
-      findingOf: getRequiredStringFlag(flags, 'of'),
-      title: getRequiredStringFlag(flags, 'title'),
-      body: (await readTextOrFileFlag(flags, cwd, 'body', true)) ?? '',
-      blockedBy: getRepeatedStringFlag(flags, 'blocked-by')
-    })
+    const result = await client.call<{ findingOf: string; titles?: string[]; title?: string }>(
+      'tickets.finding',
+      {
+        worktree: await currentWorktree(flags, cwd, client),
+        findingOf: getRequiredStringFlag(flags, 'of'),
+        title: getRequiredStringFlag(flags, 'title'),
+        body: (await readTextOrFileFlag(flags, cwd, 'body', true)) ?? '',
+        blockedBy: getRepeatedStringFlag(flags, 'blocked-by')
+      }
+    )
     printResult(
       result,
       json,
-      (r) => `Corka started an agent to check "${r.title}" before filing it.`
+      // A host older than batched checks answers with one title.
+      (r) => `Corka started an agent to check "${r.titles?.[0] ?? r.title ?? ''}" before filing it.`
     )
   },
   'tickets link': async ({ flags, client, cwd, json }) => {

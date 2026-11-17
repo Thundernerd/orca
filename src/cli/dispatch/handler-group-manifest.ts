@@ -258,7 +258,8 @@ export const HANDLER_GROUPS: readonly HandlerGroup[] = [
       'tickets draft submit',
       'tickets create',
       'tickets finding',
-      'tickets link'
+      'tickets link',
+      'tickets brief'
     ],
     load: async () => (await import('../tickets/tickets.js')).TICKET_HANDLERS
   },

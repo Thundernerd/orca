@@ -38,6 +38,12 @@ export type TicketLaunchRequest = {
   tickets: readonly TicketLaunchSelection[]
 }
 
+/** The agent docs the checkout tracks, for a brief to point at. */
+export async function findAgentDocs(checkoutPath: string): Promise<string[]> {
+  const tracked = new Set(await gitLines(checkoutPath, ['ls-files', '--', ...AGENT_DOC_CANDIDATES]))
+  return AGENT_DOC_CANDIDATES.filter((doc) => tracked.has(doc))
+}
+
 async function gitLines(cwd: string, args: string[]): Promise<string[]> {
   try {
     const { stdout } = await gitExecFileAsync(args, { cwd })
@@ -83,10 +89,7 @@ export async function launchTickets(
   )
   const rowsById = new Map(survey.rows.map((row) => [row.ticket.id, row]))
   const baseBranch = survey.baseRef.replace(/^[^/]+\//, '')
-  const trackedDocs = new Set(
-    await gitLines(parent.path, ['ls-files', '--', ...AGENT_DOC_CANDIDATES])
-  )
-  const agentDocs = AGENT_DOC_CANDIDATES.filter((doc) => trackedDocs.has(doc))
+  const agentDocs = await findAgentDocs(parent.path)
   const untrackedContext = await findUntrackedContext(parent.path)
 
   const outcomes: TicketLaunchOutcome[] = []

@@ -54,6 +54,16 @@ const exactlyOneScope = (params: { worktree?: string; repo?: string }) =>
   (params.worktree === undefined) !== (params.repo === undefined)
 const scopeMessage = { message: 'Pass exactly one of worktree or repo' }
 
+/** A Claude cloud session's brief for one GitHub issue, optionally claiming it first. */
+export const TicketBrief = z
+  .object({
+    ...ScopeFields,
+    ticket: z.string().trim().min(1).max(200),
+    type: ConventionalTypeParam.optional(),
+    claim: z.boolean().optional()
+  })
+  .refine(exactlyOneScope, scopeMessage)
+
 /** Children of a parent workspace (or the project's main one) that are safe to remove. */
 export const TicketCleanSurvey = z.object(ScopeFields).refine(exactlyOneScope, scopeMessage)
 

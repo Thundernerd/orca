@@ -34,6 +34,22 @@ export const TICKET_COMMAND_SPECS: CommandSpec[] = [
     ]
   },
   {
+    path: ['tickets', 'brief'],
+    summary: 'Print the brief to start a Claude cloud session on one GitHub issue with',
+    usage:
+      'orca tickets brief --ticket <id> [--type <type>] [--claim] [--worktree <selector>] [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'worktree', 'ticket', 'type', 'claim'],
+    notes: [
+      'Prints only the brief, so it can go straight into `claude --cloud`. Start the session from a checkout of the default branch: the cloud clones the branch your checkout is on.',
+      'With --claim, a ready issue is first assigned to you, as a launch would, so no host launches it too.',
+      'The brief names the branch <type>/<id>-<title slug> and asks for findings in the PR body. With `orca tickets settings --adopt-cloud on`, Corka takes the PR into the merge queue and checks those findings.'
+    ],
+    examples: [
+      'claude --cloud "$(orca tickets brief --ticket 312 --claim)"',
+      'orca tickets brief --ticket "#312" --type fix'
+    ]
+  },
+  {
     path: ['tickets', 'items'],
     summary: 'List launched tickets and where each stands',
     usage: 'orca tickets items [--repo <selector>] [--json]',

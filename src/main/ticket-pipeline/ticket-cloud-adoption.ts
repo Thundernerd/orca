@@ -4,9 +4,12 @@ import { isFolderRepo } from '../../shared/repository/repo-kind'
 import { CONVENTIONAL_TYPES, type TicketItem } from '../../shared/ticket-pipeline/ticket-types'
 import {
   listOpenCloudSessionPRs,
-  readIssueSummary,
-  removeCloudSessionFooter
+  readIssue,
+  removeCloudSessionFooter,
+  withoutCloudSessionFooter
 } from '../github/pull-requests/cloud-session-prs'
+import { parsePRFindings } from '../../shared/ticket-pipeline/ticket-pr-findings'
+import { startFindingCheck } from './ticket-finding-check'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import { getTicketItemStore, type TicketItemStore } from './ticket-item-store'
 import { resolveTicketParentSelector } from './ticket-parent-workspace'
@@ -15,7 +18,8 @@ import { resolveTicketParentSelector } from './ticket-parent-workspace'
 const TICKET_BRANCH = new RegExp(`^(?:${CONVENTIONAL_TYPES.join('|')})/gh-(\\d+)(?:-|$)`)
 
 /** Takes PRs Claude cloud sessions opened on ticket branches into the merge queue of their
- *  project's main workspace, for every project that adopts them on this host. */
+ *  project's main workspace, for every project that adopts them on this host, and checks the
+ *  findings each PR lists in one session. */
 export async function adoptCloudTicketPRs(
   runtime: OrcaRuntimeService,
   store: TicketItemStore = getTicketItemStore()
@@ -54,7 +58,7 @@ async function adoptForRepo(
   const parentSelector = await resolveTicketParentSelector(runtime, { repo: `id:${repoId}` })
   const parentWorktreeId = parentSelector.replace(/^id:/, '')
   for (const { pr, issueNumber } of fresh) {
-    const issue = await readIssueSummary(repo.path, ownerRepo, issueNumber)
+    const issue = await readIssue(repo.path, issueNumber, ownerRepo)
     await removeCloudSessionFooter(repo.path, ownerRepo, pr)
     const now = Date.now()
     const item: TicketItem = {
@@ -76,6 +80,16 @@ async function adoptForRepo(
       updatedAt: now
     }
     await store.put(item)
+    // A cloud session has no Corka CLI to hand findings over with, so it lists them in the PR.
+    const findings = parsePRFindings(withoutCloudSessionFooter(pr.body))
+    if (findings.length > 0) {
+      await startFindingCheck({ runtime }, parentSelector, {
+        findingOf: item.ticketId,
+        findings
+      }).catch((error: unknown) =>
+        console.warn(`[tickets] could not start the finding check for ${item.ticketId}`, error)
+      )
+    }
   }
   return fresh.length
 }

@@ -19,7 +19,7 @@ const OpenPRs = z.array(
   })
 )
 
-const IssueSummary = z.object({ title: z.string(), url: z.string() })
+const Issue = z.object({ title: z.string(), url: z.string(), body: z.string() })
 
 export type CloudSessionPR = {
   number: number
@@ -51,26 +51,35 @@ export async function listOpenCloudSessionPRs(
   return { ownerRepo, prs }
 }
 
-export async function readIssueSummary(
+export async function readIssue(
   repoPath: string,
-  ownerRepo: GitHubRepositoryIdentity,
-  issueNumber: number
-): Promise<{ title: string; url: string }> {
+  issueNumber: number,
+  knownOwnerRepo?: GitHubRepositoryIdentity
+): Promise<{ title: string; url: string; body: string }> {
+  const ownerRepo = knownOwnerRepo ?? (await resolveGitHubRepoExecution(repoPath, null)).ownerRepo
+  if (!ownerRepo) {
+    throw new Error('Could not resolve the GitHub repository.')
+  }
   const stdout = await ghApi(repoPath, ownerRepo, [
     `repos/${ownerRepo.owner}/${ownerRepo.repo}/issues/${issueNumber}`,
     '--jq',
-    '{title, url: .html_url}'
+    '{title, url: .html_url, body: (.body // "")}'
   ])
-  return IssueSummary.parse(JSON.parse(stdout))
+  return Issue.parse(JSON.parse(stdout))
 }
 
-/** Drops the session footer, which is Claude attribution, from the PR body; the session id is read first. */
+/** The PR body without the session footer, which is Claude attribution. */
+export function withoutCloudSessionFooter(body: string): string {
+  return body.replace(SESSION_FOOTER, '\n')
+}
+
+/** Drops the session footer from the PR body on GitHub; the session id is read first. */
 export async function removeCloudSessionFooter(
   repoPath: string,
   ownerRepo: GitHubRepositoryIdentity,
   pr: Pick<CloudSessionPR, 'number' | 'body'>
 ): Promise<void> {
-  const body = pr.body.replace(SESSION_FOOTER, '\n')
+  const body = withoutCloudSessionFooter(pr.body)
   if (body === pr.body) {
     return
   }
