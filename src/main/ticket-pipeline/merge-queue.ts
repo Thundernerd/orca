@@ -1,6 +1,7 @@
 import type { GitHubRepositoryIdentity } from '../../shared/github/repositories/repository-identity'
 import { renderMergeQueueFixBrief } from '../../shared/ticket-pipeline/merge-queue-fix-brief'
 import {
+  ENQUEUE_WAIT_LIMIT_MS,
   decideMergeQueueStep,
   type MergeQueueAction
 } from '../../shared/ticket-pipeline/merge-queue-step'
@@ -18,6 +19,8 @@ import { observeQueueHead, type QueueHeadContext } from './merge-queue-observati
 import { sendTicketAgentFixBrief } from './ticket-agent-reach'
 
 const MAX_ERROR_STREAK = 3
+const REQUIRED_CHECKS_PENDING =
+  /status checks? (have|has) not succeeded|status checks? (is|are) expected/i
 
 function withoutAwaitedFix(state: TicketQueueState): TicketQueueState {
   return {
@@ -239,6 +242,20 @@ export class MergeQueue {
       prRepo
     )
     if (!result.ok) {
+      // A fresh push can read as green before GitHub registers its checks; GitHub then refuses.
+      const refusedSince = previous.checksRefusedSince ?? Date.now()
+      if (
+        REQUIRED_CHECKS_PENDING.test(result.error) &&
+        Date.now() - refusedSince <= ENQUEUE_WAIT_LIMIT_MS
+      ) {
+        await this.setQueue(item, {
+          ...previous,
+          status: 'waiting-ci',
+          detail: 'Waiting for GitHub to see the required checks pass.',
+          checksRefusedSince: refusedSince
+        })
+        return
+      }
       await this.pause(item, `GitHub would not add the PR to its merge queue: ${result.error}`)
       return
     }
@@ -246,7 +263,8 @@ export class MergeQueue {
       ...previous,
       status: 'merging',
       detail,
-      enqueued: { head: headSha, at: Date.now(), requeued }
+      enqueued: { head: headSha, at: Date.now(), requeued },
+      checksRefusedSince: undefined
     })
   }
 

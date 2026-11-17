@@ -161,6 +161,8 @@ export type TicketQueueState = {
   enqueued?: { head: string; at: number; requeued: boolean }
   /** The base branch merges through GitHub's merge queue, as last observed. */
   viaGitHubQueue?: boolean
+  /** Since when GitHub has refused to queue the PR because its required checks have not passed. */
+  checksRefusedSince?: number
   /** Ticks in a row that failed with an error; a passing GitHub hiccup must not pause the queue. */
   errorStreak?: number
 }
