@@ -107,6 +107,15 @@ const PRMergeQueueReply = z
           )
           .nullish()
       })
+      .nullish(),
+    mergeQueue: z
+      .object({
+        entries: z
+          .object({
+            nodes: z.array(z.object({ enqueuedAt: z.string().nullish() }).nullable()).nullish()
+          })
+          .nullish()
+      })
       .nullish()
   })
   .nullable()
@@ -118,6 +127,8 @@ export type PRMergeQueueState = {
   headSha: string | null
   /** When GitHub last took the PR out of its queue, and why; null if it never did. */
   removed: { at: number; reason: string | null } | null
+  /** When each PR now in the base branch's merge queue was added. */
+  entriesEnqueuedAt: number[]
 }
 
 /** Where the PR stands with GitHub's merge queue, in one GraphQL call. */
@@ -135,6 +146,7 @@ export async function getPRMergeQueueState(
         timelineItems(last: 1, itemTypes: [REMOVED_FROM_MERGE_QUEUE_EVENT]) {
           nodes { ... on RemovedFromMergeQueueEvent { createdAt reason } }
         }
+        mergeQueue { entries(first: 100) { nodes { enqueuedAt } } }
       }
     }
   }`
@@ -158,6 +170,9 @@ export async function getPRMergeQueueState(
     enabled: pr?.isMergeQueueEnabled === true,
     inQueue: pr?.isInMergeQueue === true,
     headSha: pr?.headRefOid ?? null,
-    removed: Number.isNaN(removedAt) ? null : { at: removedAt, reason: event?.reason || null }
+    removed: Number.isNaN(removedAt) ? null : { at: removedAt, reason: event?.reason || null },
+    entriesEnqueuedAt: (pr?.mergeQueue?.entries?.nodes ?? [])
+      .map((entry) => Date.parse(entry?.enqueuedAt ?? ''))
+      .filter((at) => !Number.isNaN(at))
   }
 }

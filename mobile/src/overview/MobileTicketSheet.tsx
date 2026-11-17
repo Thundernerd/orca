@@ -3,7 +3,7 @@ import { ScrollView, Text, View } from 'react-native'
 import { BottomDrawer } from '../components/bottom-drawer/BottomDrawer'
 import { useMobileColorScheme } from '../theme/use-mobile-color-scheme'
 import { useMobileTranslation } from '../i18n/use-mobile-translation'
-import { ticketQueueHead } from '../../../src/shared/ticket-pipeline/ticket-queue-head'
+import { ticketQueueNextMerge } from '../../../src/shared/ticket-pipeline/ticket-queue-head'
 import type { MobileTicketActions, MobileTicketResult } from './mobile-ticket-actions'
 import type {
   MobileTicketDraftBatch,
@@ -104,7 +104,8 @@ export function MobileTicketSheet({
         ? loaded.survey.rows.filter((r) => r.verdict === 'remove').map((r) => r.worktreeId)
         : []
 
-  const queueHead = loaded?.mode === 'queue' ? ticketQueueHead(loaded.queue.entries) : undefined
+  const queueHead =
+    loaded?.mode === 'queue' ? ticketQueueNextMerge(loaded.queue.entries) : undefined
 
   const selectQueue = (itemIds: readonly string[], included: boolean) => {
     if (loaded?.mode !== 'queue' || !actions) {
@@ -266,7 +267,7 @@ export function MobileTicketSheet({
                 meta={
                   entry.included === false
                     ? t('overview.mobile.tickets.held', 'Held out of the queue.')
-                    : entry.itemId === queueHead?.itemId && entry.queue
+                    : entry.queue
                       ? entry.queue.detail
                       : t('overview.mobile.tickets.waitingTurn', 'Waiting its turn.')
                 }

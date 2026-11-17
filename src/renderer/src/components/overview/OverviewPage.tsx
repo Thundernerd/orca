@@ -8,10 +8,10 @@ import { useOverviewTicketSurveys } from './use-overview-ticket-surveys'
 import {
   cleanOverviewWorkspaces,
   launchOverviewTickets,
-  mergeOverviewQueueHead,
   publishedDraftsNotice,
   startOverviewDraftingWithNotice
 } from './overview-ticket-pipeline'
+import { mergeOverviewQueueHead } from './overview-merge-queue-actions'
 import type { TicketDraftBatch } from '../../../../shared/ticket-pipeline/ticket-draft-types'
 import type { TicketLaunchSelection } from '../../../../shared/ticket-pipeline/ticket-types'
 import {

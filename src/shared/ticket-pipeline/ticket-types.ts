@@ -159,6 +159,8 @@ export type TicketQueueState = {
   rerunHead?: string
   /** The head last added to GitHub's merge queue; `requeued` once it was re-added after a drop. */
   enqueued?: { head: string; at: number; requeued: boolean }
+  /** The base branch merges through GitHub's merge queue, as last observed. */
+  viaGitHubQueue?: boolean
   /** Ticks in a row that failed with an error; a passing GitHub hiccup must not pause the queue. */
   errorStreak?: number
 }
@@ -209,7 +211,7 @@ export type TicketQueueEntry = {
   reviewNumber: number | null
   reviewUrl: string | null
   childWorktreeId: string
-  /** Null for entries behind the head: they wait their turn. */
+  /** Null for entries the queue is not working on yet: they wait their turn. */
   queue: TicketQueueState | null
   /** False when the user held it out of the queue; absent from a host older than this field. */
   included?: boolean
@@ -219,6 +221,8 @@ export type TicketQueueView = {
   parentWorktreeId: string
   pausedReason: string | null
   autoMerge: boolean
+  /** Every included PR goes to GitHub's merge queue once ready, not one at a time; absent from older hosts. */
+  viaGitHubQueue?: boolean
   entries: TicketQueueEntry[]
 }
 

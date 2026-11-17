@@ -79,7 +79,13 @@ export async function observeQueueHead(
       attributionHits: findAttribution(texts),
       mergeBlocker: null,
       agentReachable: agent !== null,
-      githubQueue: github.enabled ? { inQueue: github.inQueue, removed: github.removed } : null,
+      githubQueue: github.enabled
+        ? {
+            inQueue: github.inQueue,
+            removed: github.removed,
+            entriesEnqueuedAt: github.entriesEnqueuedAt
+          }
+        : null,
       now: Date.now()
     }
   }

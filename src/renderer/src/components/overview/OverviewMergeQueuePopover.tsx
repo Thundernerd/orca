@@ -5,8 +5,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Switch } from '@/components/ui/switch'
 import { useTranslate } from '@/i18n/use-translate'
 import type { TicketQueueView } from '../../../../shared/ticket-pipeline/ticket-types'
-import { ticketQueueHead } from '../../../../shared/ticket-pipeline/ticket-queue-head'
-import { overviewMergeQueue, selectOverviewQueue } from './overview-ticket-pipeline'
+import { ticketQueueNextMerge } from '../../../../shared/ticket-pipeline/ticket-queue-head'
+import { overviewMergeQueue, selectOverviewQueue } from './overview-merge-queue-actions'
 import { refreshOverviewTicketStatus } from './use-overview-ticket-status'
 import { useOverviewTicketSettings } from './use-overview-ticket-settings'
 
@@ -69,13 +69,18 @@ export function OverviewMergeQueuePopover({
   }
 
   const view = state.kind === 'loaded' ? state.view : null
-  const head = view ? ticketQueueHead(view.entries) : undefined
+  const head = view ? ticketQueueNextMerge(view.entries) : undefined
   const includedCount = view?.entries.filter((e) => e.included !== false).length ?? 0
   const total = view?.entries.length ?? 0
-  const autoMergeLabel = t(
-    'auto.components.overview.mergeQueue.auto',
-    'Merge the first PR automatically once it is ready'
-  )
+  const autoMergeLabel = view?.viaGitHubQueue
+    ? t(
+        'auto.components.overview.mergeQueue.autoGitHub',
+        "Add PRs to GitHub's merge queue automatically once they are ready"
+      )
+    : t(
+        'auto.components.overview.mergeQueue.auto',
+        'Merge the first PR automatically once it is ready'
+      )
 
   return (
     <Popover
@@ -186,7 +191,7 @@ export function OverviewMergeQueuePopover({
                     <span className="block text-xs text-muted-foreground">
                       {entry.included === false
                         ? t('auto.components.overview.mergeQueue.held', 'Held out of the queue.')
-                        : entry.queue && entry.itemId === head?.itemId
+                        : entry.queue
                           ? entry.queue.detail
                           : t(
                               'auto.components.overview.mergeQueue.waitingTurn',
@@ -210,10 +215,15 @@ export function OverviewMergeQueuePopover({
           ) : null}
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs text-muted-foreground">
-              {t(
-                'auto.components.overview.mergeQueue.hint',
-                'PRs merge one at a time in ticket order, each with green CI on an up-to-date branch.'
-              )}
+              {view?.viaGitHubQueue
+                ? t(
+                    'auto.components.overview.mergeQueue.hintGitHub',
+                    "Ready PRs go into GitHub's merge queue in ticket order; GitHub tests each on top of the ones ahead and merges them."
+                  )
+                : t(
+                    'auto.components.overview.mergeQueue.hint',
+                    'PRs merge one at a time in ticket order, each with green CI on an up-to-date branch.'
+                  )}
             </span>
             <Button
               size="sm"

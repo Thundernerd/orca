@@ -27,6 +27,8 @@ export type MergeQueueObservation = {
     inQueue: boolean
     /** When GitHub last took the PR out of its queue, and why. */
     removed: { at: number; reason: string | null } | null
+    /** When each PR now in GitHub's queue was added. */
+    entriesEnqueuedAt: readonly number[]
   } | null
   now: number
 }
@@ -157,6 +159,14 @@ export function decideMergeQueueStep(
           }
     }
     const why = removed.reason ? ` (${removed.reason})` : ''
+    // A PR still ahead may be the one it clashed with; once that merges or drops, the cause shows.
+    if (observed.githubQueue.entriesEnqueuedAt.some((at) => at < removed.at)) {
+      return {
+        kind: 'wait',
+        status: 'merging',
+        detail: `GitHub's merge queue dropped it${why}; waiting for the PRs that were ahead of it.`
+      }
+    }
     // A merge group can fail on a flake too: queue the same head once more before blaming the code.
     return enqueued.requeued
       ? fix('merge-group', `GitHub's merge queue dropped it again${why}.`)

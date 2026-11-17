@@ -25,7 +25,8 @@ export function queueOrder(items: readonly TicketItem[], parentWorktreeId: strin
   return queueCandidates(items, parentWorktreeId).filter((i) => !i.queueHeld)
 }
 
-/** The queue as the user sees it: only the head carries queue state, the rest wait their turn. */
+/** The queue as the user sees it: only the head carries queue state, unless GitHub's merge queue
+ *  takes every included PR at once. */
 export async function ticketQueueView(
   parentWorktreeId: string,
   repoId: string,
@@ -33,6 +34,9 @@ export async function ticketQueueView(
 ): Promise<TicketQueueView> {
   const items = await store.list()
   const head = queueOrder(items, parentWorktreeId)[0]
+  const viaGitHubQueue = head?.queue?.viaGitHubQueue === true
+  const worked = (item: TicketItem): boolean =>
+    item.id === head?.id || (viaGitHubQueue && !item.queueHeld)
   const entries: TicketQueueEntry[] = queueCandidates(items, parentWorktreeId).map((item) => ({
     itemId: item.id,
     ticketId: item.ticketId,
@@ -40,13 +44,14 @@ export async function ticketQueueView(
     reviewNumber: item.reviewNumber,
     reviewUrl: item.reviewUrl,
     childWorktreeId: item.childWorktreeId,
-    queue: item.id === head?.id ? (item.queue ?? null) : null,
+    queue: worked(item) ? (item.queue ?? null) : null,
     included: !item.queueHeld
   }))
   return {
     parentWorktreeId,
     pausedReason: await store.getQueuePause(parentWorktreeId),
     autoMerge: (await store.getSettings(repoId)).autoMerge,
+    viaGitHubQueue,
     entries
   }
 }

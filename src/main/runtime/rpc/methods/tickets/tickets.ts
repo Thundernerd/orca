@@ -195,9 +195,12 @@ export const TICKET_METHODS = [
     handler: async (params, { runtime }) => {
       const items = await getTicketItemStore().list()
       const item = items.find((i) => i.id === params.itemId)
-      // Only the ready head of an unpaused queue merges: order and the checks still hold.
-      const head = item ? queueOrder(items, item.parentWorktreeId)[0] : undefined
-      if (!item || head?.id !== item.id || item.queue?.status !== 'ready') {
+      // Only a ready PR the queue works on merges: the head, or any included PR under GitHub's queue.
+      const order = item ? queueOrder(items, item.parentWorktreeId) : []
+      const worked =
+        order[0]?.id === item?.id ||
+        (order[0]?.queue?.viaGitHubQueue === true && order.some((i) => i.id === item?.id))
+      if (!item || !worked || item.queue?.status !== 'ready') {
         throw new Error(
           'That ticket is not ready to merge; the queue has moved on or it is not first.'
         )

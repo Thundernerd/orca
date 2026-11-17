@@ -111,13 +111,21 @@ describe('decideMergeQueueStep', () => {
   })
 
   it("leaves a behind branch to GitHub's merge queue and requeues a dropped head once", () => {
-    const github = { inQueue: false, removed: null }
+    const github = { inQueue: false, removed: null, entriesEnqueuedAt: [] }
     expect(step({ behindBase: true, githubQueue: github }).kind).toBe('ready')
-    expect(step({ githubQueue: { inQueue: true, removed: null } }).kind).toBe('wait')
+    expect(step({ githubQueue: { ...github, inQueue: true } }).kind).toBe('wait')
     const sent = queued({ status: 'merging', enqueued: { head: 'h1', at: 500, requeued: false } })
     expect(step({ githubQueue: github }, sent)).toMatchObject({ kind: 'wait', status: 'merging' })
-    const dropped = { inQueue: false, removed: { at: 900, reason: 'CI failed' } }
+    const dropped = { ...github, removed: { at: 900, reason: 'CI failed' } }
     expect(step({ githubQueue: dropped }, sent).kind).toBe('requeue')
+    // A PR added before the drop is still ahead: it may be what this one clashed with.
+    expect(step({ githubQueue: { ...dropped, entriesEnqueuedAt: [800] } }, sent)).toMatchObject({
+      kind: 'wait',
+      status: 'merging'
+    })
+    expect(step({ githubQueue: { ...dropped, entriesEnqueuedAt: [950] } }, sent).kind).toBe(
+      'requeue'
+    )
     const requeued = queued({
       status: 'merging',
       enqueued: { head: 'h1', at: 500, requeued: true }

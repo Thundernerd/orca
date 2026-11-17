@@ -19,7 +19,7 @@ import type {
   TicketFinding
 } from '../../shared/ticket-pipeline/ticket-draft-types'
 import { ticketSourceKey } from '../../shared/ticket-pipeline/ticket-source-key'
-import { ticketQueueHead } from '../../shared/ticket-pipeline/ticket-queue-head'
+import { ticketQueueNextMerge } from '../../shared/ticket-pipeline/ticket-queue-head'
 import type { CommandHandler } from '../dispatch/dispatch'
 import { readTextOrFileFlag } from '../arguments/command-body-input'
 import {
@@ -208,7 +208,7 @@ export const TICKET_HANDLERS: Record<string, CommandHandler> = {
   'tickets merge': async ({ flags, client, cwd, json }) => {
     const worktree = await currentWorktree(flags, cwd, client)
     const view = await client.call<TicketQueueView>('tickets.queue', { worktree })
-    const head = ticketQueueHead(view.result.entries)
+    const head = ticketQueueNextMerge(view.result.entries)
     if (!head || head.queue?.status !== 'ready') {
       throw new RuntimeClientError(
         'invalid_argument',

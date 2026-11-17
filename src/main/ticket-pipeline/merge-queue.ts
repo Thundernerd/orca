@@ -34,7 +34,8 @@ export class MergeQueue {
     private readonly store: TicketItemStore = getTicketItemStore()
   ) {}
 
-  /** One step for the head of every unpaused queue. */
+  /** One step for the head of every unpaused queue, and for every PR behind it where GitHub's
+   *  merge queue tests each on top of those ahead, so none waits for the one before to merge. */
   async advanceAll(): Promise<void> {
     const items = await this.store.list()
     const parents = new Set(
@@ -44,9 +45,21 @@ export class MergeQueue {
       if (await this.store.getQueuePause(parent)) {
         continue
       }
-      const head = queueOrder(items, parent)[0]
-      if (head) {
-        await this.advance(head).catch((error: unknown) => this.recordError(head.id, error))
+      const [head, ...rest] = queueOrder(items, parent)
+      if (!head) {
+        continue
+      }
+      const viaGitHubQueue = await this.advance(head).catch(async (error: unknown) => {
+        await this.recordError(head.id, error)
+        return head.queue?.viaGitHubQueue === true
+      })
+      for (const item of rest) {
+        if (viaGitHubQueue) {
+          await this.advance(item).catch((error: unknown) => this.recordError(item.id, error))
+        } else if (item.queue) {
+          // Left from when the base merged through GitHub's queue: only the head carries state.
+          await this.store.update(item.id, { queue: undefined })
+        }
       }
     }
   }
@@ -92,7 +105,8 @@ export class MergeQueue {
       .catch(() => undefined)
   }
 
-  private async advance(item: TicketItem): Promise<void> {
+  /** One step for one PR; true when its base merges through GitHub's merge queue. */
+  private async advance(item: TicketItem): Promise<boolean> {
     const context = await observeQueueHead(this.runtime, item)
     if (!context) {
       await this.setQueue(item, {
@@ -101,7 +115,7 @@ export class MergeQueue {
         detail: 'Reading the PR from GitHub.',
         errorStreak: undefined
       })
-      return
+      return item.queue?.viaGitHubQueue === true
     }
     const { pr, prRepo, repoPath, observed } = context
     let action = decideMergeQueueStep(item.queue, observed)
@@ -112,6 +126,7 @@ export class MergeQueue {
       action = decideMergeQueueStep(item.queue, { ...observed, mergeBlocker: blocker })
     }
     await this.apply(item, action, context)
+    return observed.githubQueue !== null
   }
 
   private async apply(
@@ -122,7 +137,8 @@ export class MergeQueue {
     // Reaching a step means GitHub answered, so the error streak is over.
     const stored: TicketQueueState = {
       ...(item.queue ?? { status: 'waiting-ci', detail: '', fixAttempts: {} }),
-      errorStreak: undefined
+      errorStreak: undefined,
+      viaGitHubQueue: context.observed.githubQueue !== null
     }
     // Still waiting on a fix keeps the awaited head; any other step means the fix landed.
     const stillFixing = action.kind === 'wait' && action.status === 'fixing'

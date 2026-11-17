@@ -5,7 +5,6 @@ import type {
   TicketLaunchSelection,
   TicketPipelineSettings,
   TicketPipelineStatus,
-  TicketQueueView,
   TicketSourceOption,
   TicketSurveyResult,
   WorkspaceCleanResult,
@@ -18,9 +17,8 @@ import type {
 import type { OverviewActionResult } from './overview-actions'
 import { projectRoute, requireProjectRoute } from './overview-project-route'
 import { keptWorkspaceNotes } from './workspace-clean-outcome-text'
-import { ticketQueueHead } from '../../../../shared/ticket-pipeline/ticket-queue-head'
 
-const SURVEY_TIMEOUT_MS = 120_000
+export const SURVEY_TIMEOUT_MS = 120_000
 // Each ticket creates a workspace and starts an agent before the next one begins.
 const LAUNCH_TIMEOUT_MS = 10 * 60_000
 
@@ -149,86 +147,6 @@ export async function cleanOverviewWorkspaces(
         : []),
       ...kept
     ].join(' ')
-  }
-}
-
-export async function overviewMergeQueue(
-  projectId: string,
-  action: 'view' | 'resume' = 'view'
-): Promise<TicketQueueView> {
-  const route = requireProjectRoute(projectId)
-  return callRuntimeRpc<TicketQueueView>(
-    route.target,
-    action === 'resume' ? 'tickets.queueResume' : 'tickets.queue',
-    { repo: route.repo },
-    { timeoutMs: SURVEY_TIMEOUT_MS }
-  )
-}
-
-/** Holds ticket PRs out of the merge queue, or lets them back in. */
-export async function selectOverviewQueue(
-  projectId: string,
-  itemIds: readonly string[],
-  included: boolean
-): Promise<TicketQueueView> {
-  const route = requireProjectRoute(projectId)
-  return callRuntimeRpc<TicketQueueView>(route.target, 'tickets.queueSelect', {
-    repo: route.repo,
-    itemIds,
-    included
-  })
-}
-
-/** Merges the queue head if it is ready; otherwise reports what it is waiting on. */
-export async function mergeOverviewQueueHead(
-  projectId: string,
-  projectName: string
-): Promise<OverviewActionResult> {
-  const { target } = requireProjectRoute(projectId)
-  const view = await overviewMergeQueue(projectId)
-  const head = ticketQueueHead(view.entries)
-  if (view.pausedReason) {
-    return {
-      ok: false,
-      message: translate(
-        'auto.components.overview.mergeQueue.paused',
-        'The merge queue in {{project}} is paused: {{reason}}',
-        { project: projectName, reason: view.pausedReason }
-      )
-    }
-  }
-  if (!head || head.queue?.status !== 'ready') {
-    return {
-      ok: false,
-      message: head
-        ? translate(
-            'auto.components.overview.mergeQueue.notReady',
-            '{{ticket}} is not ready to merge yet: {{detail}}',
-            { ticket: head.ticketId, detail: head.queue?.detail ?? '' }
-          )
-        : translate(
-            'auto.components.overview.mergeQueue.empty',
-            'No ticket PRs are waiting to merge in {{project}}.',
-            { project: projectName }
-          )
-    }
-  }
-  await callRuntimeRpc<TicketQueueView>(
-    target,
-    'tickets.merge',
-    { itemId: head.itemId },
-    { timeoutMs: SURVEY_TIMEOUT_MS }
-  )
-  return {
-    ok: true,
-    message: translate(
-      'auto.components.overview.mergeQueue.merged',
-      'Merged {{ticket}} in {{project}}.',
-      {
-        ticket: head.ticketId,
-        project: projectName
-      }
-    )
   }
 }
 
