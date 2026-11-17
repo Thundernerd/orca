@@ -7,7 +7,10 @@ import { resolveTicketParentSelector, type TicketParentScope } from './ticket-pa
 import { getTicketItemStore } from './ticket-item-store'
 import { surveyTicketsWithSource } from './ticket-survey'
 
-/** Starts an agent per chosen ticket in the parent workspace, each running the project's triage skill. */
+const MAX_TRIAGE_BATCH = 5
+
+/** Starts agents in the parent workspace that run the project's triage skill on the chosen tickets,
+ *  up to MAX_TRIAGE_BATCH per agent. */
 export async function startTicketTriage(
   context: RpcContext,
   scope: TicketParentScope,
@@ -30,11 +33,11 @@ export async function startTicketTriage(
     throw new Error('No triage skill is installed for this project.')
   }
   const { triageModel } = await getTicketItemStore().getSettings(parent.repoId)
-  // One agent per ticket, each in its own tab; one failing to start leaves the others running.
+  // Batches share one session, so the repo docs load once; the cap keeps its context from growing unbounded.
   const started: string[] = []
   const failed: { id: string; reason: string }[] = []
-  for (const row of rows) {
-    const command = source.briefHints(row.ticket).readCommand
+  for (let i = 0; i < rows.length; i += MAX_TRIAGE_BATCH) {
+    const batch = rows.slice(i, i + MAX_TRIAGE_BATCH)
     try {
       await launchAgentOnHost(
         AgentLaunch.parse({
@@ -43,8 +46,10 @@ export async function startTicketTriage(
           presentation: 'background',
           prompt: {
             text: renderTicketTriageBrief({
-              ticket: row.ticket,
-              read: command ? `\`${command}\`` : row.ticket.ref,
+              tickets: batch.map((row) => {
+                const command = source.briefHints(row.ticket).readCommand
+                return { ticket: row.ticket, read: command ? `\`${command}\`` : row.ticket.ref }
+              }),
               skill
             }),
             delivery: 'submit'
@@ -54,12 +59,11 @@ export async function startTicketTriage(
         }),
         context
       )
-      started.push(row.ticket.id)
+      started.push(...batch.map((row) => row.ticket.id))
     } catch (error) {
-      failed.push({
-        id: row.ticket.id,
-        reason: error instanceof Error ? error.message : String(error)
-      })
+      // One batch failing to start leaves the others running.
+      const reason = error instanceof Error ? error.message : String(error)
+      failed.push(...batch.map((row) => ({ id: row.ticket.id, reason })))
     }
   }
   return { ticketIds: started, failed, skill }
