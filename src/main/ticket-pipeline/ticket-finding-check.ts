@@ -9,9 +9,12 @@ import { launchAgentOnHost } from '../runtime/rpc/methods/agent-launch/agent-lau
 import { findFindingOrigin, resolvePublishingSource } from './ticket-drafts'
 import { getTicketItemStore } from './ticket-item-store'
 
+/** Corka itself, for a check it starts on its own rather than for an RPC caller. */
+export const TICKET_PIPELINE_CALLER = { kind: 'local-cli' } as const
+
 /** Starts one agent in the ticket's parent workspace that checks its findings before filing them. */
 export async function startFindingCheck(
-  context: Pick<RpcContext, 'runtime'>,
+  context: Pick<RpcContext, 'runtime' | 'caller'>,
   worktreeSelector: string,
   input: { findingOf: string; findings: readonly TicketFindingToCheck[] }
 ): Promise<{ findingOf: string; titles: string[] }> {

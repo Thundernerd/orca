@@ -123,6 +123,8 @@ export type TicketItem = {
   agentSessionId?: string
   /** The Claude cloud session that opened the PR, when the ticket ran there; fix briefs go here. */
   agentCloudSessionId?: string
+  /** The findings the cloud session listed in its PR went to a check, or it listed none. */
+  cloudFindingsChecked?: boolean
   /** Why auto-clean last kept this merged ticket's workspace; it tries again on the next check. */
   autoCleanHeld?: { reason: string; at: number }
   /** The user held it out of the merge queue; it keeps its place and rejoins when ticked again. */

@@ -2,14 +2,16 @@ import { randomUUID } from 'node:crypto'
 import { getRepoRoutingConnectionId } from '../../shared/execution-host/execution-host'
 import { isFolderRepo } from '../../shared/repository/repo-kind'
 import { CONVENTIONAL_TYPES, type TicketItem } from '../../shared/ticket-pipeline/ticket-types'
+import type { GitHubRepositoryIdentity } from '../../shared/github/repositories/repository-identity'
 import {
   listOpenCloudSessionPRs,
   readIssue,
+  readPRBody,
   removeCloudSessionFooter,
   withoutCloudSessionFooter
 } from '../github/pull-requests/cloud-session-prs'
 import { parsePRFindings } from '../../shared/ticket-pipeline/ticket-pr-findings'
-import { startFindingCheck } from './ticket-finding-check'
+import { startFindingCheck, TICKET_PIPELINE_CALLER } from './ticket-finding-check'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import { getTicketItemStore, type TicketItemStore } from './ticket-item-store'
 import { resolveTicketParentSelector } from './ticket-parent-workspace'
@@ -52,9 +54,6 @@ async function adoptForRepo(
     const issueNumber = Number(TICKET_BRANCH.exec(pr.branch)?.[1] ?? Number.NaN)
     return Number.isNaN(issueNumber) || tracked.has(pr.branch) ? [] : [{ pr, issueNumber }]
   })
-  if (fresh.length === 0) {
-    return 0
-  }
   const parentSelector = await resolveTicketParentSelector(runtime, { repo: `id:${repoId}` })
   const parentWorktreeId = parentSelector.replace(/^id:/, '')
   for (const { pr, issueNumber } of fresh) {
@@ -80,16 +79,48 @@ async function adoptForRepo(
       updatedAt: now
     }
     await store.put(item)
-    // A cloud session has no Corka CLI to hand findings over with, so it lists them in the PR.
-    const findings = parsePRFindings(withoutCloudSessionFooter(pr.body))
-    if (findings.length > 0) {
-      await startFindingCheck({ runtime }, parentSelector, {
-        findingOf: item.ticketId,
-        findings
-      }).catch((error: unknown) =>
-        console.warn(`[tickets] could not start the finding check for ${item.ticketId}`, error)
-      )
+  }
+  await checkCloudFindings(runtime, store, {
+    repoId,
+    repoPath: repo.path,
+    ownerRepo,
+    parentSelector
+  })
+  return fresh.length
+}
+
+/** A cloud session has no Corka CLI to hand findings over with, so it lists them in its PR: each
+ *  cloud ticket's are checked in one session, retried each tick until that session starts. */
+async function checkCloudFindings(
+  runtime: OrcaRuntimeService,
+  store: TicketItemStore,
+  where: {
+    repoId: string
+    repoPath: string
+    ownerRepo: GitHubRepositoryIdentity
+    parentSelector: string
+  }
+): Promise<void> {
+  const unchecked = (await store.list()).filter(
+    (i) =>
+      i.repoId === where.repoId &&
+      i.agentCloudSessionId &&
+      !i.cloudFindingsChecked &&
+      i.reviewNumber
+  )
+  for (const item of unchecked) {
+    try {
+      const body = await readPRBody(where.repoPath, where.ownerRepo, item.reviewNumber ?? 0)
+      const findings = parsePRFindings(withoutCloudSessionFooter(body))
+      if (findings.length > 0) {
+        await startFindingCheck({ runtime, caller: TICKET_PIPELINE_CALLER }, where.parentSelector, {
+          findingOf: item.ticketId,
+          findings
+        })
+      }
+      await store.update(item.id, { cloudFindingsChecked: true })
+    } catch (error) {
+      console.warn(`[tickets] could not start the finding check for ${item.ticketId}`, error)
     }
   }
-  return fresh.length
 }

@@ -68,6 +68,20 @@ export async function readIssue(
   return Issue.parse(JSON.parse(stdout))
 }
 
+/** A PR's body as it stands now, open or merged. */
+export async function readPRBody(
+  repoPath: string,
+  ownerRepo: GitHubRepositoryIdentity,
+  prNumber: number
+): Promise<string> {
+  const stdout = await ghApi(repoPath, ownerRepo, [
+    `repos/${ownerRepo.owner}/${ownerRepo.repo}/pulls/${prNumber}`,
+    '--jq',
+    '.body // ""'
+  ])
+  return stdout.replace(/\n$/, '')
+}
+
 /** The PR body without the session footer, which is Claude attribution. */
 export function withoutCloudSessionFooter(body: string): string {
   return body.replace(SESSION_FOOTER, '\n')
