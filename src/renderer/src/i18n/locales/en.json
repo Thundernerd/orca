@@ -20401,6 +20401,9 @@
           "unavailable": "Tickets cannot be launched for {{project}} from here.",
           "result": "Launched {{count}} of {{total}} tickets in {{project}}.",
           "source": "Tickets from",
+          "triageModel": "Triage runs",
+          "findingModel": "Finding checks run",
+          "userDefaultModel": "Your default",
           "selectAll": "Select all tickets",
           "selectedCount": "{{count}} of {{total}} selected"
         },

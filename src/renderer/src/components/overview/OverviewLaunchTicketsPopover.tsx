@@ -19,6 +19,7 @@ import {
 } from '../../../../shared/ticket-pipeline/ticket-types'
 import { surveyOverviewProject } from './overview-ticket-pipeline'
 import { OverviewTicketSourceSelect } from './OverviewTicketSourceSelect'
+import { OverviewTicketAgentModels } from './OverviewTicketAgentModels'
 import { OverviewTriageTickets } from './OverviewTriageTickets'
 
 type Choice = { row: TicketSurveyRow; selected: boolean; type: ConventionalType }
@@ -138,6 +139,7 @@ export function OverviewLaunchTicketsPopover({
             )}
           </p>
           <OverviewTicketSourceSelect projectId={projectId} onChanged={() => void load()} />
+          <OverviewTicketAgentModels projectId={projectId} />
           {state.kind === 'loading' ? (
             <p className="text-xs text-muted-foreground">
               {t(
