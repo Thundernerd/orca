@@ -56,12 +56,20 @@ export const TICKET_COMMAND_SPECS: CommandSpec[] = [
     path: ['tickets', 'settings'],
     summary: "Show or change the project's ticket settings",
     usage:
-      'orca tickets settings [--worktree <selector>] [--source <source>] [--auto-clean on|off] [--auto-merge on|off] [--json]',
-    allowedFlags: [...GLOBAL_FLAGS, 'worktree', 'source', 'auto-clean', 'auto-merge'],
+      'orca tickets settings [--worktree <selector>] [--source <source>] [--auto-clean on|off] [--auto-merge on|off] [--adopt-cloud on|off] [--json]',
+    allowedFlags: [
+      ...GLOBAL_FLAGS,
+      'worktree',
+      'source',
+      'auto-clean',
+      'auto-merge',
+      'adopt-cloud'
+    ],
     notes: [
       'The source is auto (ticket files, else GitHub issues), github-issues, linear:<TEAM KEY> or jira:<PROJECT KEY>, from the Linear and Jira accounts connected in Settings.',
       'With --auto-clean on, Corka removes a ticket workspace once its PR merges and the clean-up survey clears it.',
-      'With --auto-merge on, the merge queue merges its head as soon as it is ready instead of waiting for `orca tickets merge`.'
+      'With --auto-merge on, the merge queue merges its head as soon as it is ready instead of waiting for `orca tickets merge`.',
+      'With --adopt-cloud on, Corka takes PRs that Claude cloud sessions open on ticket branches into the merge queue and sends their fix briefs to the session. Turn it on for one host only.'
     ],
     examples: [
       'orca tickets settings',

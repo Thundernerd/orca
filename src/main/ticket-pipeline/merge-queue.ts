@@ -99,9 +99,10 @@ export class MergeQueue {
   private async pause(item: TicketItem, detail: string): Promise<void> {
     await this.store.setQueuePause(item.parentWorktreeId, `${item.ticketId}: ${detail}`)
     await this.setQueue(item, { ...(item.queue ?? { fixAttempts: {} }), status: 'paused', detail })
-    // The user decides what happens next; make the workspace ask for attention.
+    // The user decides what happens next; make the workspace ask for attention. A cloud ticket has
+    // none of its own, so its project's main workspace asks instead.
     await this.runtime
-      .updateManagedWorktreeMeta(`id:${item.childWorktreeId}`, {
+      .updateManagedWorktreeMeta(`id:${item.childWorktreeId || item.parentWorktreeId}`, {
         isUnread: true,
         comment: `merge queue paused: ${detail}`
       })

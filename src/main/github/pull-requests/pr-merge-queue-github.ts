@@ -15,7 +15,12 @@ export function prRepoFromUrl(url: string): GitHubOwnerRepo | null {
   return host === 'github.com' ? { owner, repo } : { owner, repo, host }
 }
 
-async function ghApi(repoPath: string, prRepo: GitHubOwnerRepo, args: string[]): Promise<string> {
+/** `gh api` against a PR's repository, inside GitHub's shared operation slots. */
+export async function ghApi(
+  repoPath: string,
+  prRepo: GitHubOwnerRepo,
+  args: string[]
+): Promise<string> {
   const { ownerRepo, ghOptions } = await resolveGitHubRepoExecution(repoPath, prRepo)
   if (!ownerRepo) {
     throw new Error('Could not resolve the GitHub repository for this PR.')

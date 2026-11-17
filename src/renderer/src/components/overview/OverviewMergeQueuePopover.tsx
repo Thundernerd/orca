@@ -72,6 +72,10 @@ export function OverviewMergeQueuePopover({
   const head = view ? ticketQueueNextMerge(view.entries) : undefined
   const includedCount = view?.entries.filter((e) => e.included !== false).length ?? 0
   const total = view?.entries.length ?? 0
+  const adoptCloudLabel = t(
+    'auto.components.overview.mergeQueue.adoptCloud',
+    'Take in PRs from Claude cloud sessions (turn on for one machine only)'
+  )
   const autoMergeLabel = view?.viaGitHubQueue
     ? t(
         'auto.components.overview.mergeQueue.autoGitHub',
@@ -112,6 +116,15 @@ export function OverviewMergeQueuePopover({
               aria-label={autoMergeLabel}
             />
             <span className="text-xs text-muted-foreground">{autoMergeLabel}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={settings?.adoptCloudPRs ?? false}
+              disabled={!settings}
+              onCheckedChange={(adoptCloudPRs) => updateSettings({ adoptCloudPRs })}
+              aria-label={adoptCloudLabel}
+            />
+            <span className="text-xs text-muted-foreground">{adoptCloudLabel}</span>
           </div>
           {state.kind === 'loading' ? (
             <p className="text-xs text-muted-foreground">

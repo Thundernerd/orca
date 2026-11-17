@@ -80,6 +80,7 @@ export const TicketSettings = z.object({
     .object({
       autoClean: z.boolean().optional(),
       autoMerge: z.boolean().optional(),
+      adoptCloudPRs: z.boolean().optional(),
       source: TicketSourceConfigSchema.optional()
     })
     .optional()

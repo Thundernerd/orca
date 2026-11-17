@@ -40,7 +40,10 @@ export async function ticketPipelineStatus(
     ...(settings.autoClean
       ? merged.filter((i) => !i.autoCleanHeld || i.autoCleanHeld.reason === 'agent-active')
       : [])
-  ].map((i) => i.childWorktreeId)
+  ]
+    .map((i) => i.childWorktreeId)
+    // A cloud ticket has no workspace for the board to mark.
+    .filter((id) => id !== '')
   return {
     ...ticketTrackerStatus(),
     automatedWorktreeIds: automated,

@@ -104,6 +104,7 @@ export type TicketItem = {
   id: string
   repoId: string
   parentWorktreeId: string
+  /** Empty for a cloud ticket, which has no workspace. */
   childWorktreeId: string
   source: TicketSourceKind
   ticketId: string
@@ -118,6 +119,8 @@ export type TicketItem = {
   agentTerminalHandle?: string
   /** The agent's chat session from launch, when it opened as a chat; fix briefs go here. */
   agentSessionId?: string
+  /** The Claude cloud session that opened the PR, when the ticket ran there; fix briefs go here. */
+  agentCloudSessionId?: string
   /** Why auto-clean last kept this merged ticket's workspace; it tries again on the next check. */
   autoCleanHeld?: { reason: string; at: number }
   /** The user held it out of the merge queue; it keeps its place and rejoins when ticked again. */
@@ -194,13 +197,21 @@ export type TicketPipelineSettings = {
   autoClean: boolean
   /** Merge the head of the queue as soon as it is ready, instead of waiting for a click. */
   autoMerge: boolean
+  /** Take PRs that Claude cloud sessions open on ticket branches into the merge queue. */
+  adoptCloudPRs: boolean
   source: TicketSourceConfig
 }
 
 export const DEFAULT_TICKET_PIPELINE_SETTINGS: TicketPipelineSettings = {
   autoClean: false,
   autoMerge: false,
+  adoptCloudPRs: false,
   source: { kind: 'auto' }
+}
+
+/** A ticket a Claude cloud session works on: it has no workspace, only a session and a PR. */
+export function isCloudTicket(item: Pick<TicketItem, 'agentCloudSessionId'>): boolean {
+  return Boolean(item.agentCloudSessionId)
 }
 
 /** A source the user can pick for a project, labelled for a menu. */

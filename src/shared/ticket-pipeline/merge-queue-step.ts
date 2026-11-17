@@ -184,7 +184,7 @@ export function decideMergeQueueStep(
 }
 
 const ATTRIBUTION =
-  /co-authored-by:.*(claude|anthropic)|generated with \[?claude|🤖 generated with/i
+  /co-authored-by:.*(claude|anthropic)|generated (with|by) \[?claude|🤖 generated with/i
 
 /** The PR text lines that carry Claude attribution. */
 export function findAttribution(texts: readonly string[]): string[] {

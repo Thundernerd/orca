@@ -8,13 +8,14 @@ import {
   reconcileTicketItem,
   type TicketItemObservation
 } from '../../shared/ticket-pipeline/ticket-item-reconcile'
-import type { TicketItem } from '../../shared/ticket-pipeline/ticket-types'
+import { isCloudTicket, type TicketItem } from '../../shared/ticket-pipeline/ticket-types'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import { getTicketItemStore, type TicketItemStore } from './ticket-item-store'
 import { cleanWorkspaces } from './workspace-clean'
 import { getMergeQueue } from './merge-queue'
 import { resolveTicketSource } from './sources/ticket-source-resolution'
 import { foundPR } from './ticket-pr-lookup'
+import { adoptCloudTicketPRs } from './ticket-cloud-adoption'
 
 export type TicketTrackerRuntime = {
   getWorktreePs(limit: number): Promise<RuntimeWorktreePsResult>
@@ -112,6 +113,8 @@ export class TicketTracker {
     private readonly advanceQueues?: () => Promise<void>,
     /** Finishes the ticket in its tracker once its PR merged, where merging alone does not. */
     private readonly completeTicket?: (item: TicketItem) => Promise<void>,
+    /** Takes PRs Claude cloud sessions opened into the queue; absent disables it. */
+    private readonly adoptCloudPRs?: () => Promise<number>,
     private readonly store: TicketItemStore = getTicketItemStore()
   ) {}
 
@@ -121,7 +124,8 @@ export class TicketTracker {
       return []
     }
     const waiting: TicketItem[] = []
-    for (const item of items.filter((i) => i.stage === 'merged')) {
+    // A cloud ticket has no workspace to clean.
+    for (const item of items.filter((i) => i.stage === 'merged' && !isCloudTicket(i))) {
       if ((await this.store.getSettings(item.repoId)).autoClean) {
         waiting.push(item)
       }
@@ -162,12 +166,19 @@ export class TicketTracker {
 
   /** One pass over the active items; false when none are left, so the timer stops until the next launch. */
   async tick(): Promise<boolean> {
+    // A cloud session's PR can appear at any time, so a project that adopts them keeps the loop on.
+    const adopting = this.adoptCloudPRs
+      ? (await this.store.reposAdoptingCloudPRs()).length > 0
+      : false
+    if (adopting) {
+      await this.adoptCloudPRs?.()
+    }
     const items = await this.store.list()
     const now = Date.now()
     const active = items.filter((item) => isActive(item, now))
     const cleanable = await this.awaitingAutoClean(items)
     if (active.length === 0 && cleanable.length === 0) {
-      return false
+      return adopting
     }
     const [ps, listed] = await Promise.all([
       this.runtime.getWorktreePs(SCAN_LIMIT),
@@ -176,13 +187,14 @@ export class TicketTracker {
     const existing = new Set(listed.worktrees.map((w) => w.id))
     const summaries = new Map(ps.worktrees.map((w) => [w.worktreeId, w]))
     // A closed ticket can only reopen while its workspace is still there to push from.
-    const followed = active.filter(
-      (item) => item.stage !== 'closed' || existing.has(item.childWorktreeId)
-    )
+    // A cloud ticket has no workspace: its PR alone says where it stands, and it can always reopen.
+    const hasWorkspace = (item: TicketItem): boolean =>
+      isCloudTicket(item) || existing.has(item.childWorktreeId)
+    const followed = active.filter((item) => item.stage !== 'closed' || hasWorkspace(item))
     for (const item of followed) {
-      const summary = summaries.get(item.childWorktreeId)
+      const summary = isCloudTicket(item) ? undefined : summaries.get(item.childWorktreeId)
       const observed: TicketItemObservation = {
-        workspaceExists: existing.has(item.childWorktreeId),
+        workspaceExists: hasWorkspace(item),
         agentWaiting: summary?.status === 'permission' || summary?.status === 'done',
         review: await findReview(this.runtime, item, summary?.linkedPR)
       }
@@ -197,7 +209,8 @@ export class TicketTracker {
         )
       }
       const boardStatus = update.stage !== item.stage ? boardStatusFor(update.stage) : null
-      if (observed.workspaceExists && (boardStatus || update.reviewNumber !== item.reviewNumber)) {
+      const onBoard = observed.workspaceExists && !isCloudTicket(item)
+      if (onBoard && (boardStatus || update.reviewNumber !== item.reviewNumber)) {
         await this.runtime
           .updateManagedWorktreeMeta(`id:${item.childWorktreeId}`, {
             ...(boardStatus ? { workspaceStatus: boardStatus } : {}),
@@ -215,7 +228,7 @@ export class TicketTracker {
         console.warn('[tickets] auto-clean failed', error)
       )
     }
-    return followed.length > 0 || cleanable.length > 0
+    return followed.length > 0 || cleanable.length > 0 || adopting
   }
 }
 
@@ -248,7 +261,8 @@ export function startTicketTracker(runtime: OrcaRuntimeService): void {
       if (source.kind === item.source) {
         await source.complete(item.ticketId)
       }
-    }
+    },
+    () => adoptCloudTicketPRs(runtime)
   )
   tracker.start()
 }

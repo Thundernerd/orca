@@ -174,11 +174,13 @@ export const TICKET_HANDLERS: Record<string, CommandHandler> = {
     const repo = `id:${shown.result.worktree.repoId}`
     const autoClean = onOff(flags, 'auto-clean')
     const autoMerge = onOff(flags, 'auto-merge')
+    const adoptCloudPRs = onOff(flags, 'adopt-cloud')
     const sourceFlag = getOptionalStringFlag(flags, 'source')
     const source = sourceFlag === undefined ? undefined : await pickSource(client, repo, sourceFlag)
     const patch = {
       ...(autoClean !== undefined ? { autoClean } : {}),
       ...(autoMerge !== undefined ? { autoMerge } : {}),
+      ...(adoptCloudPRs !== undefined ? { adoptCloudPRs } : {}),
       ...(source ? { source } : {})
     }
     const result = await client.call<TicketPipelineSettings>('tickets.settings', {
@@ -189,7 +191,7 @@ export const TICKET_HANDLERS: Record<string, CommandHandler> = {
       result,
       json,
       (s) =>
-        `source: ${ticketSourceKey(s.source)}\nauto-clean: ${s.autoClean ? 'on' : 'off'}\nauto-merge: ${s.autoMerge ? 'on' : 'off'}`
+        `source: ${ticketSourceKey(s.source)}\nauto-clean: ${s.autoClean ? 'on' : 'off'}\nauto-merge: ${s.autoMerge ? 'on' : 'off'}\nadopt-cloud: ${s.adoptCloudPRs ? 'on' : 'off'}`
     )
   },
   'tickets queue': async ({ flags, client, cwd, json }) => {

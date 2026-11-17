@@ -93,6 +93,12 @@ export class TicketItemStore {
     return { ...DEFAULT_TICKET_PIPELINE_SETTINGS, ...this.settings.get(repoId) }
   }
 
+  /** Projects whose cloud-session PRs this host takes into the merge queue. */
+  async reposAdoptingCloudPRs(): Promise<string[]> {
+    await this.load()
+    return [...this.settings].filter(([, s]) => s.adoptCloudPRs === true).map(([repoId]) => repoId)
+  }
+
   async updateSettings(
     repoId: string,
     patch: Partial<TicketPipelineSettings>

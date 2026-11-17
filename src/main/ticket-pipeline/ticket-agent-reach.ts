@@ -6,16 +6,23 @@ import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import { mintAgentSessionOperationId } from '../runtime/orchestration/mailbox/structured-pointer/structured-pointer-operation-id'
 import { sendAgentTurn } from '../runtime/orchestration/turn-delivery/send-agent-turn'
 import { observeChatAssignee } from '../runtime/orchestration/workers/lifecycle/chat-assignee'
+import { sendClaudeCloudSessionMessage } from '../claude/cloud/claude-cloud-session-message'
 
-/** Where a fix brief can reach the ticket's agent: its terminal, or its chat's live session. */
+/** Where a fix brief can reach the ticket's agent: its terminal, its chat's live session, or the
+ *  Claude cloud session that opened its PR. */
 export type TicketAgentReach =
   | { kind: 'terminal'; handle: string }
   | { kind: 'chat'; sessionId: string; fence: number }
+  | { kind: 'cloud'; sessionId: string }
 
 export async function findTicketAgent(
   runtime: OrcaRuntimeService,
   item: TicketItem
 ): Promise<TicketAgentReach | null> {
+  if (item.agentCloudSessionId) {
+    // Nothing reports a cloud session's state; a send that fails says it is gone.
+    return { kind: 'cloud', sessionId: item.agentCloudSessionId }
+  }
   if (item.agentSessionId) {
     // A /clear moves the chat to a successor session; observing follows it to the live one.
     const observed = isOrcaSessionId(item.agentSessionId)
@@ -44,6 +51,13 @@ export async function sendTicketAgentFixBrief(
   agent: TicketAgentReach,
   brief: string
 ): Promise<boolean> {
+  if (agent.kind === 'cloud') {
+    const sent = await sendClaudeCloudSessionMessage(agent.sessionId, brief)
+    if (!sent.ok) {
+      console.warn(`[tickets] cloud session ${agent.sessionId} did not take the brief`, sent.error)
+    }
+    return sent.ok
+  }
   if (agent.kind === 'terminal') {
     const sent = await runtime.sendTerminalAgentPrompt(agent.handle, brief, {
       inputKind: 'orchestration',
