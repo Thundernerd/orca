@@ -4,12 +4,14 @@ import { isFolderRepo } from '../../shared/repository/repo-kind'
 import { CONVENTIONAL_TYPES, type TicketItem } from '../../shared/ticket-pipeline/ticket-types'
 import type { GitHubRepositoryIdentity } from '../../shared/github/repositories/repository-identity'
 import {
+  claimCloudSessionPR,
   listOpenCloudSessionPRs,
   readIssue,
-  readPRBody,
-  removeCloudSessionFooter,
-  withoutCloudSessionFooter
+  readPRBody
 } from '../github/pull-requests/cloud-session-prs'
+import { cloudSessionBodyText } from '../../shared/ticket-pipeline/cloud-session-marker'
+import { loadOrCreateHostInstallationId } from '../runtime/hosts/platform-probe/host-descriptor'
+import { getCanonicalUserDataPath } from '../persistence/loading-store/user-data-path'
 import { parsePRFindings } from '../../shared/ticket-pipeline/ticket-pr-findings'
 import { startFindingCheck, TICKET_PIPELINE_CALLER } from './ticket-finding-check'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
@@ -21,14 +23,20 @@ const TICKET_BRANCH = new RegExp(`^(?:${CONVENTIONAL_TYPES.join('|')})/gh-(\\d+)
 
 /** Takes PRs Claude cloud sessions opened on ticket branches into the merge queue of their
  *  project's main workspace, for every project that adopts them on this host, and checks the
- *  findings each PR lists in one session. */
+ *  findings each PR lists in one session. A PR another host claimed stays with that host. */
 export async function adoptCloudTicketPRs(
   runtime: OrcaRuntimeService,
   store: TicketItemStore = getTicketItemStore()
 ): Promise<number> {
+  const repoIds = await store.reposAdoptingCloudPRs()
+  if (repoIds.length === 0) {
+    return 0
+  }
+  // Stable across restarts, unlike the runtime id, so a claim outlives this process.
+  const host = await loadOrCreateHostInstallationId(getCanonicalUserDataPath())
   let adopted = 0
-  for (const repoId of await store.reposAdoptingCloudPRs()) {
-    adopted += await adoptForRepo(runtime, store, repoId).catch((error: unknown) => {
+  for (const repoId of repoIds) {
+    adopted += await adoptForRepo(runtime, store, repoId, host).catch((error: unknown) => {
       console.warn('[tickets] could not adopt cloud-session PRs', error)
       return 0
     })
@@ -39,7 +47,8 @@ export async function adoptCloudTicketPRs(
 async function adoptForRepo(
   runtime: OrcaRuntimeService,
   store: TicketItemStore,
-  repoId: string
+  repoId: string,
+  host: string
 ): Promise<number> {
   const repo = await runtime.showRepo(`id:${repoId}`)
   // GitHub issues on a git project this host serves: the only tickets a cloud session works.
@@ -52,13 +61,17 @@ async function adoptForRepo(
   )
   const fresh = prs.flatMap((pr) => {
     const issueNumber = Number(TICKET_BRANCH.exec(pr.branch)?.[1] ?? Number.NaN)
-    return Number.isNaN(issueNumber) || tracked.has(pr.branch) ? [] : [{ pr, issueNumber }]
+    const ours = pr.host === null || pr.host === host
+    return Number.isNaN(issueNumber) || tracked.has(pr.branch) || !ours ? [] : [{ pr, issueNumber }]
   })
   const parentSelector = await resolveTicketParentSelector(runtime, { repo: `id:${repoId}` })
   const parentWorktreeId = parentSelector.replace(/^id:/, '')
   for (const { pr, issueNumber } of fresh) {
+    // Two hosts can claim one PR at once; only the one its body names afterwards keeps it.
+    if ((await claimCloudSessionPR(repo.path, ownerRepo, pr, host)) !== host) {
+      continue
+    }
     const issue = await readIssue(repo.path, issueNumber, ownerRepo)
-    await removeCloudSessionFooter(repo.path, ownerRepo, pr)
     const now = Date.now()
     const item: TicketItem = {
       id: randomUUID(),
@@ -111,7 +124,7 @@ async function checkCloudFindings(
   for (const item of unchecked) {
     try {
       const body = await readPRBody(where.repoPath, where.ownerRepo, item.reviewNumber ?? 0)
-      const findings = parsePRFindings(withoutCloudSessionFooter(body))
+      const findings = parsePRFindings(cloudSessionBodyText(body))
       if (findings.length > 0) {
         await startFindingCheck({ runtime, caller: TICKET_PIPELINE_CALLER }, where.parentSelector, {
           findingOf: item.ticketId,
