@@ -4,7 +4,8 @@ import { resolveGitHubRepoExecution } from '../repositories/github-api-repositor
 import { ghApi } from './pr-merge-queue-github'
 import {
   readCloudSessionTag,
-  withCloudSessionMarker
+  withCloudSessionMarker,
+  type CloudSessionTag
 } from '../../../shared/ticket-pipeline/cloud-session-marker'
 
 const OpenPRs = z.array(
@@ -20,20 +21,22 @@ const OpenPRs = z.array(
 
 const Issue = z.object({ title: z.string(), url: z.string(), body: z.string() })
 
-export type CloudSessionPR = {
+export type OpenRepoPR = {
   number: number
   url: string
   branch: string
   body: string
-  sessionId: string
-  /** The Corka host that follows it; null until one claims it. */
-  host: string | null
+  /** The cloud session and host its body names now; null when it names neither. */
+  tag: CloudSessionTag | null
 }
 
-/** Open, non-draft PRs of the repo's own branches that a Claude cloud session opened. */
-export async function listOpenCloudSessionPRs(
+export type CloudSessionPR = Pick<OpenRepoPR, 'number' | 'url' | 'branch' | 'body'> &
+  CloudSessionTag
+
+/** Open, non-draft PRs of the repo's own branches, with the cloud session their body names. */
+export async function listOpenRepoPRs(
   repoPath: string
-): Promise<{ ownerRepo: GitHubRepositoryIdentity; prs: CloudSessionPR[] }> {
+): Promise<{ ownerRepo: GitHubRepositoryIdentity; prs: OpenRepoPR[] }> {
   const { ownerRepo } = await resolveGitHubRepoExecution(repoPath, null)
   if (!ownerRepo) {
     throw new Error('Could not resolve the GitHub repository.')
@@ -43,13 +46,61 @@ export async function listOpenCloudSessionPRs(
     '--jq',
     '[.[] | {number, url: .html_url, branch: .head.ref, body: (.body // ""), draft, sameRepo: (.head.repo.full_name == .base.repo.full_name)}]'
   ])
-  const prs = OpenPRs.parse(JSON.parse(stdout || '[]')).flatMap((pr) => {
-    const tag = readCloudSessionTag(pr.body)
-    return tag && !pr.draft && pr.sameRepo
-      ? [{ number: pr.number, url: pr.url, branch: pr.branch, body: pr.body, ...tag }]
+  const prs = OpenPRs.parse(JSON.parse(stdout || '[]')).flatMap((pr) =>
+    !pr.draft && pr.sameRepo
+      ? [
+          {
+            number: pr.number,
+            url: pr.url,
+            branch: pr.branch,
+            body: pr.body,
+            tag: readCloudSessionTag(pr.body)
+          }
+        ]
       : []
-  })
+  )
   return { ownerRepo, prs }
+}
+
+const FirstRevision = z.object({
+  data: z.object({
+    repository: z.object({
+      pullRequest: z.object({
+        userContentEdits: z.object({
+          nodes: z.array(z.object({ diff: z.string().nullish() }).nullable())
+        })
+      })
+    })
+  })
+})
+
+/** The cloud session a PR's body named when it was opened, from GitHub's edit history: a session
+ *  can rewrite its body, footer and all, before any host sees it. Null when it named none. */
+export async function readFirstRevisionSessionId(
+  repoPath: string,
+  ownerRepo: GitHubRepositoryIdentity,
+  prNumber: number
+): Promise<string | null> {
+  // Edits list newest first, so the last one is the body as it was opened.
+  const query = `query($owner: String!, $repo: String!, $number: Int!) {
+    repository(owner: $owner, name: $repo) {
+      pullRequest(number: $number) { userContentEdits(last: 1) { nodes { diff } } }
+    }
+  }`
+  const stdout = await ghApi(repoPath, ownerRepo, [
+    'graphql',
+    '-f',
+    `query=${query}`,
+    '-f',
+    `owner=${ownerRepo.owner}`,
+    '-f',
+    `repo=${ownerRepo.repo}`,
+    '-F',
+    `number=${prNumber}`
+  ])
+  const original = FirstRevision.parse(JSON.parse(stdout)).data.repository.pullRequest
+    .userContentEdits.nodes[0]?.diff
+  return original ? (readCloudSessionTag(original)?.sessionId ?? null) : null
 }
 
 export async function readIssue(

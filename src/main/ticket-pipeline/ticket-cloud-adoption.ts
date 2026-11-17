@@ -5,10 +5,14 @@ import { CONVENTIONAL_TYPES, type TicketItem } from '../../shared/ticket-pipelin
 import type { GitHubRepositoryIdentity } from '../../shared/github/repositories/repository-identity'
 import {
   claimCloudSessionPR,
-  listOpenCloudSessionPRs,
+  listOpenRepoPRs,
+  readFirstRevisionSessionId,
   readIssue,
-  readPRBody
+  readPRBody,
+  type CloudSessionPR,
+  type OpenRepoPR
 } from '../github/pull-requests/cloud-session-prs'
+import type { CloudSessionTag } from '../../shared/ticket-pipeline/cloud-session-marker'
 import { cloudSessionBodyText } from '../../shared/ticket-pipeline/cloud-session-marker'
 import { loadOrCreateHostInstallationId } from '../runtime/hosts/platform-probe/host-descriptor'
 import { getCanonicalUserDataPath } from '../persistence/loading-store/user-data-path'
@@ -20,6 +24,31 @@ import { resolveTicketParentSelector } from './ticket-parent-workspace'
 
 // `fix/gh-314-keep-…`: the branch a ticket brief names, so the issue number is in it.
 const TICKET_BRANCH = new RegExp(`^(?:${CONVENTIONAL_TYPES.join('|')})/gh-(\\d+)(?:-|$)`)
+
+// Ticket-branch PRs whose first revision named no session, such as one a person opened: asking
+// GitHub's edit history once per PR is enough.
+const notCloudPRs = new Set<string>()
+
+/** The session a ticket-branch PR's body names now, else the one it named when opened. */
+async function cloudSessionOf(
+  repoPath: string,
+  ownerRepo: GitHubRepositoryIdentity,
+  pr: OpenRepoPR
+): Promise<CloudSessionTag | null> {
+  if (pr.tag) {
+    return pr.tag
+  }
+  const key = `${ownerRepo.owner}/${ownerRepo.repo}#${pr.number}`
+  if (notCloudPRs.has(key)) {
+    return null
+  }
+  const sessionId = await readFirstRevisionSessionId(repoPath, ownerRepo, pr.number)
+  if (!sessionId) {
+    notCloudPRs.add(key)
+    return null
+  }
+  return { sessionId, host: null }
+}
 
 /** Takes PRs Claude cloud sessions opened on ticket branches into the merge queue of their
  *  project's main workspace, for every project that adopts them on this host, and checks the
@@ -55,15 +84,22 @@ async function adoptForRepo(
   if (isFolderRepo(repo) || getRepoRoutingConnectionId(repo)) {
     return 0
   }
-  const { ownerRepo, prs } = await listOpenCloudSessionPRs(repo.path)
+  const { ownerRepo, prs: open } = await listOpenRepoPRs(repo.path)
   const tracked = new Set(
     (await store.list()).filter((i) => i.repoId === repoId).map((i) => i.branch)
   )
-  const fresh = prs.flatMap((pr) => {
+  const fresh: { pr: CloudSessionPR; issueNumber: number }[] = []
+  for (const pr of open) {
     const issueNumber = Number(TICKET_BRANCH.exec(pr.branch)?.[1] ?? Number.NaN)
-    const ours = pr.host === null || pr.host === host
-    return Number.isNaN(issueNumber) || tracked.has(pr.branch) || !ours ? [] : [{ pr, issueNumber }]
-  })
+    if (Number.isNaN(issueNumber) || tracked.has(pr.branch)) {
+      continue
+    }
+    const tag = await cloudSessionOf(repo.path, ownerRepo, pr)
+    // A PR another host claimed stays with that host.
+    if (tag && (tag.host === null || tag.host === host)) {
+      fresh.push({ pr: { ...pr, ...tag }, issueNumber })
+    }
+  }
   const parentSelector = await resolveTicketParentSelector(runtime, { repo: `id:${repoId}` })
   const parentWorktreeId = parentSelector.replace(/^id:/, '')
   for (const { pr, issueNumber } of fresh) {
