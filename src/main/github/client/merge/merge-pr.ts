@@ -110,7 +110,9 @@ export async function getPRMergeBlocker(
   ownerRepo: GitHubApiRepository | null,
   ghOptions: GhExecOptions,
   connectionId?: string | null,
-  localGitOptions: LocalGitExecOptions = {}
+  localGitOptions: LocalGitExecOptions = {},
+  /** The caller merges through GitHub's merge queue, so a required queue is no blocker. */
+  options: { viaMergeQueue?: boolean } = {}
 ): Promise<string | null> {
   if (!ownerRepo) {
     return null
@@ -132,7 +134,7 @@ export async function getPRMergeBlocker(
     if (pr.reviewDecision === 'CHANGES_REQUESTED') {
       return 'This pull request has requested changes and cannot be merged yet.'
     }
-    if (pr.mergeQueueRequired === true) {
+    if (pr.mergeQueueRequired === true && !options.viaMergeQueue) {
       return 'This pull request must be merged through GitHub merge queue. Use Merge when ready instead.'
     }
     // Conflict derivation uses local Git and cannot inspect SSH-backed repositories.

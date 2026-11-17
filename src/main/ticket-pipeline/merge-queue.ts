@@ -1,29 +1,21 @@
-import type { PRCheckDetail } from '../../shared/github/checks/check-types'
-import type { PRInfo } from '../../shared/github/pull-requests/pull-request-types'
+import type { GitHubRepositoryIdentity } from '../../shared/github/repositories/repository-identity'
 import { renderMergeQueueFixBrief } from '../../shared/ticket-pipeline/merge-queue-fix-brief'
 import {
   decideMergeQueueStep,
-  findAttribution,
-  type MergeQueueAction,
-  type MergeQueueObservation
+  type MergeQueueAction
 } from '../../shared/ticket-pipeline/merge-queue-step'
 import type { TicketItem, TicketQueueState } from '../../shared/ticket-pipeline/ticket-types'
 import {
   getPRBlocker,
-  getPRTexts,
-  isPRBehindBase,
+  getPRMergeQueueState,
   prRepoFromUrl,
   updatePRBranch
 } from '../github/pull-requests/pr-merge-queue-github'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import { getTicketItemStore, type TicketItemStore } from './ticket-item-store'
 import { queueOrder } from './merge-queue-order'
-import { foundPR } from './ticket-pr-lookup'
-import {
-  findTicketAgent,
-  sendTicketAgentFixBrief,
-  type TicketAgentReach
-} from './ticket-agent-reach'
+import { observeQueueHead, type QueueHeadContext } from './merge-queue-observation'
+import { sendTicketAgentFixBrief } from './ticket-agent-reach'
 
 const MAX_ERROR_STREAK = 3
 
@@ -34,21 +26,6 @@ function withoutAwaitedFix(state: TicketQueueState): TicketQueueState {
     awaitingPushSince: undefined,
     awaitingCause: undefined
   }
-}
-
-async function readPR(runtime: OrcaRuntimeService, item: TicketItem): Promise<PRInfo | null> {
-  const outcome = await runtime
-    .getRepoPRForBranch(
-      `id:${item.repoId}`,
-      item.branch,
-      item.reviewNumber,
-      null,
-      true,
-      null,
-      'watch'
-    )
-    .catch(() => null)
-  return foundPR(outcome)
 }
 
 export class MergeQueue {
@@ -116,9 +93,8 @@ export class MergeQueue {
   }
 
   private async advance(item: TicketItem): Promise<void> {
-    const pr = await readPR(this.runtime, item)
-    const prRepo = pr ? prRepoFromUrl(pr.url) : null
-    if (!pr || !prRepo || !pr.headSha) {
+    const context = await observeQueueHead(this.runtime, item)
+    if (!context) {
       await this.setQueue(item, {
         ...(item.queue ?? { fixAttempts: {} }),
         status: 'waiting-ci',
@@ -127,56 +103,21 @@ export class MergeQueue {
       })
       return
     }
-    const repo = await this.runtime.showRepo(`id:${item.repoId}`)
-    const baseBranch = pr.baseRefName ?? 'main'
-    const [checks, texts, behindBase, agent] = await Promise.all([
-      this.runtime.getRepoPRChecks(`id:${item.repoId}`, pr.number, pr.headSha, prRepo, {
-        noCache: true
-      }),
-      getPRTexts(repo.path, prRepo, pr.number),
-      isPRBehindBase(repo.path, prRepo, baseBranch, pr.headSha),
-      findTicketAgent(this.runtime, item)
-    ])
-    const observed: MergeQueueObservation = {
-      headSha: pr.headSha,
-      state: pr.state,
-      mergeable: pr.mergeable,
-      behindBase,
-      checks,
-      attributionHits: findAttribution(texts),
-      mergeBlocker: null,
-      agentReachable: agent !== null,
-      now: Date.now()
-    }
+    const { pr, prRepo, repoPath, observed } = context
     let action = decideMergeQueueStep(item.queue, observed)
     if (action.kind === 'ready') {
       // Only worth asking GitHub once everything else is green.
-      const blocker = await getPRBlocker(repo.path, prRepo, pr.number)
+      const viaQueue = observed.githubQueue !== null
+      const blocker = await getPRBlocker(repoPath, prRepo, pr.number, viaQueue)
       action = decideMergeQueueStep(item.queue, { ...observed, mergeBlocker: blocker })
     }
-    await this.apply(item, action, {
-      pr,
-      prRepo,
-      repoPath: repo.path,
-      baseBranch,
-      agent,
-      checks,
-      observed
-    })
+    await this.apply(item, action, context)
   }
 
   private async apply(
     item: TicketItem,
     action: MergeQueueAction,
-    context: {
-      pr: PRInfo
-      prRepo: NonNullable<ReturnType<typeof prRepoFromUrl>>
-      repoPath: string
-      baseBranch: string
-      agent: TicketAgentReach | null
-      checks: readonly PRCheckDetail[]
-      observed: MergeQueueObservation
-    }
+    context: QueueHeadContext
   ): Promise<void> {
     // Reaching a step means GitHub answered, so the error streak is over.
     const stored: TicketQueueState = {
@@ -195,6 +136,9 @@ export class MergeQueue {
         return
       case 'pause':
         await this.pause(item, action.detail)
+        return
+      case 'requeue':
+        await this.enqueue(item, prRepo, pr.number, previous, observed.headSha, action.detail, true)
         return
       case 'update-branch':
         await updatePRBranch(context.repoPath, prRepo, pr.number, observed.headSha)
@@ -261,13 +205,63 @@ export class MergeQueue {
     }
   }
 
-  /** Merges the queue head with a merge commit; the tracker then sees it merged and moves on. */
+  private async enqueue(
+    item: TicketItem,
+    prRepo: GitHubRepositoryIdentity,
+    prNumber: number,
+    previous: TicketQueueState,
+    headSha: string,
+    detail: string,
+    requeued: boolean
+  ): Promise<void> {
+    // Enqueues directly, or through auto-merge where the repo allows it; GitHub picks the merge method.
+    const result = await this.runtime.setRepoPRAutoMerge(
+      `id:${item.repoId}`,
+      prNumber,
+      true,
+      'merge',
+      prRepo
+    )
+    if (!result.ok) {
+      await this.pause(item, `GitHub would not add the PR to its merge queue: ${result.error}`)
+      return
+    }
+    await this.setQueue(item, {
+      ...previous,
+      status: 'merging',
+      detail,
+      enqueued: { head: headSha, at: Date.now(), requeued }
+    })
+  }
+
+  /** Merges the queue head with a merge commit, or hands it to GitHub's merge queue where the base
+   *  requires one; the tracker then sees it merged and moves on. */
   async merge(
     item: TicketItem,
     prRepo = item.reviewUrl ? prRepoFromUrl(item.reviewUrl) : null
   ): Promise<void> {
     if (!item.reviewNumber) {
       throw new Error(`${item.ticketId} has no PR to merge.`)
+    }
+    if (prRepo) {
+      const repo = await this.runtime.showRepo(`id:${item.repoId}`)
+      const github = await getPRMergeQueueState(repo.path, prRepo, item.reviewNumber)
+      if (github.enabled) {
+        if (!github.headSha) {
+          throw new Error(`Could not read the head of ${item.ticketId}'s PR.`)
+        }
+        const previous = item.queue ?? { status: 'waiting-ci', detail: '', fixAttempts: {} }
+        await this.enqueue(
+          item,
+          prRepo,
+          item.reviewNumber,
+          previous,
+          github.headSha,
+          "Added to GitHub's merge queue.",
+          false
+        )
+        return
+      }
     }
     const result = await this.runtime.mergeRepoPR(
       `id:${item.repoId}`,

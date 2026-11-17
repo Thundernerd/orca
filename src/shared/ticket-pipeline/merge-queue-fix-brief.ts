@@ -29,6 +29,11 @@ export function renderMergeQueueFixBrief(input: MergeQueueFixBriefInput): string
         `Merge origin/${baseBranch} into this branch (\`git fetch origin && git merge origin/${baseBranch}\`) and resolve the conflicts, keeping both sides' intent. Do not rebase or force-push. Run the repo's checks before pushing.`
       )
       break
+    case 'merge-group':
+      lines.push(
+        `GitHub's merge queue tested this PR on top of origin/${baseBranch} and it failed there, though the PR's own checks pass. Merge origin/${baseBranch} into this branch (\`git fetch origin && git merge origin/${baseBranch}\`), run the repo's checks, and fix what breaks. Do not rebase or force-push.`
+      )
+      break
     case 'attribution':
       lines.push(
         'These lines carry Claude attribution and must go:',

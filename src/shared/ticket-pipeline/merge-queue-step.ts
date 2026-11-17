@@ -5,6 +5,8 @@ import type { TicketFixCause, TicketQueueState } from './ticket-types'
 export const PUSH_WAIT_LIMIT_MS = 3 * 60 * 60 * 1000
 /** The same cause failing again after this many fix briefs pauses the queue. */
 export const MAX_FIX_ATTEMPTS = 2
+/** GitHub has not taken an enqueued PR into its merge queue for this long: the queue asks the user. */
+export const ENQUEUE_WAIT_LIMIT_MS = 30 * 60 * 1000
 
 export type MergeQueueObservation = {
   headSha: string
@@ -20,12 +22,20 @@ export type MergeQueueObservation = {
   mergeBlocker: string | null
   /** The agent's terminal is reachable for a fix brief. */
   agentReachable: boolean
+  /** GitHub's merge queue for the base branch; null when the base merges directly. */
+  githubQueue: {
+    inQueue: boolean
+    /** When GitHub last took the PR out of its queue, and why. */
+    removed: { at: number; reason: string | null } | null
+  } | null
   now: number
 }
 
 export type MergeQueueAction =
-  | { kind: 'wait'; status: 'waiting-ci' | 'fixing'; detail: string }
+  | { kind: 'wait'; status: 'waiting-ci' | 'fixing' | 'merging'; detail: string }
   | { kind: 'update-branch'; detail: string }
+  /** Add the PR to GitHub's merge queue again after it dropped out, once per head. */
+  | { kind: 'requeue'; detail: string }
   | { kind: 'rerun-failed'; detail: string }
   | { kind: 'send-fix'; cause: TicketFixCause; detail: string; failing: string[] }
   | { kind: 'ready'; detail: string }
@@ -57,6 +67,7 @@ function fixedWithoutPush(cause: TicketFixCause, observed: MergeQueueObservation
     case 'conflict':
       return observed.mergeable === 'MERGEABLE'
     case 'ci':
+    case 'merge-group':
       return false
   }
 }
@@ -68,6 +79,9 @@ export function decideMergeQueueStep(
 ): MergeQueueAction {
   if (observed.state === 'merged' || observed.state === 'closed') {
     return { kind: 'done' }
+  }
+  if (observed.githubQueue?.inQueue) {
+    return { kind: 'wait', status: 'merging', detail: "In GitHub's merge queue." }
   }
   // A fix was asked for: nothing else is judged until the agent pushes over that head, unless the
   // problem was fixable without a push (attribution only in the PR body) and is gone.
@@ -92,10 +106,15 @@ export function decideMergeQueueStep(
   if (observed.attributionHits.length > 0) {
     return fix('attribution', 'The PR body or commits carry Claude attribution.')
   }
-  if (observed.behindBase || observed.mergeable === 'CONFLICTING') {
-    return observed.mergeable === 'CONFLICTING'
-      ? fix('conflict', 'The branch conflicts with the default branch.')
-      : { kind: 'update-branch', detail: 'Bringing the branch up to date with the default branch.' }
+  if (observed.mergeable === 'CONFLICTING') {
+    return fix('conflict', 'The branch conflicts with the default branch.')
+  }
+  // GitHub's merge queue tests each PR on top of the base itself; updating the branch would only cost a CI run.
+  if (observed.behindBase && !observed.githubQueue) {
+    return {
+      kind: 'update-branch',
+      detail: 'Bringing the branch up to date with the default branch.'
+    }
   }
   const pending = pendingChecks(observed.checks)
   if (pending.length > 0) {
@@ -122,7 +141,36 @@ export function decideMergeQueueStep(
   if (observed.mergeBlocker) {
     return { kind: 'pause', detail: observed.mergeBlocker }
   }
-  return { kind: 'ready', detail: 'Checks pass and the branch is up to date.' }
+  const enqueued = previous?.enqueued
+  if (observed.githubQueue && enqueued?.head === observed.headSha) {
+    const removed = observed.githubQueue.removed
+    if (!removed || removed.at < enqueued.at) {
+      return observed.now - enqueued.at > ENQUEUE_WAIT_LIMIT_MS
+        ? {
+            kind: 'pause',
+            detail: 'GitHub has not taken the PR into its merge queue in 30 minutes.'
+          }
+        : {
+            kind: 'wait',
+            status: 'merging',
+            detail: 'Waiting for GitHub to take it into its merge queue.'
+          }
+    }
+    const why = removed.reason ? ` (${removed.reason})` : ''
+    // A merge group can fail on a flake too: queue the same head once more before blaming the code.
+    return enqueued.requeued
+      ? fix('merge-group', `GitHub's merge queue dropped it again${why}.`)
+      : {
+          kind: 'requeue',
+          detail: `GitHub's merge queue dropped it${why}; adding it once more in case it was a flake.`
+        }
+  }
+  return {
+    kind: 'ready',
+    detail: observed.githubQueue
+      ? "Checks pass; ready for GitHub's merge queue."
+      : 'Checks pass and the branch is up to date.'
+  }
 }
 
 const ATTRIBUTION =

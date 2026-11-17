@@ -139,7 +139,8 @@ export type TicketQueueStatus =
   | 'merging'
   | 'paused'
 
-export type TicketFixCause = 'attribution' | 'conflict' | 'ci'
+/** `merge-group`: GitHub's merge queue found the PR failing on top of the base branch. */
+export type TicketFixCause = 'attribution' | 'conflict' | 'ci' | 'merge-group'
 
 export type TicketQueueState = {
   status: TicketQueueStatus
@@ -156,6 +157,8 @@ export type TicketQueueState = {
   awaitingCause?: TicketFixCause
   /** The head whose failed jobs were already rerun once as a possible flake. */
   rerunHead?: string
+  /** The head last added to GitHub's merge queue; `requeued` once it was re-added after a drop. */
+  enqueued?: { head: string; at: number; requeued: boolean }
   /** Ticks in a row that failed with an error; a passing GitHub hiccup must not pause the queue. */
   errorStreak?: number
 }

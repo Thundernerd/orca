@@ -15,6 +15,7 @@ const green: MergeQueueObservation = {
   attributionHits: [],
   mergeBlocker: null,
   agentReachable: true,
+  githubQueue: null,
   now: 1_000
 }
 
@@ -107,6 +108,25 @@ describe('decideMergeQueueStep', () => {
     expect(step({ attributionHits: ['x'] }, awaiting('attribution')).kind).toBe('wait')
     expect(step({}, awaiting('conflict')).kind).toBe('ready')
     expect(step({}, awaiting('ci')).kind).toBe('wait')
+  })
+
+  it("leaves a behind branch to GitHub's merge queue and requeues a dropped head once", () => {
+    const github = { inQueue: false, removed: null }
+    expect(step({ behindBase: true, githubQueue: github }).kind).toBe('ready')
+    expect(step({ githubQueue: { inQueue: true, removed: null } }).kind).toBe('wait')
+    const sent = queued({ status: 'merging', enqueued: { head: 'h1', at: 500, requeued: false } })
+    expect(step({ githubQueue: github }, sent)).toMatchObject({ kind: 'wait', status: 'merging' })
+    const dropped = { inQueue: false, removed: { at: 900, reason: 'CI failed' } }
+    expect(step({ githubQueue: dropped }, sent).kind).toBe('requeue')
+    const requeued = queued({
+      status: 'merging',
+      enqueued: { head: 'h1', at: 500, requeued: true }
+    })
+    expect(step({ githubQueue: dropped }, requeued)).toMatchObject({
+      kind: 'send-fix',
+      cause: 'merge-group'
+    })
+    expect(step({ githubQueue: dropped, headSha: 'h2' }, requeued).kind).toBe('ready')
   })
 
   it('stops once the PR is merged or closed', () => {
