@@ -116,6 +116,12 @@ function onOff(flags: Map<string, string | boolean>, name: string): boolean | un
   return value === undefined ? undefined : value === 'on'
 }
 
+/** A per-step model flag: a model name, `default` for the user's own (null), or absent. */
+function stepModel(flags: Map<string, string | boolean>, name: string): string | null | undefined {
+  const value = getOptionalStringFlag(flags, name)
+  return value === undefined ? undefined : value === 'default' ? null : value
+}
+
 export const TICKET_HANDLERS: Record<string, CommandHandler> = {
   ...TICKET_BRIEF_HANDLERS,
   'tickets survey': async ({ flags, client, cwd, json }) => {
@@ -167,12 +173,16 @@ export const TICKET_HANDLERS: Record<string, CommandHandler> = {
     const autoClean = onOff(flags, 'auto-clean')
     const autoMerge = onOff(flags, 'auto-merge')
     const adoptCloudPRs = onOff(flags, 'adopt-cloud')
+    const triageModel = stepModel(flags, 'triage-model')
+    const findingCheckModel = stepModel(flags, 'finding-model')
     const sourceFlag = getOptionalStringFlag(flags, 'source')
     const source = sourceFlag === undefined ? undefined : await pickSource(client, repo, sourceFlag)
     const patch = {
       ...(autoClean !== undefined ? { autoClean } : {}),
       ...(autoMerge !== undefined ? { autoMerge } : {}),
       ...(adoptCloudPRs !== undefined ? { adoptCloudPRs } : {}),
+      ...(triageModel !== undefined ? { triageModel } : {}),
+      ...(findingCheckModel !== undefined ? { findingCheckModel } : {}),
       ...(source ? { source } : {})
     }
     const result = await client.call<TicketPipelineSettings>('tickets.settings', {
@@ -183,7 +193,7 @@ export const TICKET_HANDLERS: Record<string, CommandHandler> = {
       result,
       json,
       (s) =>
-        `source: ${ticketSourceKey(s.source)}\nauto-clean: ${s.autoClean ? 'on' : 'off'}\nauto-merge: ${s.autoMerge ? 'on' : 'off'}\nadopt-cloud: ${s.adoptCloudPRs ? 'on' : 'off'}`
+        `source: ${ticketSourceKey(s.source)}\nauto-clean: ${s.autoClean ? 'on' : 'off'}\nauto-merge: ${s.autoMerge ? 'on' : 'off'}\nadopt-cloud: ${s.adoptCloudPRs ? 'on' : 'off'}\ntriage-model: ${s.triageModel ?? 'default'}\nfinding-model: ${s.findingCheckModel ?? 'default'}`
     )
   },
   'tickets queue': async ({ flags, client, cwd, json }) => {

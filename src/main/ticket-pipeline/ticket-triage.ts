@@ -4,6 +4,7 @@ import { renderTicketTriageBrief } from '../../shared/ticket-pipeline/ticket-tri
 import type { RpcContext } from '../runtime/rpc/core'
 import { launchAgentOnHost } from '../runtime/rpc/methods/agent-launch/agent-launch'
 import { resolveTicketParentSelector, type TicketParentScope } from './ticket-parent-workspace'
+import { getTicketItemStore } from './ticket-item-store'
 import { surveyTicketsWithSource } from './ticket-survey'
 
 /** Starts an agent per chosen ticket in the parent workspace, each running the project's triage skill. */
@@ -28,6 +29,7 @@ export async function startTicketTriage(
   if (!skill) {
     throw new Error('No triage skill is installed for this project.')
   }
+  const { triageModel } = await getTicketItemStore().getSettings(parent.repoId)
   // One agent per ticket, each in its own tab; one failing to start leaves the others running.
   const started: string[] = []
   const failed: { id: string; reason: string }[] = []
@@ -47,7 +49,8 @@ export async function startTicketTriage(
             }),
             delivery: 'submit'
           },
-          target: { kind: 'existing', worktree: `id:${parent.id}` }
+          target: { kind: 'existing', worktree: `id:${parent.id}` },
+          ...(triageModel ? { sessionOptions: { model: triageModel } } : {})
         }),
         context
       )

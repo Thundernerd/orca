@@ -84,6 +84,8 @@ export const TicketSourceConfigSchema = z.discriminatedUnion('kind', [
 export const TicketSourceOptions = z.object({ repo: Selector })
 
 /** Reads a project's ticket settings; `patch` changes them first. */
+const StepModel = z.string().trim().min(1).max(100).nullable().optional()
+
 export const TicketSettings = z.object({
   repo: Selector,
   patch: z
@@ -91,6 +93,9 @@ export const TicketSettings = z.object({
       autoClean: z.boolean().optional(),
       autoMerge: z.boolean().optional(),
       adoptCloudPRs: z.boolean().optional(),
+      // Null goes back to the user's default model.
+      triageModel: StepModel,
+      findingCheckModel: StepModel,
       source: TicketSourceConfigSchema.optional()
     })
     .optional()

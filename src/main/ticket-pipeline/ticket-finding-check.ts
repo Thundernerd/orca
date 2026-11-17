@@ -7,6 +7,7 @@ import {
 import type { RpcContext } from '../runtime/rpc/core'
 import { launchAgentOnHost } from '../runtime/rpc/methods/agent-launch/agent-launch'
 import { findFindingOrigin, resolvePublishingSource } from './ticket-drafts'
+import { getTicketItemStore } from './ticket-item-store'
 
 /** Starts one agent in the ticket's parent workspace that checks its findings before filing them. */
 export async function startFindingCheck(
@@ -18,6 +19,7 @@ export async function startFindingCheck(
   const repo = await context.runtime.showRepo(worktree.repoId)
   const origin = await findFindingOrigin(repo.id, input.findingOf)
   const { baseRef } = await resolvePublishingSource(repo)
+  const { findingCheckModel } = await getTicketItemStore().getSettings(repo.id)
   await launchAgentOnHost(
     AgentLaunch.parse({
       agent: 'claude',
@@ -31,7 +33,8 @@ export async function startFindingCheck(
         }),
         delivery: 'submit'
       },
-      target: { kind: 'existing', worktree: `id:${origin.parentWorktreeId}` }
+      target: { kind: 'existing', worktree: `id:${origin.parentWorktreeId}` },
+      ...(findingCheckModel ? { sessionOptions: { model: findingCheckModel } } : {})
     }),
     context
   )
