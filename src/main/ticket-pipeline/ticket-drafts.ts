@@ -9,7 +9,7 @@ import {
   draftIssueBody,
   orderDraftsForPublish
 } from '../../shared/ticket-pipeline/ticket-draft-order'
-import { TRIAGE_BODY_LINE, TRIAGE_LABEL } from '../../shared/ticket-pipeline/ticket-body-markers'
+import { findingIssueBody, TRIAGE_LABEL } from '../../shared/ticket-pipeline/ticket-body-markers'
 import type { TicketItem } from '../../shared/ticket-pipeline/ticket-types'
 import type {
   TicketDraft,
@@ -213,6 +213,11 @@ export async function publishTicketDrafts(
   return store.putDraftBatch({ ...batch, status: 'published', error: undefined })
 }
 
+function sameTitle(a: string, b: string): boolean {
+  const normal = (title: string) => title.trim().replace(/\s+/g, ' ').toLowerCase()
+  return normal(a) === normal(b)
+}
+
 /** A finding a finding agent checked: published at once, marked for triage, linked to its ticket. */
 export async function createFindingTicket(
   runtime: Runtime,
@@ -230,13 +235,16 @@ export async function createFindingTicket(
   )
   const repo = await runtime.showRepo(worktree.repoId)
   const origin = input.findingOf ? await findFindingOrigin(repo.id, input.findingOf) : null
+  // A check that runs twice, or two checks of one finding, would file it twice.
+  const filedAlready = origin?.findings?.find((f) => sameTitle(f.title, input.title))
+  if (filedAlready) {
+    return filedAlready
+  }
   const draft: TicketDraft = {
     key: 'finding',
     title: input.title,
     // The body line holds it back on trackers that drop labels they do not have; Jira reads the label.
-    body: input.findingOf
-      ? `Found while implementing ${input.findingOf}.\n\n${TRIAGE_BODY_LINE}\n\n${input.body}`
-      : input.body,
+    body: input.findingOf ? findingIssueBody(input.findingOf, input.body) : input.body,
     labels: input.findingOf ? [...new Set([...input.labels, TRIAGE_LABEL])] : input.labels,
     blockedBy: input.blockedBy,
     covers: []

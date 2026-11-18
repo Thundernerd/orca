@@ -66,3 +66,27 @@ export function parseTicketFileTitle(body: string): string {
 }
 
 export const TICKET_FILE_NAME = /^([A-Z]+\d+)-[^/]*\.md$/
+
+// An agent's draft often already opens with the lines Corka adds, so the filed body said them twice.
+const FINDING_ORIGIN_LINE = /^\s*found while (implementing|checking|reviewing)\b.*$/i
+
+/** A filed finding's body: where it was found and the triage line, each once, then the draft. */
+export function findingIssueBody(findingOf: string, draft: string): string {
+  const lines = draft.split(/\r?\n/)
+  let start = 0
+  while (
+    start < lines.length &&
+    (lines[start].trim() === '' ||
+      FINDING_ORIGIN_LINE.test(lines[start]) ||
+      TRIAGE_LINE.test(lines[start]))
+  ) {
+    start++
+  }
+  return [
+    `Found while implementing ${findingOf}.`,
+    '',
+    TRIAGE_BODY_LINE,
+    '',
+    lines.slice(start).join('\n')
+  ].join('\n')
+}

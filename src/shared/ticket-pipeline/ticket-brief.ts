@@ -24,9 +24,14 @@ export function ticketWorkLines(baseBranch: string): string[] {
   return [
     `- Use the /tdd skill. The ticket's "Seams under test" are agreed: build on them without asking. Work in vertical red→green slices.`,
     '- Run the type checker and the single test file you are working on as you go, and the full test suite once at the end.',
-    `- When the acceptance criteria are met and the repo's checks pass, run /code-review with fixed point origin/${baseBranch} and the ticket as the spec. Fix what it finds or raise it as a finding (below).`
+    `- When the acceptance criteria are met and the repo's checks pass, run /code-review with fixed point origin/${baseBranch} and the ticket as the spec. Fix what it finds, or leave it with a reason, or raise it as a finding when it is one (below).`
   ]
 }
+
+/** What counts as a finding, for every implementing brief. Each finding becomes a ticket whose agent
+ *  finds more, so tidy-ups and judgement calls are kept out or the chain never ends. */
+export const FINDING_DEFINITION =
+  "- Findings: a finding is a real problem outside this ticket's scope: a bug, or a gap in behaviour, tests or docs. Problems in code this branch adds or changes are in scope: fix them here, however small, instead of handing them over. These are not findings, so hand none of them over and say in your report why you left each: a /code-review point you judged not worth fixing; a refactor or tidy-up with no bug behind it; a further pass over code a recent ticket already reworked."
 
 export const TICKET_COMMIT_RULE =
   '- Write commit messages in Conventional Commits style; commits and the PR body carry no Claude attribution or Co-Authored-By lines.'
@@ -63,14 +68,15 @@ export function renderTicketBrief(input: TicketBriefInput): string {
     `Read the ticket in full${readTicket}, then ${docs} and any references the ticket lists. Commit there; leave merging and other worktrees to the user.`,
     `- Proof: if the ticket changes something that can be seen (a UI, a page, a command's output) and this environment lets you capture it, capture the before now, before you change anything: a screenshot, or the output as text.`,
     ...ticketWorkLines(baseBranch),
-    "- Findings: a finding is a problem outside this ticket's scope (a bug, gap, follow-up, or a /code-review point you did not fix). Triage each one yourself, in this order; the first that fits decides it:",
+    FINDING_DEFINITION,
+    '  Triage each finding yourself, in this order; the first that fits decides it:',
     ...findingSteps,
     '  - Unsure which: ask the user, running `orca worktree set --worktree active --unread --json` first so they see the question.',
     TICKET_COMMIT_RULE,
     `- When every fix is committed, push the branch (\`git push -u origin ${branch}\`) and open a PR to ${baseBranch}, writing its body with /pr, ${prRule}. Put the proof in its Evidence: the before, the same capture on this branch as the after, and the test runs that show it. Reference each screenshot by its local path in the body and pass it with \`--attach <path>\` to \`gh pr create\` (or \`gh pr edit\`), which uploads it; never commit them. If your \`gh\` has no \`--attach\`, list their paths in your report instead. Corka notices the PR and moves this workspace to review.`,
     `- Then ${recordOnTicket}: what changed and how, the PR link, and how to verify it.`,
     "- If you are blocked (a missing dependency, a spec you cannot resolve), run: orca worktree set --worktree active --unread --comment 'blocked: <why>' --json and stop.",
-    `- Once the PR is up, report: the PR URL; every finding and its outcome (${findingOutcomes}); if you built the project, the absolute paths of the build output and the concrete steps the user should test by hand; if the PR's CI uploads a build artifact, a link to that run and the \`gh run download\` command for it (wait for the run with \`gh run watch\` and report a failure).`
+    `- Once the PR is up, report: the PR URL; every finding and its outcome (${findingOutcomes}); and each point you left, with why; if you built the project, the absolute paths of the build output and the concrete steps the user should test by hand; if the PR's CI uploads a build artifact, a link to that run and the \`gh run download\` command for it (wait for the run with \`gh run watch\` and report a failure).`
   ]
   if (input.untrackedContext.length > 0) {
     lines.push(

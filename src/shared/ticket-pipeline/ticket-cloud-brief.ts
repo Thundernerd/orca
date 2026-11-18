@@ -1,4 +1,4 @@
-import { TICKET_COMMIT_RULE, ticketWorkLines } from './ticket-brief'
+import { FINDING_DEFINITION, TICKET_COMMIT_RULE, ticketWorkLines } from './ticket-brief'
 import { prFindingsFormat } from './ticket-pr-findings'
 import type { Ticket } from './ticket-types'
 
@@ -29,11 +29,12 @@ export function renderCloudTicketBrief(input: CloudTicketBriefInput): string {
     `The ticket's text is below; it is the spec. Read ${docs} and any references the ticket lists.`,
     "- Proof: if the ticket changes something that can be seen (a page, a command's output) and you can capture it here, capture the before now, before you change anything.",
     ...ticketWorkLines(baseBranch),
-    `- Findings: a finding is a problem outside this ticket's scope (a bug, gap, follow-up, or a /code-review point you did not fix). Related to this ticket and small: fix it here, as its own commit. Otherwise do not fix it: list it ${prFindingsFormat(ticket.id)}. Write each in the ticket format (Goal, Scope, Seams under test, Acceptance criteria), citing file:line as the code stands on origin/${baseBranch}. Corka checks each against origin/${baseBranch} and the open tickets and files only the new ones.`,
+    FINDING_DEFINITION,
+    `  Related to this ticket and small: fix it here, as its own commit. Otherwise do not fix it: list it ${prFindingsFormat(ticket.id)}. Write each in the ticket format (Goal, Scope, Seams under test, Acceptance criteria), citing file:line as the code stands on origin/${baseBranch}. Corka checks each against origin/${baseBranch} and the open tickets and files only the new ones.`,
     TICKET_COMMIT_RULE,
     `- When every fix is committed, push the branch and open a PR to ${baseBranch}, writing its body with /pr, ${input.reviewRule}. Put the proof in its Evidence: the before, the after on this branch, and the test runs that show it. Do not merge it: Corka's merge queue merges it.`,
     '- If you are blocked (a missing dependency, a spec you cannot resolve) or a decision needs the user, say so in this session and stop instead of guessing.',
-    '- Once the PR is up, report the PR URL and each finding you listed.',
+    '- Once the PR is up, report the PR URL, each finding you listed, and each point you left, with why.',
     '',
     'The ticket:',
     '',

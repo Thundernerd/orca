@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  findingIssueBody,
   isOwnedByUser,
   needsTriage,
   parseBlockedBySection,
@@ -39,6 +40,32 @@ describe('ticket body markers', () => {
     expect(needsTriage({ labels: [], body: '# Crash\nStatus: needs triage\n' })).toBe(true)
     expect(needsTriage({ labels: [], body: 'We should triage this later in the sprint.' })).toBe(
       false
+    )
+  })
+})
+
+describe('findingIssueBody', () => {
+  const filed = (draft: string) => findingIssueBody('#421', draft)
+
+  it('opens with where the finding came from and the triage line', () => {
+    expect(filed('## Goal\n\nShare it.')).toBe(
+      'Found while implementing #421.\n\nStatus: needs triage\n\n## Goal\n\nShare it.'
+    )
+  })
+
+  it('says each once when the draft already opens with them', () => {
+    const expected = filed('## Goal\n\nShare it.')
+    expect(filed('Found while implementing #421.\n\n## Goal\n\nShare it.')).toBe(expected)
+    expect(
+      filed(
+        '\nFound while implementing #421.\n\n\nFound while checking #397.\nStatus: needs triage\n\n## Goal\n\nShare it.'
+      )
+    ).toBe(expected)
+  })
+
+  it('keeps a mention of where it was found further down the draft', () => {
+    expect(filed('## Goal\n\nFound while implementing #9, too.')).toContain(
+      '## Goal\n\nFound while implementing #9, too.'
     )
   })
 })
