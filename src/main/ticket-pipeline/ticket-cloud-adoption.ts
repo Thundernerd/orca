@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { getRepoRoutingConnectionId } from '../../shared/execution-host/execution-host'
 import { isFolderRepo } from '../../shared/repository/repo-kind'
-import { CONVENTIONAL_TYPES, type TicketItem } from '../../shared/ticket-pipeline/ticket-types'
+import {
+  CONVENTIONAL_TYPES,
+  isCloudTicket,
+  type TicketItem
+} from '../../shared/ticket-pipeline/ticket-types'
 import type { GitHubRepositoryIdentity } from '../../shared/github/repositories/repository-identity'
 import {
   claimCloudSessionPR,
@@ -85,26 +89,45 @@ async function adoptForRepo(
     return 0
   }
   const { ownerRepo, prs: open } = await listOpenRepoPRs(repo.path)
-  const tracked = new Set(
-    (await store.list()).filter((i) => i.repoId === repoId).map((i) => i.branch)
+  const byBranch = new Map(
+    (await store.list()).filter((i) => i.repoId === repoId).map((i) => [i.branch, i])
   )
-  const fresh: { pr: CloudSessionPR; issueNumber: number }[] = []
+  const fresh: { pr: CloudSessionPR; issueNumber: number; earlier: TicketItem | null }[] = []
   for (const pr of open) {
     const issueNumber = Number(TICKET_BRANCH.exec(pr.branch)?.[1] ?? Number.NaN)
-    if (Number.isNaN(issueNumber) || tracked.has(pr.branch)) {
+    const earlier = byBranch.get(pr.branch) ?? null
+    // A local launch of the same ticket whose workspace went is closed and followed no more, so
+    // the cloud session's PR on its branch takes that record over instead of being skipped.
+    const takesOver = earlier !== null && earlier.stage === 'closed' && !isCloudTicket(earlier)
+    if (Number.isNaN(issueNumber) || (earlier !== null && !takesOver)) {
       continue
     }
     const tag = await cloudSessionOf(repo.path, ownerRepo, pr)
     // A PR another host claimed stays with that host.
     if (tag && (tag.host === null || tag.host === host)) {
-      fresh.push({ pr: { ...pr, ...tag }, issueNumber })
+      fresh.push({ pr: { ...pr, ...tag }, issueNumber, earlier })
     }
   }
   const parentSelector = await resolveTicketParentSelector(runtime, { repo: `id:${repoId}` })
   const parentWorktreeId = parentSelector.replace(/^id:/, '')
-  for (const { pr, issueNumber } of fresh) {
+  for (const { pr, issueNumber, earlier } of fresh) {
     // Two hosts can claim one PR at once; only the one its body names afterwards keeps it.
     if ((await claimCloudSessionPR(repo.path, ownerRepo, pr, host)) !== host) {
+      continue
+    }
+    if (earlier) {
+      await store.update(earlier.id, {
+        parentWorktreeId,
+        childWorktreeId: '',
+        stage: 'in-review',
+        reviewNumber: pr.number,
+        reviewUrl: pr.url,
+        agentCloudSessionId: pr.sessionId,
+        agentTerminalHandle: undefined,
+        agentSessionId: undefined,
+        queue: undefined,
+        cloudFindingsChecked: undefined
+      })
       continue
     }
     const issue = await readIssue(repo.path, issueNumber, ownerRepo)
