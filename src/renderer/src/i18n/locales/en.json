@@ -20449,6 +20449,7 @@
           "auto": "Merge the first PR automatically once it is ready",
           "autoGitHub": "Add PRs to GitHub's merge queue automatically once they are ready",
           "adoptCloud": "Take in PRs from Claude cloud sessions (turn on for one machine only)",
+          "squash": "Squash each PR into one commit when merging",
           "hint": "PRs merge one at a time in ticket order, each with green CI on an up-to-date branch.",
           "hintGitHub": "Ready PRs go into GitHub's merge queue in ticket order; GitHub tests each on top of the ones ahead and merges them.",
           "merge": "Merge {{ticket}}",

@@ -298,10 +298,11 @@ export class MergeQueue {
         return
       }
     }
+    const { squashMerge } = await this.store.getSettings(item.repoId)
     const result = await this.runtime.mergeRepoPR(
       `id:${item.repoId}`,
       item.reviewNumber,
-      'merge',
+      squashMerge ? 'squash' : 'merge',
       prRepo
     )
     if (!result.ok) {

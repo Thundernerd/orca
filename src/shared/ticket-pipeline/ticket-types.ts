@@ -203,6 +203,8 @@ export type TicketPipelineSettings = {
   autoMerge: boolean
   /** Take PRs that Claude cloud sessions open on ticket branches into the merge queue. */
   adoptCloudPRs: boolean
+  /** Corka's own queue squashes each PR into one commit; GitHub's merge queue goes by its ruleset. */
+  squashMerge: boolean
   /** The model triage agents run (`sonnet`, `claude-haiku-5-5`); null runs the user's default. */
   triageModel: string | null
   /** The model finding-check agents run; null runs the user's default. */
@@ -214,6 +216,7 @@ export const DEFAULT_TICKET_PIPELINE_SETTINGS: TicketPipelineSettings = {
   autoClean: false,
   autoMerge: false,
   adoptCloudPRs: false,
+  squashMerge: false,
   triageModel: null,
   findingCheckModel: null,
   source: { kind: 'auto' }

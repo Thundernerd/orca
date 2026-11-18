@@ -72,6 +72,10 @@ export function OverviewMergeQueuePopover({
   const head = view ? ticketQueueNextMerge(view.entries) : undefined
   const includedCount = view?.entries.filter((e) => e.included !== false).length ?? 0
   const total = view?.entries.length ?? 0
+  const squashLabel = t(
+    'auto.components.overview.mergeQueue.squash',
+    'Squash each PR into one commit when merging'
+  )
   const adoptCloudLabel = t(
     'auto.components.overview.mergeQueue.adoptCloud',
     'Take in PRs from Claude cloud sessions (turn on for one machine only)'
@@ -126,6 +130,18 @@ export function OverviewMergeQueuePopover({
             />
             <span className="text-xs text-muted-foreground">{adoptCloudLabel}</span>
           </div>
+          {/* GitHub's merge queue merges by its ruleset, so the switch only steers Corka's own merges. */}
+          {view?.viaGitHubQueue ? null : (
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={settings?.squashMerge ?? false}
+                disabled={!settings}
+                onCheckedChange={(squashMerge) => updateSettings({ squashMerge })}
+                aria-label={squashLabel}
+              />
+              <span className="text-xs text-muted-foreground">{squashLabel}</span>
+            </div>
+          )}
           {state.kind === 'loading' ? (
             <p className="text-xs text-muted-foreground">
               {t('auto.components.overview.mergeQueue.loading', 'Reading the queue…')}

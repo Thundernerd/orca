@@ -95,6 +95,7 @@ export const TicketSettings = z.object({
       autoClean: z.boolean().optional(),
       autoMerge: z.boolean().optional(),
       adoptCloudPRs: z.boolean().optional(),
+      squashMerge: z.boolean().optional(),
       // Null goes back to the user's default model.
       triageModel: StepModel,
       findingCheckModel: StepModel,

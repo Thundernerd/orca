@@ -178,6 +178,7 @@ export const TICKET_HANDLERS: Record<string, CommandHandler> = {
     const autoClean = onOff(flags, 'auto-clean')
     const autoMerge = onOff(flags, 'auto-merge')
     const adoptCloudPRs = onOff(flags, 'adopt-cloud')
+    const squashMerge = onOff(flags, 'squash')
     const triageModel = stepModel(flags, 'triage-model')
     const findingCheckModel = stepModel(flags, 'finding-model')
     const sourceFlag = getOptionalStringFlag(flags, 'source')
@@ -186,6 +187,7 @@ export const TICKET_HANDLERS: Record<string, CommandHandler> = {
       ...(autoClean !== undefined ? { autoClean } : {}),
       ...(autoMerge !== undefined ? { autoMerge } : {}),
       ...(adoptCloudPRs !== undefined ? { adoptCloudPRs } : {}),
+      ...(squashMerge !== undefined ? { squashMerge } : {}),
       ...(triageModel !== undefined ? { triageModel } : {}),
       ...(findingCheckModel !== undefined ? { findingCheckModel } : {}),
       ...(source ? { source } : {})
@@ -198,7 +200,7 @@ export const TICKET_HANDLERS: Record<string, CommandHandler> = {
       result,
       json,
       (s) =>
-        `source: ${ticketSourceKey(s.source)}\nauto-clean: ${s.autoClean ? 'on' : 'off'}\nauto-merge: ${s.autoMerge ? 'on' : 'off'}\nadopt-cloud: ${s.adoptCloudPRs ? 'on' : 'off'}\ntriage-model: ${s.triageModel ?? 'default'}\nfinding-model: ${s.findingCheckModel ?? 'default'}`
+        `source: ${ticketSourceKey(s.source)}\nauto-clean: ${s.autoClean ? 'on' : 'off'}\nauto-merge: ${s.autoMerge ? 'on' : 'off'}\nadopt-cloud: ${s.adoptCloudPRs ? 'on' : 'off'}\nsquash: ${s.squashMerge ? 'on' : 'off'}\ntriage-model: ${s.triageModel ?? 'default'}\nfinding-model: ${s.findingCheckModel ?? 'default'}`
     )
   },
   'tickets queue': async ({ flags, client, cwd, json }) => {
