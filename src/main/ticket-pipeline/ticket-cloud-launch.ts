@@ -15,6 +15,7 @@ import type {
 } from '../../shared/ticket-pipeline/ticket-types'
 import { readIssue } from '../github/pull-requests/cloud-session-prs'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
+import { cloudLaunchTerminalTitle, watchCloudLaunch } from './ticket-cloud-launch-session'
 import { getTicketItemStore } from './ticket-item-store'
 import { findAgentDocs } from './ticket-launch'
 import { resolveTicketParentSelector, type TicketParentScope } from './ticket-parent-workspace'
@@ -134,8 +135,15 @@ export async function launchCloudTickets(
         agent: 'claude',
         prompt: brief,
         agentArgs: '--cloud',
-        title: `${row.ticket.id} in the cloud`
+        title: cloudLaunchTerminalTitle(row.ticket.id)
       })
+      void watchCloudLaunch(runtime, getTicketItemStore(), {
+        repoId: parent.repoId,
+        issueNumber: row.ticket.issueNumber,
+        handle: terminal.handle
+      }).catch((error: unknown) =>
+        console.warn(`[tickets] could not record the cloud session of ${row.ticket.id}`, error)
+      )
       outcomes.push({ id: selection.id, status: 'started', branch, terminal: terminal.handle })
     } catch (error) {
       await source.release(row.ticket).catch(() => undefined)

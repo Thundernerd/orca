@@ -16,6 +16,8 @@ type TicketItemFile = {
   /** Paused merge queues by parent workspace id, with the reason the user sees. */
   pausedQueues?: Record<string, string>
   draftBatches?: TicketDraftBatch[]
+  /** Claude cloud sessions launched from this host by repo id, then issue number. */
+  cloudLaunches?: Record<string, Record<string, string>>
 }
 
 const FILE_NAME = 'ticket-pipeline.json'
@@ -37,6 +39,7 @@ export class TicketItemStore {
   private settings = new Map<string, TicketPipelineSettings>()
   private pausedQueues = new Map<string, string>()
   private draftBatches = new Map<string, TicketDraftBatch>()
+  private cloudLaunches = new Map<string, string>()
   private writing: Promise<void> = Promise.resolve()
 
   constructor(private readonly path: string) {}
@@ -63,6 +66,12 @@ export class TicketItemStore {
       this.pausedQueues = new Map(Object.entries(paused))
       const batches = isTicketItemFile(parsed) ? (parsed.draftBatches ?? []) : []
       this.draftBatches = new Map(batches.map((batch) => [batch.id, batch]))
+      const launches = isTicketItemFile(parsed) ? (parsed.cloudLaunches ?? {}) : {}
+      this.cloudLaunches = new Map(
+        Object.entries(launches).flatMap(([repoId, byIssue]) =>
+          Object.entries(byIssue).map(([issue, sessionId]) => [`${repoId}#${issue}`, sessionId])
+        )
+      )
     }
     return this.items
   }
@@ -137,13 +146,37 @@ export class TicketItemStore {
     return next
   }
 
+  async cloudLaunchSession(repoId: string, issueNumber: number): Promise<string | null> {
+    await this.load()
+    return this.cloudLaunches.get(`${repoId}#${issueNumber}`) ?? null
+  }
+
+  async recordCloudLaunch(repoId: string, issueNumber: number, sessionId: string): Promise<void> {
+    await this.load()
+    this.cloudLaunches.set(`${repoId}#${issueNumber}`, sessionId)
+    await this.flush()
+  }
+
+  async forgetCloudLaunch(repoId: string, issueNumber: number): Promise<void> {
+    await this.load()
+    if (this.cloudLaunches.delete(`${repoId}#${issueNumber}`)) {
+      await this.flush()
+    }
+  }
+
   private flush(): Promise<void> {
+    const cloudLaunches: Record<string, Record<string, string>> = {}
+    for (const [key, sessionId] of this.cloudLaunches) {
+      const [repoId, issue] = key.split('#')
+      cloudLaunches[repoId] = { ...cloudLaunches[repoId], [issue]: sessionId }
+    }
     const snapshot: TicketItemFile = {
       version: 1,
       items: [...(this.items?.values() ?? [])],
       settings: Object.fromEntries(this.settings),
       pausedQueues: Object.fromEntries(this.pausedQueues),
-      draftBatches: [...this.draftBatches.values()]
+      draftBatches: [...this.draftBatches.values()],
+      cloudLaunches
     }
     this.writing = this.writing
       .catch(() => undefined)

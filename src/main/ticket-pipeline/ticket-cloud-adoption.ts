@@ -25,6 +25,7 @@ import { startFindingCheck, TICKET_PIPELINE_CALLER } from './ticket-finding-chec
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import { getTicketItemStore, type TicketItemStore } from './ticket-item-store'
 import { resolveTicketParentSelector } from './ticket-parent-workspace'
+import { recordLaunchedCloudSessions } from './ticket-cloud-launch-session'
 
 // `fix/gh-314-keep-…`: the branch a ticket brief names, so the issue number is in it.
 const TICKET_BRANCH = new RegExp(`^(?:${CONVENTIONAL_TYPES.join('|')})/gh-(\\d+)(?:-|$)`)
@@ -33,20 +34,27 @@ const TICKET_BRANCH = new RegExp(`^(?:${CONVENTIONAL_TYPES.join('|')})/gh-(\\d+)
 // GitHub's edit history once per PR is enough.
 const notCloudPRs = new Set<string>()
 
-/** The session a ticket-branch PR's body names now, else the one it named when opened. */
+/** The session a ticket-branch PR's body names now, else the one this host launched for its
+ *  issue, else the one its body named when opened. */
 async function cloudSessionOf(
-  repoPath: string,
+  store: TicketItemStore,
+  repo: { id: string; path: string },
   ownerRepo: GitHubRepositoryIdentity,
-  pr: OpenRepoPR
+  pr: OpenRepoPR,
+  issueNumber: number
 ): Promise<CloudSessionTag | null> {
   if (pr.tag) {
     return pr.tag
+  }
+  const launched = await store.cloudLaunchSession(repo.id, issueNumber)
+  if (launched) {
+    return { sessionId: launched, host: null }
   }
   const key = `${ownerRepo.owner}/${ownerRepo.repo}#${pr.number}`
   if (notCloudPRs.has(key)) {
     return null
   }
-  const sessionId = await readFirstRevisionSessionId(repoPath, ownerRepo, pr.number)
+  const sessionId = await readFirstRevisionSessionId(repo.path, ownerRepo, pr.number)
   if (!sessionId) {
     notCloudPRs.add(key)
     return null
@@ -89,6 +97,10 @@ async function adoptForRepo(
     return 0
   }
   const { ownerRepo, prs: open } = await listOpenRepoPRs(repo.path)
+  const parentSelector = await resolveTicketParentSelector(runtime, { repo: `id:${repoId}` })
+  await recordLaunchedCloudSessions(runtime, store, repoId, parentSelector).catch(
+    (error: unknown) => console.warn('[tickets] could not read cloud launch terminals', error)
+  )
   const byBranch = new Map(
     (await store.list()).filter((i) => i.repoId === repoId).map((i) => [i.branch, i])
   )
@@ -102,19 +114,25 @@ async function adoptForRepo(
     if (Number.isNaN(issueNumber) || (earlier !== null && !takesOver)) {
       continue
     }
-    const tag = await cloudSessionOf(repo.path, ownerRepo, pr)
+    const tag = await cloudSessionOf(
+      store,
+      { id: repoId, path: repo.path },
+      ownerRepo,
+      pr,
+      issueNumber
+    )
     // A PR another host claimed stays with that host.
     if (tag && (tag.host === null || tag.host === host)) {
       fresh.push({ pr: { ...pr, ...tag }, issueNumber, earlier })
     }
   }
-  const parentSelector = await resolveTicketParentSelector(runtime, { repo: `id:${repoId}` })
   const parentWorktreeId = parentSelector.replace(/^id:/, '')
   for (const { pr, issueNumber, earlier } of fresh) {
     // Two hosts can claim one PR at once; only the one its body names afterwards keeps it.
     if ((await claimCloudSessionPR(repo.path, ownerRepo, pr, host)) !== host) {
       continue
     }
+    await store.forgetCloudLaunch(repoId, issueNumber)
     if (earlier) {
       await store.update(earlier.id, {
         parentWorktreeId,
