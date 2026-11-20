@@ -5,7 +5,8 @@ import {
   needsTriage,
   parseBlockedBySection,
   parseTicketFileDeps,
-  parseTicketFileTitle
+  parseTicketFileTitle,
+  ticketRunsIn
 } from './ticket-body-markers'
 
 describe('ticket body markers', () => {
@@ -67,5 +68,13 @@ describe('findingIssueBody', () => {
     expect(filed('## Goal\n\nFound while implementing #9, too.')).toContain(
       '## Goal\n\nFound while implementing #9, too.'
     )
+  })
+
+  it('reads where a ticket runs from its ready-for labels, ignoring case', () => {
+    expect(ticketRunsIn(['ready-for-agent'])).toBe('cloud')
+    expect(ticketRunsIn(['bug', 'Ready-For-Human'])).toBe('local')
+    expect(ticketRunsIn(['READY-FOR-AGENT', 'ready-for-human'])).toBe('local')
+    expect(ticketRunsIn(['bug', 'needs-triage'])).toBeUndefined()
+    expect(ticketRunsIn([])).toBeUndefined()
   })
 })

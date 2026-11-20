@@ -23,8 +23,7 @@ import {
 import { getTicketItemStore } from '../../../../ticket-pipeline/ticket-item-store'
 import { adoptUntrackedTicketWorkspaces } from '../../../../ticket-pipeline/ticket-adoption'
 import { startFindingCheck } from '../../../../ticket-pipeline/ticket-finding-check'
-import { launchTickets } from '../../../../ticket-pipeline/ticket-launch'
-import { launchCloudTickets } from '../../../../ticket-pipeline/ticket-cloud-launch'
+import { launchRequestedTickets } from '../../../../ticket-pipeline/ticket-launch-request'
 import { surveyTickets } from '../../../../ticket-pipeline/ticket-survey'
 import { startTicketTracker } from '../../../../ticket-pipeline/ticket-tracker'
 import { ticketPipelineStatus } from '../../../../ticket-pipeline/ticket-pipeline-status'
@@ -83,14 +82,7 @@ export const TICKET_METHODS = [
     permission: 'workspace',
     params: TicketLaunch,
     handler: async (params, context) => {
-      const result = params.cloud
-        ? await launchCloudTickets(context.runtime, ticketParentScope(params), params.tickets)
-        : await launchTickets(context, {
-            ...(params.worktree !== undefined ? { parentWorktree: params.worktree } : {}),
-            ...(params.repo !== undefined ? { repo: params.repo } : {}),
-            ...(params.source ? { source: params.source } : {}),
-            tickets: params.tickets
-          })
+      const result = await launchRequestedTickets(context, params)
       startTicketTracker(context.runtime)
       return result
     }

@@ -45,6 +45,31 @@ export async function surveyOverviewProject(projectId: string): Promise<Overview
   }
 }
 
+/** Counts by where each ticket actually started, since labels can split one launch both ways. */
+function launchSummary(result: TicketLaunchResult, project: string, askedCloud: boolean): string {
+  const local = result.outcomes.filter((o) => o.status === 'launched').length
+  const cloud = result.outcomes.filter((o) => o.status === 'started').length
+  const total = result.outcomes.length
+  if (local > 0 && cloud > 0) {
+    return translate(
+      'auto.components.overview.launchTickets.mixedResult',
+      'Launched {{local}} of {{total}} tickets locally and started {{cloud}} in Claude cloud sessions for {{project}}; their terminals show any prompt to answer.',
+      { local, cloud, total, project }
+    )
+  }
+  return cloud > 0 || (local === 0 && askedCloud)
+    ? translate(
+        'auto.components.overview.launchTickets.cloudResult',
+        'Started {{count}} of {{total}} tickets in Claude cloud sessions for {{project}}; their terminals show any prompt to answer.',
+        { count: cloud, total, project }
+      )
+    : translate(
+        'auto.components.overview.launchTickets.result',
+        'Launched {{count}} of {{total}} tickets in {{project}}.',
+        { count: local, total, project }
+      )
+}
+
 /** Launches the chosen tickets from the project's main workspace and summarises what happened. */
 export async function launchOverviewTickets(
   projectId: string,
@@ -69,25 +94,25 @@ export async function launchOverviewTickets(
     { repo: route.repo, tickets, ...(options.cloud ? { cloud: true } : {}) },
     { timeoutMs: LAUNCH_TIMEOUT_MS }
   )
-  const launched = result.outcomes.filter((o) => o.status === 'launched' || o.status === 'started')
   const details = result.outcomes.flatMap((o) =>
     o.status === 'launched' || o.status === 'started' ? [] : [`${o.id}: ${o.reason}`]
   )
-  const counts = { count: launched.length, total: result.outcomes.length, project: projectName }
+  const keptLocal = result.outcomes.flatMap((o) =>
+    o.status === 'launched' && o.keptLocal ? [o.id] : []
+  )
   return {
     ok: details.length === 0,
     message: [
-      options.cloud
-        ? translate(
-            'auto.components.overview.launchTickets.cloudResult',
-            'Started {{count}} of {{total}} tickets in Claude cloud sessions for {{project}}; their terminals show any prompt to answer.',
-            counts
-          )
-        : translate(
-            'auto.components.overview.launchTickets.result',
-            'Launched {{count}} of {{total}} tickets in {{project}}.',
-            counts
-          ),
+      launchSummary(result, projectName, options.cloud === true),
+      ...(keptLocal.length > 0
+        ? [
+            translate(
+              'auto.components.overview.launchTickets.keptLocal',
+              '{{tickets}} ran locally, since ready-for-human tickets need a person nearby.',
+              { tickets: keptLocal.join(', ') }
+            )
+          ]
+        : []),
       ...details
     ].join(' ')
   }
