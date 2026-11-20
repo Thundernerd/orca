@@ -17,8 +17,14 @@ afterEach(() => {
   }
 })
 
+// The identity is passed on every call: CI runners have none, and commits and annotated tags need one.
 function git(cwd, ...args) {
-  const result = runProcessSync({ program: 'git', args, cwd, timeoutMs: 30_000 })
+  const result = runProcessSync({
+    program: 'git',
+    args: ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args],
+    cwd,
+    timeoutMs: 30_000
+  })
   expect(result.code, result.stderr).toBe(0)
 }
 
