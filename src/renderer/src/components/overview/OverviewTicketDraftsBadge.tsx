@@ -6,6 +6,23 @@ import { overviewDraftBatches } from './overview-ticket-pipeline'
 import { OverviewTicketDraftReviewDialog } from './OverviewTicketDraftReviewDialog'
 import { refreshOverviewTicketStatus, useOverviewTicketStatus } from './use-overview-ticket-status'
 
+/** The oldest batch still waiting for review among `waiting`, or null when none is (or loading failed). */
+async function oldestDraftBatchToReview(
+  projectId: string,
+  waiting: readonly { batchId: string }[]
+): Promise<TicketDraftBatch | null> {
+  try {
+    const batches = await overviewDraftBatches(projectId)
+    const ids = new Set(waiting.map((b) => b.batchId))
+    const oldest = batches
+      .filter((b) => b.status === 'review' && ids.has(b.id))
+      .sort((a, b) => a.createdAt - b.createdAt)[0]
+    return oldest ?? null
+  } catch {
+    return null
+  }
+}
+
 /** Tells the user when Write ticket's drafts are being written or wait for review, and opens the oldest. */
 export function OverviewTicketDraftsBadge({
   projectId,
@@ -26,20 +43,11 @@ export function OverviewTicketDraftsBadge({
 
   const openOldest = async (): Promise<void> => {
     setOpening(true)
-    try {
-      const batches = await overviewDraftBatches(projectId)
-      const ids = new Set(waiting.map((b) => b.batchId))
-      const oldest = batches
-        .filter((b) => b.status === 'review' && ids.has(b.id))
-        .sort((a, b) => a.createdAt - b.createdAt)[0]
-      setReviewing(oldest ?? null)
-      if (!oldest) {
-        refreshOverviewTicketStatus(projectId)
-      }
-    } catch {
+    const oldest = await oldestDraftBatchToReview(projectId, waiting)
+    setOpening(false)
+    setReviewing(oldest)
+    if (!oldest) {
       refreshOverviewTicketStatus(projectId)
-    } finally {
-      setOpening(false)
     }
   }
 

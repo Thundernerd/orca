@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import type { OverviewAttentionItem } from '../../../../shared/overview/overview-model-types'
 
 /** What the cards and table rows read to show the selection and an open reply. */
@@ -49,65 +49,66 @@ export function useOverviewKeyboardTriage(args: {
 }): OverviewTriage {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [replyOpenId, setReplyOpen] = useState<string | null>(null)
-  // The listener reads the latest list and callbacks without re-subscribing on every update.
-  const latest = useRef(args)
-  latest.current = args
-  const selectedRef = useRef(selectedId)
-  selectedRef.current = selectedId
+  // Only the listener changes the selection, and key repeat can outrun a render: it keeps its own
+  // copy so the next press sees the last one.
+  const selectedRef = useRef<string | null>(null)
 
   const visibleSelectedId =
     selectedId !== null && args.items.some((item) => item.worktreeId === selectedId)
       ? selectedId
       : null
 
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent): void {
-      if (
-        event.defaultPrevented ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.altKey ||
-        isTypingOrInOverlay(event.target)
-      ) {
-        return
-      }
-      const { items, onOpen, onMarkRead } = latest.current
-      const index = items.findIndex((item) => item.worktreeId === selectedRef.current)
-      const selected = index !== -1 ? items[index] : null
-      const select = (next: number): void => {
-        const item = items[Math.max(0, Math.min(items.length - 1, next))]
-        if (item) {
-          // Key repeat can outrun a render; the next press must see this selection.
-          selectedRef.current = item.worktreeId
-          setSelectedId(item.worktreeId)
-        }
-      }
-      const key = event.key.length === 1 ? event.key.toLowerCase() : event.key
-      if ((key === 'Enter' || key.startsWith('Arrow')) && isOnControl(event.target)) {
-        return
-      }
-      if (key === 'ArrowDown' || key === 'j') {
-        select(index + 1)
-      } else if (key === 'ArrowUp' || key === 'k') {
-        select(index === -1 ? 0 : index - 1)
-      } else if (key === 'Enter' && selected) {
-        onOpen(selected.worktreeId)
-      } else if (key === 'e' && selected?.unread) {
-        onMarkRead(selected.worktreeId)
-      } else if (key === 'r' && selected?.kinds.includes('agent-waiting')) {
-        setReplyOpen(selected.worktreeId)
-      } else if (key === 'Escape' && selected) {
-        selectedRef.current = null
-        setSelectedId(null)
-      } else {
-        return
-      }
-      // Capture phase: claim the key before the page's own Escape handler sees it.
-      event.preventDefault()
-      event.stopPropagation()
+  // An effect event reads the latest list and callbacks without re-subscribing on every update.
+  const onKeyDown = useEffectEvent((event: KeyboardEvent): void => {
+    if (
+      event.defaultPrevented ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.altKey ||
+      isTypingOrInOverlay(event.target)
+    ) {
+      return
     }
-    window.addEventListener('keydown', onKeyDown, true)
-    return () => window.removeEventListener('keydown', onKeyDown, true)
+    const { items, onOpen, onMarkRead } = args
+    const index = items.findIndex((item) => item.worktreeId === selectedRef.current)
+    const selected = index !== -1 ? items[index] : null
+    const select = (next: number): void => {
+      const item = items[Math.max(0, Math.min(items.length - 1, next))]
+      if (item) {
+        // Key repeat can outrun a render; the next press must see this selection.
+        selectedRef.current = item.worktreeId
+        setSelectedId(item.worktreeId)
+      }
+    }
+    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key
+    if ((key === 'Enter' || key.startsWith('Arrow')) && isOnControl(event.target)) {
+      return
+    }
+    if (key === 'ArrowDown' || key === 'j') {
+      select(index + 1)
+    } else if (key === 'ArrowUp' || key === 'k') {
+      select(index === -1 ? 0 : index - 1)
+    } else if (key === 'Enter' && selected) {
+      onOpen(selected.worktreeId)
+    } else if (key === 'e' && selected?.unread) {
+      onMarkRead(selected.worktreeId)
+    } else if (key === 'r' && selected?.kinds.includes('agent-waiting')) {
+      setReplyOpen(selected.worktreeId)
+    } else if (key === 'Escape' && selected) {
+      selectedRef.current = null
+      setSelectedId(null)
+    } else {
+      return
+    }
+    // Capture phase: claim the key before the page's own Escape handler sees it.
+    event.preventDefault()
+    event.stopPropagation()
+  })
+
+  useEffect(() => {
+    const listener = (event: KeyboardEvent): void => onKeyDown(event)
+    window.addEventListener('keydown', listener, true)
+    return () => window.removeEventListener('keydown', listener, true)
   }, [])
 
   useEffect(() => {

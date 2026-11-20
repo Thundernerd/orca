@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildOverviewSnapshot } from '../../../src/shared/overview/overview-model'
-import type { Worktree } from '../worktree/workspace-list-types'
+import type { Worktree } from '../worktree/workspace-list/workspace-list-types'
 import { overviewInputsFromRows } from './overview-ps-inputs'
 
 function row(worktreeId: string, overrides: Partial<Worktree> = {}): Worktree {

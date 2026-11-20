@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAppStore } from '@/store/index'
 import type { OverviewProject } from '../../../../shared/overview/overview-model-types'
 import {
@@ -10,6 +10,82 @@ import { surveyOverviewProject } from './overview-ticket-pipeline'
 const TICKETS_MS = 5 * 60_000
 const SURVEY_CONCURRENCY = 2
 
+/** Surveys one project and stores its counts; reports whether surveys are unavailable there. */
+async function surveyAndStore(projectId: string): Promise<'unavailable' | 'done'> {
+  const result = await surveyOverviewProject(projectId)
+  if (result.status === 'unavailable') {
+    return 'unavailable'
+  }
+  const now = Date.now()
+  useAppStore.getState().updateOverviewPrefs((prefs) => ({
+    ...prefs,
+    tickets: {
+      ...prefs.tickets,
+      [projectId]:
+        result.status === 'ok'
+          ? countTicketSurvey(result.result.rows, now)
+          : failedTicketSurvey(result.error, now, prefs.tickets[projectId] ?? null)
+    }
+  }))
+  return 'done'
+}
+
+type SurveyQueueListener = {
+  loading: (projectIds: ReadonlySet<string>) => void
+  unavailable: (projectId: string) => void
+}
+
+/** A queue that runs at most two surveys at a time and reports to the page while it is attached. */
+function createSurveyQueue(): {
+  request: (projectId: string) => void
+  attach: (listener: SurveyQueueListener) => () => void
+} {
+  const queue: string[] = []
+  const queued = new Set<string>()
+  let running = 0
+  let listener: SurveyQueueListener | null = null
+
+  const pump = (): void => {
+    while (running < SURVEY_CONCURRENCY && queue.length > 0) {
+      const projectId = queue.shift()!
+      running += 1
+      void surveyAndStore(projectId)
+        .then((outcome) => {
+          if (outcome === 'unavailable') {
+            listener?.unavailable(projectId)
+          }
+        })
+        .finally(() => {
+          running -= 1
+          queued.delete(projectId)
+          listener?.loading(new Set(queued))
+          pump()
+        })
+    }
+  }
+
+  return {
+    request(projectId) {
+      if (queued.has(projectId)) {
+        return
+      }
+      queued.add(projectId)
+      queue.push(projectId)
+      listener?.loading(new Set(queued))
+      pump()
+    },
+    attach(next) {
+      listener = next
+      next.loading(new Set(queued))
+      return () => {
+        if (listener === next) {
+          listener = null
+        }
+      }
+    }
+  }
+}
+
 /** Surveys each project's tickets while the page is open: at most two at a time. */
 export function useOverviewTicketSurveys(): {
   ticketsLoading: ReadonlySet<string>
@@ -20,66 +96,18 @@ export function useOverviewTicketSurveys(): {
 } {
   const [ticketsLoading, setTicketsLoading] = useState<ReadonlySet<string>>(new Set())
   const [unavailable, setUnavailable] = useState<ReadonlySet<string>>(new Set())
-  const queue = useRef<string[]>([])
-  const queued = useRef(new Set<string>())
-  const running = useRef(0)
-  const mounted = useRef(true)
+  const [queue] = useState(createSurveyQueue)
 
-  useEffect(() => {
-    mounted.current = true
-    return () => {
-      mounted.current = false
-    }
-  }, [])
-
-  const runOne = useCallback(async (projectId: string): Promise<void> => {
-    const result = await surveyOverviewProject(projectId)
-    if (result.status === 'unavailable') {
-      if (mounted.current) {
-        setUnavailable((current) => new Set(current).add(projectId))
-      }
-      return
-    }
-    const now = Date.now()
-    useAppStore.getState().updateOverviewPrefs((prefs) => ({
-      ...prefs,
-      tickets: {
-        ...prefs.tickets,
-        [projectId]:
-          result.status === 'ok'
-            ? countTicketSurvey(result.result.rows, now)
-            : failedTicketSurvey(result.error, now, prefs.tickets[projectId] ?? null)
-      }
-    }))
-  }, [])
-
-  const pump = useCallback((): void => {
-    while (running.current < SURVEY_CONCURRENCY && queue.current.length > 0) {
-      const projectId = queue.current.shift()!
-      running.current += 1
-      void runOne(projectId).finally(() => {
-        running.current -= 1
-        queued.current.delete(projectId)
-        if (mounted.current) {
-          setTicketsLoading(new Set(queued.current))
-        }
-        pump()
-      })
-    }
-  }, [runOne])
-
-  const requestSurvey = useCallback(
-    (projectId: string): void => {
-      if (queued.current.has(projectId)) {
-        return
-      }
-      queued.current.add(projectId)
-      queue.current.push(projectId)
-      setTicketsLoading(new Set(queued.current))
-      pump()
-    },
-    [pump]
+  useEffect(
+    () =>
+      queue.attach({
+        loading: setTicketsLoading,
+        unavailable: (projectId) => setUnavailable((current) => new Set(current).add(projectId))
+      }),
+    [queue]
   )
+
+  const requestSurvey = queue.request
 
   const scheduleStale = useCallback(
     (projects: readonly OverviewProject[]): void => {

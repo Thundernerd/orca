@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useState } from 'react'
 import { useAppStore } from '@/store/index'
 import { useTranslate } from '@/i18n/use-translate'
-import { parseWorkspaceKey } from '../../../../shared/workspace/identity/workspace-scope'
 import type { OverviewPrefs } from '../../../../shared/overview-prefs'
 import { useOverviewData } from './use-overview-data'
 import { useOverviewTicketSurveys } from './use-overview-ticket-surveys'
@@ -17,7 +16,9 @@ import type { TicketLaunchSelection } from '../../../../shared/ticket-pipeline/t
 import {
   markOverviewWorkspaceRead,
   openOverviewWorkspace,
+  refreshOverviewPrs,
   replyToOverviewWorkspace,
+  settleOverviewAction,
   type OverviewActionResult
 } from './overview-actions'
 import { OverviewAttentionCard, type OverviewAttentionCardActions } from './OverviewAttentionCard'
@@ -88,24 +89,15 @@ export default function OverviewPage(): React.JSX.Element {
   }, [])
 
   // The list changes on every agent update; read it at refresh time so the timer is not restarted.
-  const worktreesRef = useRef(worktreesById)
-  worktreesRef.current = worktreesById
-  const refreshPrs = useCallback(() => {
-    const { refreshGitHubForWorktreeIfStale } = useAppStore.getState()
-    for (const w of worktreesRef.current.values()) {
-      if (parseWorkspaceKey(w.id)?.type !== 'folder') {
-        refreshGitHubForWorktreeIfStale(w.id)
-      }
-    }
-  }, [])
+  const refreshPrsOnTimer = useEffectEvent(() => refreshOverviewPrs(worktreesById))
   // PR/CI data is otherwise fetched only for cards on screen; keep every row here fresh.
   useEffect(() => {
     return installWindowVisibilityInterval({
-      run: refreshPrs,
+      run: () => refreshPrsOnTimer(),
       intervalMs: PR_REFRESH_MS,
       slowWhileUnfocused: true
     })
-  }, [refreshPrs])
+  }, [])
 
   const { scheduleStale } = surveys
   useEffect(() => {
@@ -114,15 +106,10 @@ export default function OverviewPage(): React.JSX.Element {
 
   const run = useCallback(async (action: () => Promise<OverviewActionResult | null>) => {
     setBusy(true)
-    try {
-      const result = await action()
-      if (result) {
-        setNotice(result)
-      }
-    } catch (error) {
-      setNotice({ ok: false, message: error instanceof Error ? error.message : String(error) })
-    } finally {
-      setBusy(false)
+    const result = await settleOverviewAction(action)
+    setBusy(false)
+    if (result) {
+      setNotice(result)
     }
   }, [])
 
@@ -283,7 +270,7 @@ export default function OverviewPage(): React.JSX.Element {
   // Hidden projects are already out of Needs you, so they keep their unread flags.
   const unreadItems = snapshot.attention.filter((item) => item.unread)
   const refreshAll = (): void => {
-    refreshPrs()
+    refreshOverviewPrs(worktreesById)
     for (const project of snapshot.projects) {
       if (project.usesTickets && project.ticketSource && !project.hidden) {
         surveys.requestSurvey(project.ticketSource)
