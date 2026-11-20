@@ -18,7 +18,7 @@ import type { RpcContext } from '../runtime/rpc/core'
 import { launchAgentOnHost } from '../runtime/rpc/methods/agent-launch/agent-launch'
 import { getTicketItemStore } from './ticket-item-store'
 import { resolveTicketParentSelector } from './ticket-parent-workspace'
-import { surveyTicketsWithSource } from './ticket-survey'
+import { surveyTicketsWithSource, type TicketSurveyWithSource } from './ticket-survey'
 import type { TicketSource } from './sources/ticket-source'
 
 const AGENT_DOC_CANDIDATES = [
@@ -36,6 +36,8 @@ export type TicketLaunchRequest = {
   repo?: string
   source?: TicketSourceKind
   tickets: readonly TicketLaunchSelection[]
+  /** A survey of the parent workspace taken just before, so the launch need not survey again. */
+  survey?: TicketSurveyWithSource
 }
 
 /** The agent docs the checkout tracks, for a brief to point at. */
@@ -82,11 +84,13 @@ export async function launchTickets(
   )
   const parent = await context.runtime.showManagedWorktree(parentSelector)
   const repo = await context.runtime.showRepo(parent.repoId)
-  const { result: survey, source } = await surveyTicketsWithSource(
-    context.runtime,
-    { worktree: `id:${parent.id}` },
-    request.source
-  )
+  const { result: survey, source } =
+    request.survey ??
+    (await surveyTicketsWithSource(
+      context.runtime,
+      { worktree: `id:${parent.id}` },
+      request.source
+    ))
   const rowsById = new Map(survey.rows.map((row) => [row.ticket.id, row]))
   const baseBranch = survey.baseRef.replace(/^[^/]+\//, '')
   const agentDocs = await findAgentDocs(parent.path)

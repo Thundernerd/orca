@@ -19,14 +19,19 @@ import { cloudLaunchTerminalTitle, watchCloudLaunch } from './ticket-cloud-launc
 import { getTicketItemStore } from './ticket-item-store'
 import { findAgentDocs } from './ticket-launch'
 import { resolveTicketParentSelector, type TicketParentScope } from './ticket-parent-workspace'
-import { surveyTicketsWithSource } from './ticket-survey'
+import { surveyTicketsWithSource, type TicketSurveyWithSource } from './ticket-survey'
 
 /** The parent workspace, its GitHub-issue survey, and what every cloud brief there shares. */
-async function cloudLaunchContext(runtime: OrcaRuntimeService, scope: TicketParentScope) {
+async function cloudLaunchContext(
+  runtime: OrcaRuntimeService,
+  scope: TicketParentScope,
+  takenSurvey?: TicketSurveyWithSource
+) {
   const parent = await runtime.showManagedWorktree(
     await resolveTicketParentSelector(runtime, scope)
   )
-  const survey = await surveyTicketsWithSource(runtime, { worktree: `id:${parent.id}` })
+  const survey =
+    takenSurvey ?? (await surveyTicketsWithSource(runtime, { worktree: `id:${parent.id}` }))
   if (survey.source.kind !== 'github-issues') {
     throw new Error('Cloud sessions take GitHub issues; this project reads its tickets elsewhere.')
   }
@@ -94,13 +99,15 @@ export async function cloudTicketBrief(
 
 /** Claims each confirmed ticket and opens a terminal in the parent workspace running
  *  `claude --cloud` with its brief, where the user answers any prompt the CLI asks. This host
- *  then adopts the PRs those sessions open. */
+ *  then adopts the PRs those sessions open. A survey of the parent workspace taken just before
+ *  saves surveying again. */
 export async function launchCloudTickets(
   runtime: OrcaRuntimeService,
   scope: TicketParentScope,
-  selections: readonly TicketLaunchSelection[]
+  selections: readonly TicketLaunchSelection[],
+  survey?: TicketSurveyWithSource
 ): Promise<TicketLaunchResult> {
-  const context = await cloudLaunchContext(runtime, scope)
+  const context = await cloudLaunchContext(runtime, scope, survey)
   const { parent, result, source, baseBranch } = context
   const checkedOut = parent.branch.replace(/^refs\/heads\//, '')
   // The cloud clones the remote branch this checkout is on, not the default branch.

@@ -43,6 +43,9 @@ export type TicketSurveyRow = {
   waitingOn: string[]
   /** The existing workspace for `launched`. */
   worktreeId?: string
+  /** Where a GitHub issue's `ready-for-agent` / `ready-for-human` label says it runs; absent
+   *  when it has neither label, or the tickets come from elsewhere. */
+  runsIn?: 'cloud' | 'local'
 }
 
 export type TicketSurveyResult = {
@@ -77,7 +80,15 @@ export type TicketLaunchSelection = {
 }
 
 export type TicketLaunchOutcome =
-  | { id: string; status: 'launched'; itemId: string; worktreeId: string; branch: string }
+  | {
+      id: string
+      status: 'launched'
+      itemId: string
+      worktreeId: string
+      branch: string
+      /** Asked for in the cloud, but launched locally because its label is `ready-for-human`. */
+      keptLocal?: 'ready-for-human'
+    }
   /** Started as a Claude cloud session in `terminal`; Corka adopts the PR it opens. */
   | { id: string; status: 'started'; branch: string; terminal: string }
   | { id: string; status: 'skipped'; reason: string }

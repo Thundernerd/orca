@@ -27,7 +27,8 @@ export const TICKET_COMMAND_SPECS: CommandSpec[] = [
       'An issue is claimed by assigning it to you; a failed launch releases the claim.',
       'The branch is <type>/<id>-<title slug>; the type comes from the ticket labels (feat when none says otherwise) unless --type sets it.',
       'Corka then follows each ticket to its PR and moves the workspace to In review.',
-      'With --cloud, each GitHub issue starts as a Claude cloud session instead, in a terminal of the parent workspace, which must be on the default branch. This host then takes their PRs into the merge queue.'
+      'With --cloud, each GitHub issue starts as a Claude cloud session instead, in a terminal of the parent workspace, which must be on the default branch. This host then takes their PRs into the merge queue.',
+      'A GitHub issue labelled ready-for-agent always starts in the cloud and one labelled ready-for-human always launches locally (both labels: locally), so --cloud only applies to issues with neither label.'
     ],
     examples: [
       'orca tickets launch --ticket "#12" --ticket "#14"',

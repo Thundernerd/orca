@@ -5,6 +5,7 @@ import type {
   RuntimeWorktreeListResult,
   RuntimeWorktreeRecord
 } from '../../shared/worktree/catalog/runtime-worktree-contracts'
+import { ticketRunsIn } from '../../shared/ticket-pipeline/ticket-body-markers'
 import { classifyTickets } from '../../shared/ticket-pipeline/ticket-classification'
 import type {
   TicketSourceKind,
@@ -24,12 +25,19 @@ const WORKTREE_SCAN_LIMIT = 10_000
 
 export type TicketSurveyScope = { worktree: string } | { repo: string }
 
-/** A survey together with the source it read, so a launch claims and links through the same one. */
+/** A survey together with the source it read. */
+export type TicketSurveyWithSource = {
+  result: TicketSurveyResult
+  source: TicketSource
+  repo: Repo
+}
+
+/** Surveys the open tickets and keeps the source it read, so a launch claims and links through the same one. */
 export async function surveyTicketsWithSource(
   runtime: TicketSurveyRuntime,
   scope: TicketSurveyScope,
   sourceOverride?: TicketSourceKind
-): Promise<{ result: TicketSurveyResult; source: TicketSource; repo: Repo }> {
+): Promise<TicketSurveyWithSource> {
   const parent = 'worktree' in scope ? await runtime.showManagedWorktree(scope.worktree) : null
   const repo = await runtime.showRepo('repo' in scope ? scope.repo : (parent?.repoId ?? ''))
   if (isFolderRepo(repo)) {
@@ -52,7 +60,15 @@ export async function surveyTicketsWithSource(
       branch: w.branch
     }))
 
-  const rows = classifyTickets(tickets, doneIds, signatures)
+  const classified = classifyTickets(tickets, doneIds, signatures)
+  // Only GitHub issues carry the triage skill's labels; Linear, Jira and ticket files keep the switch.
+  const rows =
+    source.kind === 'github-issues'
+      ? classified.map((row) => {
+          const runsIn = ticketRunsIn(row.ticket.labels)
+          return runsIn ? { ...row, runsIn } : row
+        })
+      : classified
   return {
     result: {
       source: source.kind,

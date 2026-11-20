@@ -20405,6 +20405,8 @@
           "cloud": "Run in Claude cloud",
           "cloudHint": "Each starts a Claude cloud session in a terminal here; Corka takes its PR into the merge queue.",
           "cloudResult": "Started {{count}} of {{total}} tickets in Claude cloud sessions for {{project}}; their terminals show any prompt to answer.",
+          "mixedResult": "Launched {{local}} of {{total}} tickets locally and started {{cloud}} in Claude cloud sessions for {{project}}; their terminals show any prompt to answer.",
+          "keptLocal": "{{tickets}} ran locally, since ready-for-human tickets need a person nearby.",
           "findingModel": "Finding checks run",
           "userDefaultModel": "Your default",
           "selectAll": "Select all tickets",

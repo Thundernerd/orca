@@ -11,7 +11,12 @@ export function formatLaunch(result: TicketLaunchResult): string {
   return result.outcomes
     .map((o) =>
       o.status === 'launched' || o.status === 'started'
-        ? `${o.status}\t${o.id}\t${o.branch}`
+        ? [
+            o.status,
+            o.id,
+            o.branch,
+            ...(o.status === 'launched' && o.keptLocal ? [`ran locally: ${o.keptLocal}`] : [])
+          ].join('\t')
         : `${o.status}\t${o.id}\t${o.reason}`
     )
     .join('\n')

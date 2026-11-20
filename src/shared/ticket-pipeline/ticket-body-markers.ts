@@ -30,6 +30,24 @@ export function needsTriage(input: {
   )
 }
 
+/** The triage skill's label for a ticket specified well enough to run in a Claude cloud session. */
+export const READY_FOR_AGENT_LABEL = 'ready-for-agent'
+/** The triage skill's label for a ticket that likely needs a person, so it runs locally. */
+export const READY_FOR_HUMAN_LABEL = 'ready-for-human'
+
+/** Where a GitHub issue runs when launched: a Claude cloud session or a local ticket workspace. */
+export type TicketRunsIn = 'cloud' | 'local'
+
+/** Where a ticket's labels say it runs; undefined when neither label is set. Both labels mean
+ *  local, the safe choice. Matching ignores case. */
+export function ticketRunsIn(labels: readonly string[]): TicketRunsIn | undefined {
+  const names = new Set(labels.map((label) => label.trim().toLowerCase()))
+  if (names.has(READY_FOR_HUMAN_LABEL)) {
+    return 'local'
+  }
+  return names.has(READY_FOR_AGENT_LABEL) ? 'cloud' : undefined
+}
+
 /** Issue numbers listed under a markdown `Blocked by` heading, up to the next heading. */
 export function parseBlockedBySection(body: string): number[] {
   const numbers = new Set<number>()

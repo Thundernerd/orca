@@ -42,7 +42,8 @@ export const TicketLaunch = z
       )
       .min(1)
       .max(50),
-    /** Start each as a Claude cloud session instead of a local workspace. */
+    /** Start each GitHub issue without a ready-for-agent or ready-for-human label as a Claude
+     *  cloud session instead of a local workspace; labelled issues go where their label says. */
     cloud: z.boolean().optional()
   })
   .refine((params) => (params.worktree === undefined) !== (params.repo === undefined), {
