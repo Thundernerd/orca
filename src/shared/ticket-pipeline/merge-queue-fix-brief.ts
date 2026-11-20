@@ -38,7 +38,7 @@ export function renderMergeQueueFixBrief(input: MergeQueueFixBriefInput): string
       lines.push(
         'These lines carry Claude attribution and must go:',
         ...input.attributionLines.map((l) => `- ${l}`),
-        `Remove them from the PR body (\`gh pr edit ${prNumber} --body-file <file>\`) and reword the commits that have them, then push with \`git push --force-with-lease\`. This is the only case where rewriting pushed commits is fine.`
+        `Remove them from the PR body (\`gh pr edit ${prNumber} --body-file <file>\`) and reword the commits that have them, then push with \`git push --force-with-lease\`. This is the only case where rewriting pushed commits is fine. Claude Code's own footer at the end of the PR body may stay.`
       )
       break
   }
