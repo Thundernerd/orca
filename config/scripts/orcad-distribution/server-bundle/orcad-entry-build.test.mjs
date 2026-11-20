@@ -8,6 +8,8 @@ import {
   buildOrcadEntry,
   escapeLegalCommentTail,
   findNonAsciiSource,
+  matchingOffset,
+  moduleAtOffset,
   ORCAD_COMMONJS_MODULE_OPTIONS
 } from './orcad-entry-build.mjs'
 import { runProcessSync } from '@orca/process-host'
@@ -112,4 +114,23 @@ it('escapes only the trailing license comment, never code', () => {
   expect(escaped).toContain('(c) Jos\\u{e9} \\u{1f600}')
   expect(findNonAsciiSource(escaped.slice(code.length))).toBeNull()
   expect(escapeLegalCommentTail(code)).toBe(code)
+})
+
+// The unminified build keeps comments, so its first non-ASCII character can belong to another module.
+it('names the module of the non-ASCII character the minified bundle has, not an earlier comment', () => {
+  const unminified = [
+    '',
+    '// node_modules/zod/checks.js',
+    'var a = 1 // a comment with \u00e9',
+    '',
+    '// src/shared/attribution.ts',
+    'var ATTRIBUTION = /generated with|\u{1f916} generated with/i',
+    ''
+  ].join('\n')
+  const minified = 'var a=1;var b=/generated with|\u{1f916} generated with/i;'
+  const offset = findNonAsciiSource(minified).offset
+  const found = matchingOffset(minified, offset, unminified)
+  expect(unminified.codePointAt(found)).toBe(0x1f916)
+  expect(moduleAtOffset(unminified, found)).toBe('src/shared/attribution.ts')
+  expect(matchingOffset(minified, offset, 'var nothing = 1')).toBeNull()
 })
