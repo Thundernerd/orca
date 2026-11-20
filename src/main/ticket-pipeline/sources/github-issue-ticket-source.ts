@@ -4,6 +4,7 @@ import { linkIssueBlockedBy } from '../../github/issues/issue-dependency-link'
 import { surveyOpenIssueTickets } from '../../github/issues/issue-dependency-survey'
 import { updateIssue } from '../../github/issues/issue-update'
 import { listLabels } from '../../github/issues/issue-field-options'
+import { AGENT_BRIEF_HEADING } from '../../../shared/ticket-pipeline/agent-brief'
 import type { TicketSource } from './ticket-source'
 
 function issueNumber(id: string): number | null {
@@ -41,7 +42,8 @@ export function githubIssueTicketSource(repo: Repo): TicketSource {
     briefHints: (ticket) => ({
       readCommand: `gh issue view ${ticket.issueNumber} --comments`,
       reviewRule: `with 'Closes #${ticket.issueNumber}' in the body`,
-      commentCommand: `gh issue comment ${ticket.issueNumber} --body-file <file> [--attach <screenshot>]`
+      commentCommand: `gh issue comment ${ticket.issueNumber} --body-file <file> [--attach <screenshot>]`,
+      specComment: `the latest comment with an \`${AGENT_BRIEF_HEADING}\` heading line, which triage wrote`
     }),
     // `Closes #n` in the PR closes the issue when it merges.
     complete: async () => undefined,

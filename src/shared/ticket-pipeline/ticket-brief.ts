@@ -8,6 +8,8 @@ export type TicketBriefInput = {
   reviewRule: string
   /** A command that comments on the ticket, `<file>` holding the body; null when it is a file here. */
   commentCommand: string | null
+  /** The comment that is the ticket's spec, winning over its text, when the tracker has one. */
+  specComment?: string
   /** Findings become tickets published at once; otherwise they are ticket files committed here. */
   findingsPublish: boolean
   branch: string
@@ -66,6 +68,11 @@ export function renderTicketBrief(input: TicketBriefInput): string {
   const lines = [
     `Implement ${ticketName} in this worktree, on branch ${branch}.`,
     `Read the ticket in full${readTicket}, then ${docs} and any references the ticket lists. Commit there; leave merging and other worktrees to the user.`,
+    ...(input.specComment
+      ? [
+          `- If the ticket has ${input.specComment}, that comment is the spec: it wins over the ticket's text, which is context.`
+        ]
+      : []),
     `- Proof: if the ticket changes something that can be seen (a UI, a page, a command's output) and this environment lets you capture it, capture the before now, before you change anything: a screenshot, or the output as text.`,
     ...ticketWorkLines(baseBranch),
     FINDING_DEFINITION,

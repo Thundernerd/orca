@@ -7,6 +7,7 @@ import {
   withCloudSessionMarker,
   type CloudSessionTag
 } from '../../../shared/ticket-pipeline/cloud-session-marker'
+import { findAgentBrief } from '../../../shared/ticket-pipeline/agent-brief'
 
 const OpenPRs = z.array(
   z.object({
@@ -20,6 +21,8 @@ const OpenPRs = z.array(
 )
 
 const Issue = z.object({ title: z.string(), url: z.string(), body: z.string() })
+
+const IssueComment = z.object({ body: z.string(), createdAt: z.string() })
 
 export type OpenRepoPR = {
   number: number
@@ -118,6 +121,35 @@ export async function readIssue(
     '{title, url: .html_url, body: (.body // "")}'
   ])
   return Issue.parse(JSON.parse(stdout))
+}
+
+/** The latest agent brief comment triage wrote on the issue. Null when there is none, or when the
+ *  comments cannot be read: the brief then carries the body alone, as it did before. */
+export async function readAgentBrief(
+  repoPath: string,
+  issueNumber: number,
+  knownOwnerRepo?: GitHubRepositoryIdentity
+): Promise<string | null> {
+  try {
+    const ownerRepo = knownOwnerRepo ?? (await resolveGitHubRepoExecution(repoPath, null)).ownerRepo
+    if (!ownerRepo) {
+      return null
+    }
+    // --paginate with --jq prints one JSON object per comment, a line each, across every page.
+    const stdout = await ghApi(repoPath, ownerRepo, [
+      `repos/${ownerRepo.owner}/${ownerRepo.repo}/issues/${issueNumber}/comments?per_page=100`,
+      '--paginate',
+      '--jq',
+      '.[] | {body: (.body // ""), createdAt: .created_at}'
+    ])
+    const comments = stdout
+      .split('\n')
+      .filter((line) => line.trim() !== '')
+      .map((line) => IssueComment.parse(JSON.parse(line)))
+    return findAgentBrief(comments)
+  } catch {
+    return null
+  }
 }
 
 /** A PR's body as it stands now, open or merged. */

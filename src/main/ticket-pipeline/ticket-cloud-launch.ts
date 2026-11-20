@@ -13,7 +13,7 @@ import type {
   TicketLaunchSelection,
   TicketSurveyRow
 } from '../../shared/ticket-pipeline/ticket-types'
-import { readIssue } from '../github/pull-requests/cloud-session-prs'
+import { readAgentBrief, readIssue } from '../github/pull-requests/cloud-session-prs'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import { cloudLaunchTerminalTitle, watchCloudLaunch } from './ticket-cloud-launch-session'
 import { getTicketItemStore } from './ticket-item-store'
@@ -45,13 +45,18 @@ async function renderBrief(
   row: TicketSurveyRow,
   type: ConventionalType | undefined
 ): Promise<{ branch: string; brief: string }> {
-  const issue = await readIssue(context.repo.path, row.ticket.issueNumber ?? 0)
+  const issueNumber = row.ticket.issueNumber ?? 0
+  const [issue, agentBrief] = await Promise.all([
+    readIssue(context.repo.path, issueNumber),
+    readAgentBrief(context.repo.path, issueNumber)
+  ])
   const branch = ticketBranchName(row.ticket, type ?? conventionalTypeForTicket(row.ticket))
   return {
     branch,
     brief: renderCloudTicketBrief({
       ticket: row.ticket,
       ticketBody: issue.body,
+      agentBrief,
       reviewRule: context.source.briefHints(row.ticket).reviewRule,
       branch,
       baseBranch: context.baseBranch,

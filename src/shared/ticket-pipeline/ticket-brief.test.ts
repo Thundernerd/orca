@@ -45,3 +45,29 @@ describe('renderTicketBrief proof and ticket record', () => {
     expect(record).not.toContain('comment on the ticket')
   })
 })
+
+describe('renderTicketBrief spec comment', () => {
+  it('names the spec comment as the spec, over the ticket text, right after reading it', () => {
+    const lines = renderTicketBrief({
+      ticket: { id: '#12', ref: '12', title: 'Add export' },
+      readCommand: 'gh issue view 12 --comments',
+      reviewRule: 'with "Closes #12" in it',
+      commentCommand: null,
+      specComment: 'the latest comment with an `## Agent Brief` heading line, which triage wrote',
+      findingsPublish: true,
+      branch: 'feat/12-add-export',
+      baseBranch: 'main',
+      agentDocs: [],
+      untrackedContext: []
+    }).split('\n')
+    const read = lines.findIndex((line) => line.startsWith('Read the ticket in full'))
+    expect(lines[read]).toContain('`gh issue view 12 --comments`')
+    expect(lines[read + 1]).toBe(
+      "- If the ticket has the latest comment with an `## Agent Brief` heading line, which triage wrote, that comment is the spec: it wins over the ticket's text, which is context."
+    )
+  })
+
+  it('says nothing of a spec comment when the source has none', () => {
+    expect(brief(true)).not.toContain('is the spec')
+  })
+})
