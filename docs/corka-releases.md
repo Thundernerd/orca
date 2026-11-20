@@ -27,6 +27,21 @@ Pushing a tag on `mine` starts the build. The workflow refuses a tag that doesn'
 - `v*` runs `.github/workflows/corka-desktop-release.yml`. It builds the macOS arm64 dmg/zip and the Linux x64 AppImage/deb, then publishes the release.
 - `mobile-android-v*` runs `.github/workflows/corka-android-release.yml`. It builds the signed APK and publishes a prerelease. Upstream's `mobile-android-release.yml` listens to the same tags, so `mine` limits its build job to `stablyai/orca`. Keep that `if:` when an upstream merge conflicts there.
 
+## Upstream workflows
+
+`main` carries all of upstream's workflows, and scheduled ones run from `main`, so many of them fail here on every
+schedule. Corka keeps only what builds, tests or ships it: the two Corka release workflows, PR Checks with Unit tests,
+Mobile Checks, Release JavaScript bundle, PR test LoC and the two cache cleanups. Disable the rest by id rather than
+editing files on `main`, which would conflict on every upstream sync:
+
+```sh
+bash config/scripts/release/operations/corka-disable-upstream-workflows.sh --dry-run   # list them
+bash config/scripts/release/operations/corka-disable-upstream-workflows.sh             # disable them
+```
+
+`--enable` turns the same list back on. PR Checks calls `e2e.yml` and `terminal-ime-e2e.yml` itself; if its runs fail
+after the disable, re-enable those two. A new upstream workflow arrives enabled; add it to the script's list.
+
 ## Updates
 
 - **Desktop:** reads releases from `APP_RELEASE_REPO` (`src/shared/updater/release-channel.ts`).
