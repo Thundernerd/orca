@@ -65,7 +65,8 @@ export class AgentSessionSubscribers {
       cursor: input.cursor ?? { epoch: liveCursor.epoch, sequence: 0 },
       boundedFrames: input.boundedFrames === true,
       readsCurrentRequests: input.readsCurrentRequests === true,
-      snapshotCatchUp: input.snapshotCatchUp !== false
+      snapshotCatchUp: input.snapshotCatchUp !== false,
+      ...(input.cursor ? {} : { awaitsSnapshot: true })
     }
     const session = this.bySession.get(input.sessionId) ?? new Map<string, Subscriber>()
     session.set(input.id, subscriber)

@@ -30,6 +30,7 @@ import { structuredAgentSessionStopNoteIdentity } from '../../../operations/stru
 import { createStructuredAgentSessionStatusReader } from '../../../observations/structured-agent-session-status-reader'
 import { indexedStatusFeedSession } from '../../../observations/testing/structured-agent-session-status-feed-test-session.test-fixture'
 import { AgentSessionSubscribers } from '../structured-agent-session-subscribers'
+import { SUBSCRIBER_SNAPSHOT_ATTEMPTS } from '../agent-session-subscriber-catch-up'
 import {
   structuredQueueSendGate,
   tryReadQueuePublication
@@ -480,4 +481,57 @@ it('a send restated off a snapshot page survives a follow-up abandoned by a newe
   await chat.laneDrained()
 
   expect(chat.sendState('send')).toBe('pending')
+})
+
+it('a first snapshot abandoned by a live authority change is taken again before any batch', async () => {
+  const held = new Set(['send'])
+  const chat = await openChat('first-snapshot-authority', held)
+  await chat.submit()
+
+  // The child stops holding the send during the first read; its owner republishes, as the host does.
+  chat.historyReads.mockImplementationOnce(async (...args) => {
+    const read = chat.journal.history(...args)
+    held.clear()
+    chat.subscribers.publish(SESSION, chat.journal)
+    return read
+  })
+  chat.open()
+  await vi.waitFor(() => expect(chat.sendState('send')).toBe('unknown'))
+  await chat.laneDrained()
+
+  expect(chat.events[0]?.type).toBe('snapshot')
+  expect(chat.delivered(0)).not.toContain('pending')
+})
+
+it('a first snapshot abandoned on every attempt comes from the next delivery, not a batch', async () => {
+  const held = new Set(['send'])
+  const chat = await openChat('first-snapshot-churn', held)
+  await chat.submit()
+
+  // Authority flips during each of the open's captures; each flip's publish queues a delivery.
+  let flips = 0
+  const flipDuringNextRead = () =>
+    chat.historyReads.mockImplementationOnce(async (...args) => {
+      const read = chat.journal.history(...args)
+      flips += 1
+      if (held.has('send')) {
+        held.clear()
+      } else {
+        held.add('send')
+      }
+      chat.subscribers.publish(SESSION, chat.journal)
+      if (flips < SUBSCRIBER_SNAPSHOT_ATTEMPTS) {
+        flipDuringNextRead()
+      }
+      return read
+    })
+  flipDuringNextRead()
+  chat.open()
+  await vi.waitFor(() => expect(chat.events.length).toBeGreaterThan(0))
+  await chat.laneDrained()
+
+  expect(flips).toBe(SUBSCRIBER_SNAPSHOT_ATTEMPTS)
+  expect(chat.events[0]?.type).toBe('snapshot')
+  expect(chat.pane().epoch).not.toBeNull()
+  expect(chat.sendState('send')).toBe(held.has('send') ? 'pending' : 'unknown')
 })
