@@ -2,7 +2,7 @@ import type { PRCheckDetail } from '../../shared/github/checks/check-types'
 import type { PRInfo } from '../../shared/github/pull-requests/pull-request-types'
 import type { GitHubRepositoryIdentity } from '../../shared/github/repositories/repository-identity'
 import {
-  findAttribution,
+  findPRAttribution,
   type MergeQueueObservation
 } from '../../shared/ticket-pipeline/merge-queue-step'
 import type { TicketItem } from '../../shared/ticket-pipeline/ticket-types'
@@ -76,7 +76,7 @@ export async function observeQueueHead(
       mergeable: pr.mergeable,
       behindBase,
       checks,
-      attributionHits: findAttribution(texts),
+      attributionHits: findPRAttribution(texts),
       mergeBlocker: null,
       agentReachable: agent !== null,
       githubQueue: github.enabled

@@ -69,13 +69,13 @@ export async function getPRTexts(
   repoPath: string,
   prRepo: GitHubOwnerRepo,
   prNumber: number
-): Promise<string[]> {
+): Promise<{ body: string; commits: string[] }> {
   const base = `repos/${prRepo.owner}/${prRepo.repo}/pulls/${prNumber}`
   const [body, commits] = await Promise.all([
     ghApi(repoPath, prRepo, [base, '--jq', '.body // ""']),
     ghApi(repoPath, prRepo, [`${base}/commits?per_page=100`, '--jq', '.[].commit.message'])
   ])
-  return [body, commits]
+  return { body, commits: [commits] }
 }
 
 /** What GitHub still requires before a merge (a review, say), via the merge button's own check. */
