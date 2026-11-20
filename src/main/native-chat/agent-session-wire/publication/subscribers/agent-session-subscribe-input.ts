@@ -43,6 +43,9 @@ export type Subscriber = {
   readHistorySnapshot?: HistoryReader['snapshot']
   readQueueSourceIds?: HistoryReader['queueSourceIds']
   snapshotCatchUp?: boolean
+  /** Set while a fresh subscriber has had no snapshot yet: the client's reducer ignores every batch
+   *  until a snapshot or reset gives it an epoch, so its next frame must be a snapshot. */
+  awaitsSnapshot?: boolean
   /** The current-work view the last frame's fields were read under
    *  (`StructuredAgentSessionCurrentWork.viewKey`); a change with no row still owes a frame. */
   workView?: string

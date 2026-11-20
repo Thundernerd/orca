@@ -33,7 +33,8 @@ export class SubscriberFrameSuperseded extends Error {
 /** Hold the chat's lane for one bounded read of rows, work and queue, then release it before any
  *  emission. Undefined abandons the frame: not `live`, a closed or replaced journal, or live
  *  authority that changed during any part of the read, whose own publication schedules the
- *  replacement. */
+ *  replacement. That replacement is a catch-up from the subscriber's cursor, so a snapshot's caller
+ *  captures again rather than wait for it (`publishSubscriberSnapshot`). */
 export async function captureJournalFrame<T>(
   hooks: FrameCaptureHooks,
   sessionId: string,

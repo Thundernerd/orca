@@ -101,6 +101,10 @@ async function deliver(
     hostNow,
     ...(publishedActivity !== undefined ? { activity: publishedActivity } : {})
   }
+  if (subscriber.awaitsSnapshot) {
+    // A batch before the first snapshot would be ignored, leaving the client with an empty chat.
+    return publishSnapshotFrame(port, subscriber, journal, subscriber.fence, shared)
+  }
   const reader = subscriberHistoryReader(subscriber)
   const readPage = createAgentSessionCatchUpReader(journal, reader)
   while (true) {
@@ -252,6 +256,12 @@ async function emitCaughtUp(
   }
 }
 
+/** How many captures a snapshot takes when live authority keeps moving during its read. */
+export const SUBSCRIBER_SNAPSHOT_ATTEMPTS = 3
+
+/** A snapshot is not replaced by its invalidation's delivery the way a catch-up is, so an abandoned
+ *  capture is taken again at the new authority. A subscriber still owed its first snapshot after
+ *  every attempt gets it from its next delivery instead of a batch. */
 export async function publishSubscriberSnapshot(
   port: SubscriberDeliveryPort,
   subscriber: Subscriber,
@@ -259,7 +269,22 @@ export async function publishSubscriberSnapshot(
   fence: number,
   hostNow: number
 ): Promise<void> {
-  await unlessSuperseded(publishSnapshotFrame(port, subscriber, journal, fence, { hostNow }))
+  for (let attempt = 0; attempt < SUBSCRIBER_SNAPSHOT_ATTEMPTS; attempt += 1) {
+    if (!port.isActive(subscriber) || journal.isClosed) {
+      return
+    }
+    try {
+      if (await publishSnapshotFrame(port, subscriber, journal, fence, { hostNow })) {
+        return
+      }
+    } catch (error) {
+      if (error instanceof SubscriberFrameSuperseded) {
+        // The emission sent nothing; the newer commit's own delivery follows.
+        return
+      }
+      throw error
+    }
+  }
 }
 
 async function publishSnapshotFrame(
@@ -286,6 +311,7 @@ async function publishSnapshotFrame(
     hostNow: shared.hostNow,
     activity: port.activity(subscriber.sessionId)
   })
+  subscriber.awaitsSnapshot = false
   if (!port.isActive(subscriber)) {
     return frame
   }
