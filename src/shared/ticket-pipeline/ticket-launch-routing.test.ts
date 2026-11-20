@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { routeTicketLaunch } from './ticket-launch-routing'
+import { cloudSwitchDecides, routeTicketLaunch } from './ticket-launch-routing'
 import type { TicketSurveyRow } from './ticket-types'
 
 function row(id: string, runsIn?: 'cloud' | 'local'): TicketSurveyRow {
@@ -46,5 +46,20 @@ describe('routeTicketLaunch', () => {
   it('lets a ticket the survey no longer has follow the switch', () => {
     expect(ids(routeTicketLaunch([{ id: '#9' }], rows, true).cloud)).toEqual(['#9'])
     expect(ids(routeTicketLaunch([{ id: '#9' }], rows, false).local)).toEqual(['#9'])
+  })
+})
+
+describe('cloudSwitchDecides', () => {
+  it('is needed while any selected ticket is unlabelled', () => {
+    expect(cloudSwitchDecides([row('#1', 'cloud'), row('#3')])).toBe(true)
+    expect(cloudSwitchDecides([row('#3')])).toBe(true)
+  })
+
+  it('is not needed once every selected ticket is labelled', () => {
+    expect(cloudSwitchDecides([row('#1', 'cloud'), row('#2', 'local')])).toBe(false)
+  })
+
+  it('stays while nothing is selected', () => {
+    expect(cloudSwitchDecides([])).toBe(true)
   })
 })

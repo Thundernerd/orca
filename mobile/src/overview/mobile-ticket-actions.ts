@@ -59,19 +59,28 @@ export function mobileTicketActions(client: RpcClient, projectId: string) {
         () => ticketLaunchRun.interpret(response),
         failed('launch the tickets')
       )
-      // `started` is a cloud session the desktop opened for it.
-      const isStarted = (o: { status: string }) => o.status === 'launched' || o.status === 'started'
-      const launched = result.outcomes.filter(isStarted).length
+      // `started` is a cloud session the desktop opened for it; `launched` a local workspace.
+      const local = result.outcomes.filter((o) => o.status === 'launched').length
+      const cloud = result.outcomes.filter((o) => o.status === 'started').length
       const problems = result.outcomes.flatMap((o) =>
-        isStarted(o) ? [] : [`${o.id}: ${o.reason ?? o.status}`]
+        o.status === 'launched' || o.status === 'started'
+          ? []
+          : [`${o.id}: ${o.reason ?? o.status}`]
       )
+      const total = result.outcomes.length
       return {
         ok: problems.length === 0,
         message: [
-          translate('overview.mobile.tickets.launched', 'Launched {{count}} of {{total}}', {
-            count: launched,
-            total: result.outcomes.length
-          }),
+          cloud > 0
+            ? translate(
+                'overview.mobile.tickets.launchedRouted',
+                'Started {{cloud}} in Claude cloud and launched {{local}} locally, of {{total}}',
+                { cloud, local, total }
+              )
+            : translate('overview.mobile.tickets.launched', 'Launched {{count}} of {{total}}', {
+                count: local,
+                total
+              }),
           ...problems
         ].join(' ')
       }

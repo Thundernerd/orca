@@ -1,29 +1,24 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Switch } from '@/components/ui/switch'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
 import { useTranslate } from '@/i18n/use-translate'
 import { conventionalTypeForTicket } from '../../../../shared/ticket-pipeline/ticket-branch-name'
-import {
-  CONVENTIONAL_TYPES,
-  type ConventionalType,
-  type TicketLaunchSelection,
-  type TicketSurveyRow
+import type {
+  TicketLaunchSelection,
+  TicketSurveyRow
 } from '../../../../shared/ticket-pipeline/ticket-types'
 import { surveyOverviewProject } from './overview-ticket-pipeline'
 import { OverviewTicketSourceSelect } from './OverviewTicketSourceSelect'
 import { OverviewTicketAgentModels } from './OverviewTicketAgentModels'
 import { OverviewTriageTickets } from './OverviewTriageTickets'
+import {
+  LaunchTicketsList,
+  LaunchTicketsRouting,
+  launchAsksCloud,
+  type LaunchTicketChoice
+} from './OverviewLaunchTicketsList'
 
-type Choice = { row: TicketSurveyRow; selected: boolean; type: ConventionalType }
+type Choice = LaunchTicketChoice
 
 type LoadState =
   | { kind: 'loading' }
@@ -37,10 +32,6 @@ type LoadState =
       /** Claude cloud sessions take GitHub issues only. */
       cloudCapable: boolean
     }
-
-function isConventionalType(value: string): value is ConventionalType {
-  return CONVENTIONAL_TYPES.some((type) => type === value)
-}
 
 /** Picks the ready tickets to launch: each gets a child workspace of the main one and a Claude agent. */
 export function OverviewLaunchTicketsPopover({
@@ -107,7 +98,7 @@ export function OverviewLaunchTicketsPopover({
   }
 
   const selected = state.kind === 'loaded' ? state.choices.filter((c) => c.selected) : []
-  const total = state.kind === 'loaded' ? state.choices.length : 0
+  const cloudCapable = state.kind === 'loaded' && state.cloudCapable
 
   const selectAll = (on: boolean): void => {
     setState((current) =>
@@ -163,74 +154,7 @@ export function OverviewLaunchTicketsPopover({
               )}
             </p>
           ) : (
-            <>
-              <label className="flex items-center gap-2 border-b border-border pb-1 text-xs text-muted-foreground">
-                <Checkbox
-                  checked={
-                    selected.length === total
-                      ? true
-                      : selected.length === 0
-                        ? false
-                        : 'indeterminate'
-                  }
-                  onCheckedChange={() => selectAll(selected.length < total)}
-                  aria-label={t(
-                    'auto.components.overview.launchTickets.selectAll',
-                    'Select all tickets'
-                  )}
-                />
-                {t(
-                  'auto.components.overview.launchTickets.selectedCount',
-                  '{{count}} of {{total}} selected',
-                  {
-                    count: selected.length,
-                    total
-                  }
-                )}
-              </label>
-              <ul className="scrollbar-sleek flex max-h-72 flex-col gap-1 overflow-y-auto">
-                {state.choices.map((choice) => (
-                  <li key={choice.row.ticket.id} className="flex items-center gap-2">
-                    <Checkbox
-                      checked={choice.selected}
-                      onCheckedChange={(checked) =>
-                        update(choice.row.ticket.id, { selected: checked === true })
-                      }
-                      aria-label={choice.row.ticket.title}
-                    />
-                    <span className="w-16 shrink-0 font-mono text-xs text-muted-foreground">
-                      {choice.row.ticket.id}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-xs">
-                      {choice.row.ticket.title}
-                    </span>
-                    <Select
-                      value={choice.type}
-                      onValueChange={(value) => {
-                        if (isConventionalType(value)) {
-                          update(choice.row.ticket.id, { type: value })
-                        }
-                      }}
-                    >
-                      <SelectTrigger
-                        size="sm"
-                        className="w-24"
-                        aria-label={t('auto.components.overview.launchTickets.type', 'Commit type')}
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CONVENTIONAL_TYPES.map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {type}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </li>
-                ))}
-              </ul>
-            </>
+            <LaunchTicketsList choices={state.choices} onChange={update} onSelectAll={selectAll} />
           )}
           {state.kind === 'loaded' ? (
             <OverviewTriageTickets
@@ -255,42 +179,19 @@ export function OverviewLaunchTicketsPopover({
               }}
             />
           ) : null}
-          {state.kind === 'loaded' && state.cloudCapable ? (
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={inCloud}
-                onCheckedChange={setInCloud}
-                aria-label={t(
-                  'auto.components.overview.launchTickets.cloud',
-                  'Run in Claude cloud'
-                )}
-              />
-              <span className="text-xs text-muted-foreground">
-                {t('auto.components.overview.launchTickets.cloud', 'Run in Claude cloud')}
-              </span>
-            </div>
-          ) : null}
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs text-muted-foreground">
-              {inCloud
-                ? t(
-                    'auto.components.overview.launchTickets.cloudHint',
-                    'Each starts a Claude cloud session in a terminal here; Corka takes its PR into the merge queue.'
-                  )
-                : t(
-                    'auto.components.overview.launchTickets.hint',
-                    'Each gets its own workspace and a Claude agent that works until its PR is up.'
-                  )}
-            </span>
+          <LaunchTicketsRouting
+            selected={selected}
+            inCloud={inCloud}
+            cloudCapable={cloudCapable}
+            onInCloud={setInCloud}
+          >
             <Button
               size="sm"
               disabled={busy || selected.length === 0}
               onClick={() => {
                 onLaunch(
                   selected.map((c) => ({ id: c.row.ticket.id, type: c.type })),
-                  inCloud && state.kind === 'loaded' && state.cloudCapable
-                    ? { cloud: true }
-                    : undefined
+                  launchAsksCloud(selected, inCloud, cloudCapable) ? { cloud: true } : undefined
                 )
                 setOpen(false)
               }}
@@ -299,7 +200,7 @@ export function OverviewLaunchTicketsPopover({
                 count: selected.length
               })}
             </Button>
-          </div>
+          </LaunchTicketsRouting>
         </div>
       </PopoverContent>
     </Popover>

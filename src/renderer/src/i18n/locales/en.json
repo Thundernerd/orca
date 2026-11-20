@@ -20410,7 +20410,13 @@
           "findingModel": "Finding checks run",
           "userDefaultModel": "Your default",
           "selectAll": "Select all tickets",
-          "selectedCount": "{{count}} of {{total}} selected"
+          "selectedCount": "{{count}} of {{total}} selected",
+          "runsInCloud": "Cloud",
+          "runsInLocal": "Local",
+          "runsInCloudTip": "Runs in a Claude cloud session, from its ready-for-agent label.",
+          "runsInLocalTip": "Runs here in its own workspace, from its ready-for-human label.",
+          "mixedHint": "Cloud tickets each start a Claude cloud session in a terminal here; local ones get their own workspace and a Claude agent.",
+          "cloudUnlabelledHint": "Only for unlabelled tickets: ready-for-agent ones run in the cloud and ready-for-human ones here."
         },
         "cleanUpWorkspaces": {
           "button": "Clean up",

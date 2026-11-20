@@ -29,3 +29,8 @@ export function routeTicketLaunch(
   }
   return route
 }
+
+/** Whether the cloud switch decides any of the selected tickets: labelled ones go where their label says. */
+export function cloudSwitchDecides(selected: readonly Pick<TicketSurveyRow, 'runsIn'>[]): boolean {
+  return selected.length === 0 || selected.some((row) => !row.runsIn)
+}

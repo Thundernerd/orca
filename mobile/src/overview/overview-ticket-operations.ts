@@ -10,7 +10,9 @@ const surveySchema = z.looseObject({
     z.looseObject({
       status: z.string(),
       ticket: z.looseObject({ id: z.string(), title: z.string() }),
-      waitingOn: z.array(z.string())
+      waitingOn: z.array(z.string()),
+      // Absent from a desktop older than label routing, and for unlabelled tickets.
+      runsIn: z.enum(['cloud', 'local']).optional()
     })
   ),
   // Absent from a desktop older than triage.
