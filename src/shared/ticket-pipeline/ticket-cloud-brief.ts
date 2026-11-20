@@ -9,6 +9,8 @@ export type CloudTicketBriefInput = {
   ticket: Pick<Ticket, 'id' | 'title'>
   /** The ticket's text: a cloud session may have no tracker CLI to read it with. */
   ticketBody: string
+  /** The latest agent brief comment triage wrote on the issue; it wins over the body. */
+  agentBrief?: string | null
   /** How the PR names the ticket so its tracker links it. */
   reviewRule: string
   branch: string
@@ -24,9 +26,13 @@ export function renderCloudTicketBrief(input: CloudTicketBriefInput): string {
   const { ticket, branch, baseBranch } = input
   const docs =
     input.agentDocs.length > 0 ? input.agentDocs.join(', ') : "the repo's contributing docs"
-  return [
+  const agentBrief = input.agentBrief?.trim() || null
+  const spec = agentBrief
+    ? "The ticket's text and its agent brief are below; the agent brief is the spec and wins over the ticket's text where they differ, which is context."
+    : "The ticket's text is below; it is the spec."
+  const lines = [
     `Implement ticket ${ticket.id} (${ticket.title}) on a new branch named exactly \`${branch}\`, created from origin/${baseBranch}.`,
-    `The ticket's text is below; it is the spec. Read ${docs} and any references the ticket lists.`,
+    `${spec} Read ${docs} and any references the ticket lists.`,
     "- Proof: if the ticket changes something that can be seen (a page, a command's output) and you can capture it here, capture the before now, before you change anything.",
     ...ticketWorkLines(baseBranch),
     FINDING_DEFINITION,
@@ -41,5 +47,16 @@ export function renderCloudTicketBrief(input: CloudTicketBriefInput): string {
     '---',
     '',
     input.ticketBody.trim()
-  ].join('\n')
+  ]
+  if (agentBrief) {
+    lines.push(
+      '',
+      '---',
+      '',
+      "The agent brief (the spec; it wins over the ticket's text where they differ):",
+      '',
+      agentBrief
+    )
+  }
+  return lines.join('\n')
 }

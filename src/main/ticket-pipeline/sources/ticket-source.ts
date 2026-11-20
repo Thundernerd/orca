@@ -17,6 +17,8 @@ export type TicketBriefHints = {
   reviewRule: string
   /** A command that comments on the ticket, with `<file>` for the body; null when the ticket is a file. */
   commentCommand: string | null
+  /** The comment that is the ticket's spec, winning over its text, when the tracker has one. */
+  specComment?: string
 }
 
 /** One tracker the pipeline reads tickets from and writes them to. */
