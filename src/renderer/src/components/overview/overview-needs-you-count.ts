@@ -9,19 +9,6 @@ import {
 import { ticketProjectIds } from '../../../../shared/overview/overview-ticket-projects'
 
 const NO_LABELS: OverviewHostLabels = new Map()
-const SLICE_KEYS: readonly (keyof OverviewStoreSlice)[] = [
-  'repos',
-  'worktreesByRepo',
-  'folderWorkspaces',
-  'projectGroups',
-  'activeWorktreeId',
-  'activeWorkspaceExecutionHostId',
-  'prCache',
-  'agentStatusByPaneKey',
-  'migrationUnsupportedByPtyId',
-  'tabsByWorktree',
-  'unifiedTabsByWorktree'
-]
 const NONE: ReadonlySet<string> = new Set()
 
 type Cached = {
@@ -36,8 +23,10 @@ let counted: {
   count: number
 } | null = null
 
+/** Both come from selectOverviewStoreSlice, so their fields line up in the same order. */
 function sameSlice(a: OverviewStoreSlice, b: OverviewStoreSlice): boolean {
-  return SLICE_KEYS.every((key) => a[key] === b[key])
+  const bValues = Object.values(b)
+  return Object.values(a).every((value, index) => value === bValues[index])
 }
 
 function overviewInputs(state: AppState): Cached['inputs'] {

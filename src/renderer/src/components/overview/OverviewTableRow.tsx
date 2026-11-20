@@ -93,7 +93,7 @@ export function OverviewTableRow({
         {agentStateLabel(row.agentState)}
       </td>
       <td className="px-2 py-1.5 whitespace-nowrap">
-        <OverviewPrLink pr={row.pr} />
+        <OverviewPrLink pr={row.pr} worktreeKey={row.worktreeId} />
       </td>
       <td className="hidden px-2 py-1.5 whitespace-nowrap text-muted-foreground @3xl:table-cell">
         {row.lastActivityAt ? formatRelativeTime(row.lastActivityAt, now) : '–'}

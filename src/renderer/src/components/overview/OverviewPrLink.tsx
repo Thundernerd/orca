@@ -1,11 +1,18 @@
 import { cn } from '@/lib/class-names'
 import { useTranslate } from '@/i18n/use-translate'
-import { openHttpLink } from '@/lib/browser/navigation/http-link-routing'
+import { openOverviewPrLink } from './overview-actions'
 import type { OverviewPr } from '../../../../shared/overview/overview-model-types'
 import { prChecksClass, prSummary } from './overview-presentation'
 
 /** A workspace's PR state; opens the PR where links open, and names failing checks on hover. */
-export function OverviewPrLink({ pr }: { pr: OverviewPr | null }): React.JSX.Element {
+export function OverviewPrLink({
+  pr,
+  worktreeKey
+}: {
+  pr: OverviewPr | null
+  /** The workspace's Overview key, so the link opens on the workspace's own host. */
+  worktreeKey: string
+}): React.JSX.Element {
   const t = useTranslate()
   if (!pr) {
     return <span className="text-muted-foreground">–</span>
@@ -34,7 +41,7 @@ export function OverviewPrLink({ pr }: { pr: OverviewPr | null }): React.JSX.Ele
           number: pr.number
         })
       }
-      onClick={() => openHttpLink(url)}
+      onClick={() => openOverviewPrLink(url, worktreeKey)}
     >
       {prSummary(pr)}
     </button>

@@ -1,4 +1,8 @@
 import type { AppState } from '@/store/types'
+import {
+  selectFolderWorkspaces,
+  selectWorktreesByRepo
+} from '@/store/workspaces/catalog/workspace-record-fields'
 import { selectLiveAgentStatusEntriesForWorktree } from '@/components/sidebar/workspace-card/activity/worktree-agent-row-selectors'
 import { readWorkspaceReviewPR } from '../../../../shared/sidebar-list/feed-facts/workspace-review-facts'
 import {
@@ -38,8 +42,8 @@ export type OverviewStoreSlice = Pick<
 export function selectOverviewStoreSlice(state: AppState): OverviewStoreSlice {
   return {
     repos: state.repos,
-    worktreesByRepo: state.worktreesByRepo,
-    folderWorkspaces: state.folderWorkspaces,
+    worktreesByRepo: selectWorktreesByRepo(state),
+    folderWorkspaces: selectFolderWorkspaces(state),
     projectGroups: state.projectGroups,
     activeWorktreeId: state.activeWorktreeId,
     activeWorkspaceExecutionHostId: state.activeWorkspaceExecutionHostId,
@@ -107,6 +111,13 @@ export function parseOverviewProjectId(
   return hostId ? { hostId, repoId: projectId.slice(split + 1) } : null
 }
 
+/** The id a workspace's host knows it by, from its Overview key (see {@link hostScoped}). */
+export function overviewWorktreeIdFromKey(key: string): string {
+  const split = key.indexOf('|')
+  // A local workspace's key is its id, which may itself hold a `|` (a path).
+  return split !== -1 && normalizeExecutionHostId(key.slice(0, split)) ? key.slice(split + 1) : key
+}
+
 export function buildOverviewStoreInputs(
   slice: OverviewStoreSlice,
   hostLabels: OverviewHostLabels
@@ -136,7 +147,7 @@ export function buildOverviewStoreInputs(
       groupId: repo.projectGroupId ?? null
     })
     // worktreesByRepo is keyed by bare repo id, so a twin's rows from every host share one list.
-    for (const worktree of slice.worktreesByRepo[repo.id] ?? []) {
+    for (const worktree of selectWorktreesByRepo(slice)[repo.id] ?? []) {
       const rowHostId = worktree.hostId ?? LOCAL_EXECUTION_HOST_ID
       if (worktree.isArchived || worktree.removing || rowHostId !== hostId) {
         continue
@@ -163,7 +174,7 @@ export function buildOverviewStoreInputs(
 
   // Folder workspaces are not git worktrees: they group under their project group.
   const groupNames = new Map(slice.projectGroups.map((group) => [group.id, group.name]))
-  for (const folder of slice.folderWorkspaces) {
+  for (const folder of selectFolderWorkspaces(slice)) {
     if (folder.isArchived) {
       continue
     }

@@ -14,10 +14,10 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/class-names'
 import { useTranslate } from '@/i18n/use-translate'
 import { formatRelativeTime } from '@/components/activity/activity-thread-presentation'
-import { openHttpLink } from '@/lib/browser/navigation/http-link-routing'
 import type { OverviewAttentionItem } from '../../../../shared/overview/overview-model-types'
 import { OVERVIEW_TRIAGE_ATTRIBUTE, type OverviewTriage } from './use-overview-keyboard-triage'
 import { ATTENTION_TONE, attentionKindLabel } from './overview-presentation'
+import { openOverviewPrLink } from './overview-actions'
 
 export type OverviewAttentionCardActions = {
   busy: boolean
@@ -144,7 +144,7 @@ export function OverviewAttentionCard({
           <Button
             variant="outline"
             size="xs"
-            onClick={() => item.prUrl && openHttpLink(item.prUrl)}
+            onClick={() => item.prUrl && openOverviewPrLink(item.prUrl, item.worktreeId)}
           >
             <GitPullRequest />
             {t('auto.components.overview.openPr', 'PR')}

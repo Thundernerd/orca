@@ -72,7 +72,7 @@ export function OverviewWorkspaceTable({
                 {agentStateLabel(row.agentState)}
               </td>
               <td className="py-1 pr-2 whitespace-nowrap">
-                <OverviewPrLink pr={row.pr} />
+                <OverviewPrLink pr={row.pr} worktreeKey={row.worktreeId} />
               </td>
               <td className="hidden py-1 pr-2 whitespace-nowrap text-muted-foreground sm:table-cell">
                 {row.cleanable ? (

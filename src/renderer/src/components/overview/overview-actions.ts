@@ -7,6 +7,8 @@ import { activateWorktreeAgentPane } from '@/components/sidebar/workspace-card/a
 import { sendMessageToAgent } from '@/lib/agent-session/messaging/agent-message-send'
 import { parsePaneKey } from '../../../../shared/workspace-layout/stable-pane-id'
 import { parseWorkspaceKey } from '../../../../shared/workspace/identity/workspace-scope'
+import { openAppHttpLink } from '@/lib/browser/navigation/app-http-link-open'
+import { overviewWorktreeIdFromKey } from './overview-store-inputs'
 import { agentsByUrgency, isWaitingAgent } from '../../../../shared/overview/overview-model'
 import type {
   OverviewAgentInput,
@@ -103,5 +105,31 @@ export async function replyToOverviewWorkspace(
       'No agent in {{name}} took the reply.',
       { name: worktree.name }
     )
+  }
+}
+
+/** Opens a workspace's PR per the link setting, in the browser of the host the workspace lives on. */
+export function openOverviewPrLink(url: string, worktreeKey: string): void {
+  openAppHttpLink(url, { worktreeId: overviewWorktreeIdFromKey(worktreeKey) })
+}
+
+/** Runs an action and turns a thrown error into a failure notice, so a page action never throws. */
+export async function settleOverviewAction(
+  action: () => Promise<OverviewActionResult | null>
+): Promise<OverviewActionResult | null> {
+  try {
+    return await action()
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : String(error) }
+  }
+}
+
+/** Refreshes the PR and CI state of every git workspace listed, where it is stale. */
+export function refreshOverviewPrs(worktrees: ReadonlyMap<string, OverviewWorktreeInput>): void {
+  const { refreshGitHubForWorktreeIfStale } = useAppStore.getState()
+  for (const w of worktrees.values()) {
+    if (parseWorkspaceKey(w.id)?.type !== 'folder') {
+      refreshGitHubForWorktreeIfStale(w.id)
+    }
   }
 }
