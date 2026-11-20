@@ -123,13 +123,28 @@ export function moduleAtOffset(source, offset) {
   return found
 }
 
-async function nonAsciiModule(outfile) {
+/**
+ * Where the minified bundle's non-ASCII character at `offset` sits in the unminified build. The unminified build
+ * keeps comments, so its own first non-ASCII character is often a different one; regex and template text survive
+ * minifying verbatim, so the longest run of text ending at the character finds the same spot.
+ */
+export function matchingOffset(minified, offset, unminified) {
+  for (let length = Math.min(40, offset); length >= 0; length--) {
+    const found = unminified.indexOf(minified.slice(offset - length, offset + 1))
+    if (found !== -1) {
+      return found + length
+    }
+  }
+  return null
+}
+
+async function nonAsciiModule(outfile, minified, offset) {
   const unminified = `${outfile}.unminified.js`
   try {
     await buildOrcadEntryBundle(unminified, false)
     const source = readFileSync(unminified, 'utf8')
-    const nonAscii = findNonAsciiSource(source)
-    return nonAscii ? moduleAtOffset(source, nonAscii.offset) : null
+    const found = matchingOffset(minified, offset, source)
+    return found === null ? null : moduleAtOffset(source, found)
   } finally {
     rmSync(unminified, { force: true })
   }
@@ -141,7 +156,7 @@ export async function buildOrcadEntry(outfile) {
   writeFileSync(outfile, source)
   const nonAscii = findNonAsciiSource(source)
   if (nonAscii) {
-    const module = await nonAsciiModule(outfile)
+    const module = await nonAsciiModule(outfile, source, nonAscii.offset)
     throw new Error(
       `orcad server bundle has a non-ASCII character at offset ${nonAscii.offset} ` +
         `(line ${nonAscii.line}${module ? `, from ${module}` : ''}): ...${nonAscii.excerpt}... ` +
