@@ -172,6 +172,13 @@ export function MobileTicketSheet({
                         ? `${row.status}: ${row.waitingOn.join(', ')}`
                         : row.status
                   }
+                  badge={
+                    row.status !== 'ready' || !row.runsIn
+                      ? undefined
+                      : row.runsIn === 'cloud'
+                        ? t('overview.mobile.tickets.runsInCloud', 'Cloud')
+                        : t('overview.mobile.tickets.runsInLocal', 'Local')
+                  }
                   onPress={() => toggle(row.ticket.id)}
                 />
               ))}

@@ -9,12 +9,15 @@ export function Toggle({
   checked,
   label,
   meta,
+  badge,
   disabled,
   onPress
 }: {
   checked: boolean
   label: string
   meta?: string
+  /** A short status chip beside the label. */
+  badge?: string
   disabled?: boolean
   onPress: () => void
 }) {
@@ -35,6 +38,11 @@ export function Toggle({
           </Text>
           {meta ? <Text style={styles.meta}>{meta}</Text> : null}
         </View>
+        {badge ? (
+          <View style={[styles.chip, styles.chipNeutral]}>
+            <Text style={[styles.chipText, styles.chipNeutralText]}>{badge}</Text>
+          </View>
+        ) : null}
       </View>
     </Pressable>
   )

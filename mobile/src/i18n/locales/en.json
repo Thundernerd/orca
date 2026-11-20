@@ -5151,6 +5151,9 @@
       "tickets": {
         "failed": "Could not {{what}}",
         "launched": "Launched {{count}} of {{total}}",
+        "launchedRouted": "Started {{cloud}} in Claude cloud and launched {{local}} locally, of {{total}}",
+        "runsInCloud": "Cloud",
+        "runsInLocal": "Local",
         "removed": "Removed {{count}} of {{total}}",
         "drafting": "Claude is drafting; review the drafts under Drafts when they are ready",
         "launchButton": "Launch tickets",
