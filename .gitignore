@@ -126,9 +126,13 @@ playwright-report/
 # Claude Code settings are machine-local.
 **/.claude/settings.local.json
 
-# Agent skills are installed per machine.
-/.claude/skills/
-/.agents/skills/
+# Agent skills are installed per machine, except the ticket agents' set Corka tracks on mine.
+/.claude/skills/*
+!/.claude/skills/code-review
+!/.claude/skills/codebase-design
+!/.claude/skills/pr
+!/.claude/skills/tdd
+!/.claude/skills/triage
 /skills-lock.json
 
 # Generated Clawpatch state includes machine-local paths and review records.

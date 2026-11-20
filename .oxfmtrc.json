@@ -6,6 +6,8 @@
   "trailingComma": "none",
   "ignorePatterns": [
     "cloud/**",
+    ".agents/skills/**",
+    ".claude/skills/**",
     "resources/licenses/**",
     "resources/plugins/launch/*/**",
     ".github/actions/cloud-sql-rollout-lease/**",
