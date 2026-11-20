@@ -1017,8 +1017,15 @@ jobs:
           DIFF_BASE="$(node config/scripts/git/pr-diff-base/git-pull-request-diff-base.mjs "$BASE_SHA")"
           pnpm run check:runtime-launcher-protocol-ratchet -- --base "$DIFF_BASE"
 
+      # The journeys check out shipped releases by tag; a repository without those tags (a fork)
+      # skips them with a notice instead of failing every wire PR on history it doesn't have.
+      - name: Release tags for the journeys
+        id: release_tags
+        run: node config/scripts/ci/cross-version-wire/release-tag-preflight.mjs
+
       # Run the entire directory; zero matches fail so new contracts cannot be omitted silently.
       - name: Old/new client and server compatibility journeys
+        if: steps.release_tags.outputs.present == 'true'
         run: pnpm exec vitest run --config config/vitest.config.ts tests/e2e/cross-version-wire/
 
   managed_hook_node18:
